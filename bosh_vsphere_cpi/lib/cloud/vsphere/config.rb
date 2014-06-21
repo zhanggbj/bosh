@@ -114,6 +114,14 @@ module VSphereCloud
       Regexp.new(vcenter_datacenter['persistent_datastore_pattern'])
     end
 
+    def datacenter_datastore_cluster
+      Regexp.new(vcenter_datacenter['datastore_cluster'])
+    end
+
+    def datacenter_persistent_datastore_cluster
+      Regexp.new(vcenter_datacenter['persistent_datastore_cluster'])
+    end
+
     def datacenter_clusters
       @cluster_objs ||= cluster_objs
     end
@@ -162,8 +170,10 @@ module VSphereCloud
               'template_folder' => String,
               optional('use_sub_folder') => bool,
               'disk_path' => String,
-              'datastore_pattern' => String,
-              'persistent_datastore_pattern' => String,
+              optional('datastore_pattern') => String,
+              optional('datastore_cluster') => String,
+              optional('persistent_datastore_pattern') => String,
+              optional('persistent_datastore_cluster') => String,
               optional('allow_mixed_datastores') => bool,
               'clusters' => [enum(String,
                 dict(String, { 'resource_pool' => String }))]

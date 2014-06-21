@@ -88,16 +88,16 @@ module VSphereCloud
           @logger.info("Generated name: #{name}")
 
           stemcell_size = File.size(image) / (1024 * 1024)
-          cluster, datastore = @resources.place(0, stemcell_size, [])
-          @logger.info("Deploying to: #{cluster.mob} / #{datastore.mob}")
+          @cluster, datastore = @resources.place(0, stemcell_size, [])
+          @logger.info("Deploying to: #{@cluster.mob} / #{datastore.mob}")
 
-          import_spec_result = import_ovf(name, ovf_file, cluster.resource_pool.mob, datastore.mob)
+          import_spec_result = import_ovf(name, ovf_file, @cluster.resource_pool.mob, datastore.mob)
 
           lease_obtainer = LeaseObtainer.new(@client, @logger)
           nfc_lease = lease_obtainer.obtain(
-            cluster.resource_pool,
+            @cluster.resource_pool,
             import_spec_result.import_spec,
-            cluster.datacenter.template_folder,
+            @cluster.datacenter.template_folder,
           )
 
           @logger.info('Uploading')
@@ -172,15 +172,39 @@ module VSphereCloud
 
     def create_vm(agent_id, stemcell, cloud_properties, networks, disk_locality = nil, environment = nil)
       with_thread_name("create_vm(#{agent_id}, ...)") do
-        VmCreatorBuilder.new.build(
-          choose_placer(cloud_properties),
-          cloud_properties,
-          @client,
-          @logger,
-          self,
-          @agent_env,
-          @file_provider
-        ).create(agent_id, stemcell, networks, disk_locality, environment)
+        stemcell_vm = @client.find_by_inventory_path([@cluster.datacenter.name, 'vm', @cluster.datacenter.template_folder.name, stemcell])
+
+        # TODO: replace with search by name
+        storage_pod = @client.get_managed_objects(Vim::StoragePod, {}).first
+        resource_pool = @client.get_managed_objects(Vim::ResourcePool, {}).first
+
+        initial_vm_config = Vim::StorageDrs::PodSelectionSpec::VmPodConfig.new
+        initial_vm_config.storage_pod = storage_pod
+
+        pod_spec = Vim::StorageDrs::PodSelectionSpec.new(storage_pod: storage_pod)
+        pod_spec.initial_vm_config = initial_vm_config
+
+        relocation_spec = Vim::Vm::RelocateSpec.new
+        relocation_spec.pool = resource_pool
+
+        clone_spec = Vim::Vm::CloneSpec.new
+        clone_spec.location = relocation_spec
+        clone_spec.power_on = true
+        clone_spec.template = false
+
+        storage_spec = Vim::StorageDrs::StoragePlacementSpec.new
+        storage_spec.clone_spec = clone_spec
+        storage_spec.type = 'clone'
+        storage_spec.vm = stemcell_vm
+        storage_spec.pod_selection_spec = pod_spec
+        storage_spec.folder = @cluster.datacenter.vm_folder.mob
+        storage_spec.clone_name = "vm-#{generate_unique_name}"
+
+        srm = @client.service_content.storage_resource_manager
+        recommend_datastores = srm.recommend_datastores(storage_spec)
+        task = srm.apply_recommendation([recommend_datastores.recommendations[0].key])
+        task_result = @client.wait_for_task(task)
+        task_result.vm.name
       end
     end
 

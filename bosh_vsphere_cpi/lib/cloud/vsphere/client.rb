@@ -29,7 +29,7 @@ module VSphereCloud
       http_client.connect_timeout = 30
       http_client.ssl_config.verify_mode = OpenSSL::SSL::VERIFY_NONE
 
-      @soap_stub = Soap::StubAdapter.new(host, 'vim.version.version6', http_client)
+      @soap_stub = Soap::StubAdapter.new(host, 'vim.version.version7', http_client)
 
       @service_instance = Vim::ServiceInstance.new('ServiceInstance', soap_stub)
       @service_content = service_instance.content
@@ -330,6 +330,16 @@ module VSphereCloud
           ]
       )
 
+      datacenter_datastore_traversal_spec = PC::TraversalSpec.new(
+          :name => "datacenterDatastoreTraversalSpec",
+          :type => Vim::Datacenter,
+          :path => "datastoreFolder",
+          :skip => false,
+          :select_set => [
+              PC::SelectionSpec.new(:name => "folderTraversalSpec")
+          ]
+      )
+
       host_vm_traversal_spec = PC::TraversalSpec.new(
           :name => "hostVmTraversalSpec",
           :type => Vim::HostSystem,
@@ -349,6 +359,7 @@ module VSphereCloud
               PC::SelectionSpec.new(:name => "folderTraversalSpec"),
               PC::SelectionSpec.new(:name => "datacenterHostTraversalSpec"),
               PC::SelectionSpec.new(:name => "datacenterVmTraversalSpec"),
+              PC::SelectionSpec.new(:name => "datacenterDatastoreTraversalSpec"),
               PC::SelectionSpec.new(:name => "computeResourceRpTraversalSpec"),
               PC::SelectionSpec.new(:name => "computeResourceDatastoreTraversalSpec"),
               PC::SelectionSpec.new(:name => "computeResourceHostTraversalSpec"),
@@ -364,6 +375,7 @@ module VSphereCloud
               folder_traversal_spec,
               datacenter_vm_traversal_spec,
               datacenter_host_traversal_spec,
+              datacenter_datastore_traversal_spec,
               compute_resource_host_traversal_spec,
               compute_resource_datastore_traversal_spec,
               compute_resource_rp_traversal_spec,
