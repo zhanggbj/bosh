@@ -26,6 +26,7 @@ module Bosh::Dev
       %w[
        agent_client
        blobstore_client
+       bosh-template
        bosh-core
        bosh-stemcell
        bosh_agent

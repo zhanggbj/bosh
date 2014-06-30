@@ -55,27 +55,28 @@ module Bosh::AwsCloud
 
     private
 
-    def create_spot_request_spec(instance_params, spot_price) {
-      spot_price: "#{spot_price}",
-      instance_count: 1,
-      launch_specification: {
-        image_id: instance_params[:image_id],
-        key_name: instance_params[:key_name],
-        instance_type: instance_params[:instance_type],
-        user_data: Base64.encode64(instance_params[:user_data]),
-        placement: {
-          availability_zone: instance_params[:availability_zone]
-        },
-        network_interfaces: [ 
-          { 
-            subnet_id: instance_params[:subnet].subnet_id,
-            groups: resolve_security_group_ids(instance_params[:security_groups]),
-            device_index: 0,
-            private_ip_address: instance_params[:private_ip_address]
-          } 
-        ]
+    def create_spot_request_spec(instance_params, spot_price)
+      {
+        spot_price: "#{spot_price}",
+        instance_count: 1,
+        launch_specification: {
+          image_id: instance_params[:image_id],
+          key_name: instance_params[:key_name],
+          instance_type: instance_params[:instance_type],
+          user_data: Base64.encode64(instance_params[:user_data]),
+          placement: {
+            availability_zone: instance_params[:availability_zone],
+          },
+          network_interfaces: [
+            {
+              subnet_id: instance_params[:subnet].subnet_id,
+              # groups: resolve_security_group_ids(instance_params[:security_groups]),
+              device_index: 0,
+              private_ip_address: instance_params[:private_ip_address],
+            },
+          ],
+        }
       }
-    }
     end
 
     def get_spot_instance_request_status(spot_instance_requests)
@@ -104,6 +105,7 @@ module Bosh::AwsCloud
     end
 
     def resolve_security_group_ids(security_group_names)
+      return [] if security_group_names.nil?
       security_group_ids = []
       @region.security_groups.each do |group|
          security_group_ids << group.security_group_id if security_group_names.include?(group.name)

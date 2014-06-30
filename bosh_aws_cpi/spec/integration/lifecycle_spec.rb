@@ -6,10 +6,13 @@ require 'cloud'
 
 describe Bosh::AwsCloud::Cloud do
   before(:all) do
-    @access_key_id     = ENV['BOSH_AWS_ACCESS_KEY_ID']     || raise("Missing BOSH_AWS_ACCESS_KEY_ID")
-    @secret_access_key = ENV['BOSH_AWS_SECRET_ACCESS_KEY'] || raise("Missing BOSH_AWS_SECRET_ACCESS_KEY")
-    @subnet_id         = ENV['BOSH_AWS_SUBNET_ID']         || raise("Missing BOSH_AWS_SUBNET_ID")
-    @spot_bid_price_for_m1_small = ENV['SPOT_BID_PRICE_FOR_M1_SMALL'] || 0.30
+    @access_key_id     = ENV['BOSH_AWS_ACCESS_KEY_ID']       || raise("Missing BOSH_AWS_ACCESS_KEY_ID")
+    @secret_access_key = ENV['BOSH_AWS_SECRET_ACCESS_KEY']   || raise("Missing BOSH_AWS_SECRET_ACCESS_KEY")
+    @subnet_id         = ENV['BOSH_AWS_SUBNET_ID']           || raise("Missing BOSH_AWS_SUBNET_ID")
+    @manual_ip         = ENV['BOSH_AWS_LIFECYCLE_MANUAL_IP'] || raise("Missing BOSH_AWS_LIFECYCLE_MANUAL_IP")
+
+    # Amazon controls the maximum bid price (4x on-demand price), so this is not a permanent default
+    @spot_bid_price_for_m1_small = ENV['SPOT_BID_PRICE_FOR_M1_SMALL'] || 0.24
   end
 
   before { Bosh::Registry::Client.stub(new: double('registry').as_null_object) }
@@ -208,7 +211,7 @@ describe Bosh::AwsCloud::Cloud do
       {
         'default' => {
           'type' => 'manual',
-          'ip' => '10.0.0.9', # use different IP to avoid race condition
+          'ip' => @manual_ip, # use different IP to avoid race condition
           'cloud_properties' => { 'subnet' => @subnet_id }
         }
       }
@@ -236,11 +239,19 @@ describe Bosh::AwsCloud::Cloud do
     end
   end
 
-  describe 'spot' do 
-    
+  describe 'spot' do
+    let(:network_spec) do
+      {
+        'default' => {
+          'type' => 'manual',
+          'ip' => @manual_ip, # use different IP to avoid race condition
+          'cloud_properties' => { 'subnet' => @subnet_id }
+        }
+      }
+    end
+
     context 'without existing disks' do
-      
-      it 'excercises vm lifecycle with light stemcell' do
+      it 'exercises vm lifecycle with light stemcell' do
         expect {
           stemcell_id = cpi.create_stemcell('/not/a/real/path', { 'ami' => { 'us-east-1' => 'ami-809a48e9' } })
           instance_id = cpi.create_vm(
@@ -257,8 +268,6 @@ describe Bosh::AwsCloud::Cloud do
           cpi.delete_stemcell(stemcell_id)
         }.not_to raise_error
       end
-      
     end
-
   end
 end
