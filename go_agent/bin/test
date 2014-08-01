@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 result=0
 
 bin=$(dirname $0)
@@ -15,8 +15,10 @@ echo -e "\n Installing ginkgo..."
 $bin/go install github.com/onsi/ginkgo/ginkgo
 let "result+=$?"
 
+ps aux
+
 echo -e "\n Testing packages..."
-$bin/env ginkgo -r $race $bin/../src/bosh
+GOMAXPROCS=2 $bin/env ginkgo -r $race $bin/../src/bosh
 let "result+=$?"
 
 echo -e "\n Vetting packages for potential issues..."
