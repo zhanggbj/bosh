@@ -22,7 +22,7 @@ namespace :spec do
 
     def run_integration_specs
       num_processes   = ENV['NUM_PROCESSES']
-      num_processes ||= ENV['TRAVIS'] ? 4 : nil
+      num_processes ||= ENV['TRAVIS'] ? 6 : nil
 
       Rake::Task['parallel:spec'].invoke(num_processes, 'spec/integration')
     end
