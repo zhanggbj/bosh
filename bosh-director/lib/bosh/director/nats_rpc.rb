@@ -35,9 +35,10 @@ module Bosh::Director
         @requests[request_id] = block
       end
       message = Yajl::Encoder.encode(request)
-      @logger.debug("SENT: #{client} #{message}")
+      @logger.debug("SENDING: #{client} #{message}; connected? #{@nats.connected?}; pending data size: #{@nats.pending_data_size}")
       EM.next_tick do
         @nats.publish(client, message)
+        @logger.debug("SENT: #{client} #{message}; connected? #{@nats.connected?}; pending data size: #{@nats.pending_data_size}")
       end
       request_id
     end
