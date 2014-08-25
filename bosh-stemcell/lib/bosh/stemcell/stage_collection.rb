@@ -187,6 +187,7 @@ module Bosh::Stemcell
     def default_openstack_stages
       [
         # Misc
+        :system_openstack_initramfs,
         :system_openstack_network,
         :system_openstack_clock,
         :system_openstack_modules,

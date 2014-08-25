@@ -149,6 +149,7 @@ module Bosh::Stemcell
           it 'has the correct stages' do
             expect(stage_collection.infrastructure_stages).to eq(
               [
+                :system_openstack_initramfs,
                 :system_openstack_network,
                 :system_openstack_clock,
                 :system_openstack_modules,
