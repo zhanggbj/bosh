@@ -165,6 +165,16 @@ describe 'with release and stemcell and two deployments' do
         bosh('rename job batlight batfoo').should succeed_with /Rename successful/
         bosh('vms').should succeed_with /batfoo/
       end
+
+      context 'third deployment with a persisent disk size change' do
+        before do
+          use_persistent_disk(4200)
+        end
+
+        it 'should succeed' do
+          @requirements.requirement(deployment, @spec, force: true)
+        end
+      end
     end
   end
 end
