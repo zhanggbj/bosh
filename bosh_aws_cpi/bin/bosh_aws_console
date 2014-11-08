@@ -1,16 +1,15 @@
 #!/usr/bin/env ruby
 
-# Copyright (c) 2009-2012 VMware, Inc.
-
 # Usage example:
 # irb(main):001:0> cpi.create_vm("test", "ami-809a48e9",
 #                  {"instance_type" => "m1.small"}, {}, [], {"foo" =>"bar"})
 
-require "bosh_aws_cpi"
-require "irb"
-require "irb/completion"
-require "ostruct"
-require "optparse"
+require 'bosh_aws_cpi'
+require 'irb'
+require 'irb/completion'
+require 'ostruct'
+require 'optparse'
+require 'logging'
 
 config_file = nil
 
@@ -41,7 +40,7 @@ module ConsoleHelpers
   end
 end
 
-cloud_config = OpenStruct.new(:logger => Logger.new(STDOUT))
+cloud_config = OpenStruct.new(:logger => Logging.logger(STDOUT))
 
 Bosh::Clouds::Config.configure(cloud_config)
 

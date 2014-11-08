@@ -11,7 +11,6 @@ module Bosh::Deployer
     let(:deployments_state) { instance_double('Bosh::Deployer::DeploymentsState') }
     let(:microbosh_job_instance) { instance_double('Bosh::Deployer::MicroboshJobInstance') }
     let(:spec) { instance_double('Bosh::Deployer::Specification') }
-    let(:logger) { instance_double('Logger', info: nil, error: nil) }
 
     subject(:instance_manager) { described_class.create(config_hash) }
 

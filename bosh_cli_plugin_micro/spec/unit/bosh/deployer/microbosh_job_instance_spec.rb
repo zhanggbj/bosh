@@ -1,5 +1,4 @@
 require 'spec_helper'
-require 'logger'
 require 'bosh/deployer/microbosh_job_instance'
 require 'bosh/director/core/templates/rendered_templates_archive'
 
@@ -7,7 +6,6 @@ module Bosh::Deployer
   describe MicroboshJobInstance do
     subject { MicroboshJobInstance.new('fake-blobstore-ip', mbus, logger) }
     let(:mbus) { 'https://fake-user:fake-password@0.0.0.0:6868' }
-    let(:logger) { instance_double('Logger', debug: nil) }
 
     describe '#render_templates' do
       before { allow(Bosh::Blobstore::DavBlobstoreClient).to receive(:new).and_return(blobstore) }

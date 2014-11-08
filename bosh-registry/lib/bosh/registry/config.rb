@@ -1,4 +1,4 @@
-# Copyright (c) 2009-2013 VMware, Inc.
+require 'common/logging_helper'
 
 module Bosh::Registry
 
@@ -14,10 +14,11 @@ module Bosh::Registry
     def configure(config)
       validate_config(config)
 
-      @logger ||= Logger.new(config["logfile"] || STDOUT)
-      if config["loglevel"].kind_of?(String)
-        @logger.level = Logger.const_get(config["loglevel"].upcase)
-      end
+      @logger ||= Bosh::LoggingHelper.create_logger(
+        'Registry',
+        logfile: config['logfile'],
+        level: config['loglevel'],
+      )
 
       @http_port = config["http"]["port"]
       @http_user = config["http"]["user"]

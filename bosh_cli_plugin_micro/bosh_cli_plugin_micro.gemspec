@@ -19,8 +19,8 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib', 'config']
 
   s.add_dependency 'sqlite3',     '~>1.3.7'
-  s.add_dependency 'mono_logger', '~>1.1.0'
 
+  s.add_dependency 'bosh_common',   "~>#{version}"
   s.add_dependency 'bosh_cli',      "~>#{version}"
   s.add_dependency 'bosh-stemcell', "~>#{version}"
   s.add_dependency 'bosh-registry', "~>#{version}"

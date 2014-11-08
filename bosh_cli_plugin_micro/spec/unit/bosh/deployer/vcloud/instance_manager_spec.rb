@@ -1,6 +1,5 @@
 require 'timeout'
 require 'spec_helper'
-require 'logger'
 
 BOSH_STEMCELL_TGZ ||= 'bosh-instance-1.0.tgz'
 
@@ -31,8 +30,6 @@ module Bosh::Deployer
       @deployer.state.destroy
       FileUtils.remove_entry_secure @dir
     end
-
-    let(:logger) { instance_double('Logger', debug: nil, info: nil) }
 
     def load_deployment
       deployments = Bosh::Deployer::DeploymentsState.load_from_dir(@config['dir'], logger)

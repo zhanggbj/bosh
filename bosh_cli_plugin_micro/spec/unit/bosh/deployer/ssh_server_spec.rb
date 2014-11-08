@@ -1,12 +1,10 @@
 require 'spec_helper'
 
 require 'bosh/deployer/ssh_server'
-require 'logger'
 
 module Bosh::Deployer
   describe SshServer do
     subject { SshServer.new('fake-user', 'fake-key', 'fake-port', logger) }
-    let(:logger) { instance_double('Logger', debug: nil, info: nil) }
 
     before do
       allow(Kernel).to receive(:sleep)

@@ -58,8 +58,8 @@ describe Bosh::Registry do
 
       logger = Bosh::Registry.logger
 
-      logger.should be_kind_of(Logger)
-      logger.level.should == Logger::DEBUG
+      expect(logger).to be_kind_of(Logging::Logger)
+      expect(logger.level).to eq(Logging.level_num(:debug))
 
       Bosh::Registry.http_port.should == 25777
       Bosh::Registry.http_user.should == "admin"
@@ -93,8 +93,8 @@ describe Bosh::Registry do
 
       logger = Bosh::Registry.logger
 
-      logger.should be_kind_of(Logger)
-      logger.level.should == Logger::DEBUG
+      expect(logger).to be_kind_of(Logging::Logger)
+      expect(logger.level).to eq(Logging.level_num(:debug))
 
       Bosh::Registry.http_port.should == 25777
       Bosh::Registry.http_user.should == "admin"

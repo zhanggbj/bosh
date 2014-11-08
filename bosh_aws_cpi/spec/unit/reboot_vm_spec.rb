@@ -37,7 +37,7 @@ describe Bosh::AwsCloud::Cloud, "reboot_vm" do
 
     instance_manager = instance_double('Bosh::AwsCloud::InstanceManager')
     Bosh::AwsCloud::InstanceManager.stub(:new).
-      with(region, registry, be_an_instance_of(AWS::ELB), az_selector, be_an_instance_of(Logger)).
+      with(region, registry, be_an_instance_of(AWS::ELB), az_selector, be_a_kind_of(Logging::Logger)).
       and_return(instance_manager)
 
     instance = instance_double('Bosh::AwsCloud::Instance')

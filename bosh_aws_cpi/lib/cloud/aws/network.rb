@@ -1,5 +1,3 @@
-# Copyright (c) 2009-2012 VMware, Inc.
-
 module Bosh::AwsCloud
   ##
   #
@@ -13,8 +11,7 @@ module Bosh::AwsCloud
     # @param [Hash] spec Raw network spec
     def initialize(name, spec)
       unless spec.is_a?(Hash)
-        raise ArgumentError, "Invalid spec, Hash expected, " \
-                             "#{spec.class} provided"
+        raise ArgumentError, "Invalid spec, Hash expected, #{spec.class} provided"
       end
 
       @logger = Bosh::Clouds::Config.logger

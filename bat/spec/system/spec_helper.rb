@@ -23,7 +23,8 @@ RSpec.configure do |config|
   config.filter_run :focus
 end
 
-logger = Logger.new(STDOUT)
+logger = Logging::Logger.new('SystemTest')
+logger.add_appenders(Logging.appenders.stdout)
 bosh_config_file = Tempfile.new('bosh_config')
 
 env = Bat::Env.from_env
@@ -52,7 +53,6 @@ RSpec.configure do |config|
 
   # inject dependencies into tests
   config.before(:all) do
-    @logger = logger
     @env = env
     @requirements = requirements
     @bosh_api = bosh_api

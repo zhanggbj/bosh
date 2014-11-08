@@ -46,11 +46,10 @@ describe Bosh::AwsCloud::Cloud do
 
   before do
     Bosh::Clouds::Config.configure(
-      double('delegate', task_checkpoint: nil, logger: Logger.new(STDOUT)))
+      double('delegate', task_checkpoint: nil, logger: logger))
   end
 
   before { Bosh::Clouds::Config.stub(logger: logger) }
-  let(:logger) { Logger.new(STDERR) }
 
   before { @instance_id = nil }
   after  { cpi.delete_vm(@instance_id) if @instance_id }

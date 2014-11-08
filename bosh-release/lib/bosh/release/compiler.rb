@@ -1,4 +1,5 @@
 require 'bosh/template/property_helper'
+require 'common/logging_helper'
 
 module Bosh
   module Release
@@ -17,7 +18,10 @@ module Bosh
 
       def initialize(options)
         @options = OPTIONS.merge(options)
-        @logger = Logger.new(@options["logfile"] || STDOUT)
+        @logger = Bosh::LoggingHelper.create_logger(
+          'ReleaseCompiler',
+          filename: @options["logfile"]
+        )
 
         FileUtils.mkdir_p(File.join(@options["base_dir"], "packages"))
         bsc_provider = @options["blobstore_provider"]

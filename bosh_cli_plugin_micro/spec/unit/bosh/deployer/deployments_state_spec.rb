@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'bosh/deployer/deployments_state'
-require 'logger'
 
 require 'bosh/deployer/instance_manager/vsphere'
 
@@ -10,7 +9,6 @@ module Bosh::Deployer
 
     describe '.load_from_dir' do
       let(:fake_deployments_state) { double('DeploymentsState') }
-      let(:logger) { instance_double('Logger', info: nil) }
 
       before do
         allow(described_class).to receive(:new).and_return(fake_deployments_state)

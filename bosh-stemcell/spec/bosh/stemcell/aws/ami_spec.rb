@@ -18,6 +18,8 @@ module Bosh::Stemcell::Aws
 
     let(:virtualization_type) { "hvm" }
 
+    after { FileUtils.rm('ami.log') }
+
     describe '#publish' do
       let(:image) { instance_double('AWS::EC2::Image', :"public=" => nil) }
       let(:ec2) { instance_double('AWS::EC2', images: { 'fake-ami-id' => image }) }
@@ -31,8 +33,6 @@ module Bosh::Stemcell::Aws
         }
       end
       before { stub_const('ENV', env) }
-
-      before { allow(Logger).to receive(:new) }
 
       it 'creates a new cpi with the appropriate properties' do
         expect(Bosh::Clouds::Provider).to receive(:create).with({

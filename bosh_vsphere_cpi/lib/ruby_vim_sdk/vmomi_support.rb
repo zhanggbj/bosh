@@ -2,7 +2,8 @@ module VimSdk
 
   module VmomiSupport
 
-    @logger = MonoLogger.new(STDOUT)
+    @logger = Logging::Logger.new('VimSdk')
+    @logger.add_appenders(Logging.appenders.stdout('VimSdkOut'))
 
     @type_info = {}
     @wsdl_type_info = {}

@@ -1,4 +1,5 @@
 require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
+require File.expand_path('../../../spec/support/buffered_logger', __FILE__)
 
 require 'tmpdir'
 require 'cloud/aws'
@@ -100,7 +101,7 @@ end
 
 RSpec.configure do |config|
   config.before do
-    logger = Logger.new('/dev/null')
+    # fake Director Config logger (CPI runs in the same process as the director)
     allow(Bosh::Clouds::Config).to receive(:logger).and_return(logger)
   end
 end

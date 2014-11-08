@@ -35,7 +35,7 @@ describe 'network configuration' do
     it 'resolves instance names from deployed VM' do
       # Temporarily add to debug why dig is returning 'connection timed out'
       resolv_conf = ssh(public_ip, 'vcap', 'cat /etc/resolv.conf', ssh_options)
-      @logger.info("Contents of resolv.conf '#{resolv_conf}'")
+      logger.info("Contents of resolv.conf '#{resolv_conf}'")
 
       bosh('logs batlight 0 --agent --dir /tmp')
 

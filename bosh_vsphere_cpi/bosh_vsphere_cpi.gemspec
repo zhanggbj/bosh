@@ -30,6 +30,7 @@ Gem::Specification.new do |s|
   s.add_dependency 'builder',     '~>3.1.4'
   s.add_dependency 'nokogiri',    '~>1.5.10'
   s.add_dependency 'httpclient',  '=2.4.0'
+  s.add_dependency 'logging',     '~>1.8.2'
 
   s.add_development_dependency 'timecop', '~>0.7.1'
 end

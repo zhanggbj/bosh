@@ -15,7 +15,6 @@ module Bosh::Deployer
 
     let(:ssh_server) { instance_double('Bosh::Deployer::SshServer') }
     let(:wait) { 60 }
-    let(:logger) { instance_double('Logger', debug: nil, info: nil) }
 
     describe '#create' do
       let(:session) { instance_double('Net::SSH::Connection::Session') }

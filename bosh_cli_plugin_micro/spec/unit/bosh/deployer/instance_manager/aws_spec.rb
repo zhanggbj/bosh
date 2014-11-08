@@ -1,6 +1,5 @@
 require 'spec_helper'
 require 'aws-sdk'
-require 'logger'
 require 'bosh/deployer/instance_manager/aws'
 
 module Bosh::Deployer
@@ -25,8 +24,6 @@ module Bosh::Deployer
         },
       )
     end
-
-    let(:logger) { instance_double('Logger', info: nil) }
 
     before { allow(Registry).to receive(:new).and_return(registry) }
     let(:registry) { instance_double('Bosh::Deployer::Registry') }

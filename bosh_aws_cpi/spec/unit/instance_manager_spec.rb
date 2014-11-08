@@ -7,7 +7,6 @@ describe Bosh::AwsCloud::InstanceManager do
   let(:registry) { double('Bosh::Registry::Client', :endpoint => 'http://...', :update_settings => nil) }
   let(:elb) { double('AWS::ELB') }
   let(:az_selector) { instance_double('Bosh::AwsCloud::AvailabilityZoneSelector', common_availability_zone: 'us-east-1a') }
-  let(:logger) { Logger.new('/dev/null') }
 
   describe '#create' do
     before { allow(region).to receive(:subnets).and_return('sub-123456' => fake_aws_subnet) }

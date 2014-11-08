@@ -1,4 +1,5 @@
 require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
+require File.expand_path('../../../spec/support/buffered_logger', __FILE__)
 
 require 'sequel'
 require 'sequel/adapters/sqlite'
@@ -17,11 +18,15 @@ end
 
 config = VSphereSpecConfig.new
 config.db = db
-config.logger = Logger.new(STDOUT)
-config.logger.level = Logger::DEBUG
 config.uuid = '123'
 
 Bosh::Clouds::Config.configure(config)
+
+RSpec.configure do |example|
+  example.before do
+    config.logger = logger
+  end
+end
 
 def by(message)
   if block_given?

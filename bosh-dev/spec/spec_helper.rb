@@ -1,4 +1,5 @@
 require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
+require File.expand_path('../../../spec/support/buffered_logger', __FILE__)
 
 require 'rake'
 require 'fakefs/spec_helpers'
@@ -6,7 +7,6 @@ require 'webmock/rspec'
 require 'sequel'
 require 'sequel/adapters/sqlite'
 require 'cloud'
-require 'support/buffered_logger'
 
 db = Sequel.sqlite(':memory:')
 

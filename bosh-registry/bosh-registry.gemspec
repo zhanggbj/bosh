@@ -24,4 +24,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'yajl-ruby', '~>1.1.0'
   s.add_dependency 'fog',       '~>1.23.0'
   s.add_dependency 'aws-sdk',   '1.44.0'
+  s.add_dependency 'logging',   '~>1.8.2'
 end

@@ -4,6 +4,7 @@ require 'ostruct'
 require 'yaml'
 require 'rake'
 require 'bosh/stemcell/aws/region'
+require 'common/logging_helper'
 
 module Bosh::Stemcell::Aws
   class Ami
@@ -16,7 +17,8 @@ module Bosh::Stemcell::Aws
     end
 
     def publish
-      cloud_config = OpenStruct.new(logger: Logger.new('ami.log'), task_checkpoint: nil)
+      logger = Bosh::LoggingHelper.create_logger('Stemcell', filename: 'ami.log')
+      cloud_config = OpenStruct.new(logger: logger, task_checkpoint: nil)
       Bosh::Clouds::Config.configure(cloud_config)
 
       cloud = Bosh::Clouds::Provider.create(options, 'fake-director-uuid')

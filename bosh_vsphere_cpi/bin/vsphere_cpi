@@ -3,7 +3,7 @@
 require 'rubygems'
 require 'yaml'
 require 'sequel'
-require 'logger'
+require 'logging'
 require 'cloud'
 require 'cloud/vsphere'
 require 'ostruct'
@@ -28,7 +28,7 @@ db_migrations_path = File.expand_path('../../db/migrations', __FILE__)
 Sequel::TimestampMigrator.new(db, db_migrations_path, {table: 'vsphere_cpi_schema'}).run
 
 Bosh::Clouds::Config.configure(OpenStruct.new(
-  logger: Logger.new(STDERR),
+  logger: Logging.logger(STDERR),
   task_checkpoint: nil,
   db: db,
 ))

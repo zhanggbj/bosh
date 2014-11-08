@@ -11,7 +11,6 @@ module Bosh::Deployer
     let(:cloud_plugin) { 'fake-plugin-name' }
     let(:deployments) { {} }
     let(:state) { instance_double('Bosh::Deployer::InstanceManager', deployments: deployments) }
-    let(:logger) { instance_double('Logger', info: nil, debug: nil) }
     let(:cloud_properties) { 'fake-properties' }
     let(:http_client) { instance_double(HTTPClient, head: nil) }
     let(:db) { instance_double('Sequel::SQLite::Database') }

@@ -1,6 +1,7 @@
 $: << File.expand_path('..', __FILE__)
 
 require File.expand_path('../../../spec/shared_spec_helper', __FILE__)
+require File.expand_path('../../../spec/support/buffered_logger', __FILE__)
 
 require 'digest/sha1'
 require 'fileutils'
@@ -13,7 +14,6 @@ require 'zlib'
 require 'archive/tar/minitar'
 require 'machinist/sequel'
 require 'sham'
-require 'support/buffered_logger'
 
 Dir[File.expand_path('../support/**/*.rb', __FILE__)].each { |f| require(f) }
 

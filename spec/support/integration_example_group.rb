@@ -1,10 +1,14 @@
 require 'yaml'
 require 'yajl'
 require 'bosh/dev/sandbox/main'
+require 'logging'
 
 module IntegrationExampleGroup
   def logger
-    @logger ||= Logger.new(STDOUT)
+    unless @logger
+      @logger = Logging::Logger.new('IntegrationTests')
+      @logger.add_appenders(Logging.appenders.stdout)
+    end
   end
 
   def director

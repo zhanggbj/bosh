@@ -21,6 +21,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = %w[lib]
 
   spec.add_dependency 'bosh_aws_cpi', "~>#{version}"
+  spec.add_dependency 'logging',      '~>1.8.2'
 
   spec.add_development_dependency 'fakefs'
   spec.add_development_dependency 'rake'

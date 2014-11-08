@@ -16,7 +16,7 @@ describe Bat::BoshHelper do
 
   before { stub_const('ENV', {}) }
 
-  before { bosh_helper.instance_variable_set('@logger', Logger.new('/dev/null')) }
+  before { bosh_helper.instance_variable_set('@logger', logger) }
 
   describe '#ssh_options' do
     let(:env) { instance_double('Bat::Env') }

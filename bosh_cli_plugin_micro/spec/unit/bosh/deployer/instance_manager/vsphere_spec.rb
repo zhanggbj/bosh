@@ -23,7 +23,6 @@ module Bosh::Deployer
         },
       )
     end
-    let(:logger) { instance_double('Logger') }
     let(:registry) { instance_double('Bosh::Deployer::Registry') }
 
     before do
