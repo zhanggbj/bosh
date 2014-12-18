@@ -20,24 +20,48 @@ module Bosh::Blobstore
 
     describe '#initialize' do
       it 'initializes with http_proxy when using http endpoint' do
-        ENV['HTTPS_PROXY'] = ENV['https_proxy'] = 'https://proxy.example.com:8080'
-        ENV['HTTP_PROXY']  = ENV['http_proxy']  = 'http://proxy.example.com:8080'
+        ENV['HTTPS_PROXY'] = 'https://proxy.example.com:8080'
+        ENV['HTTP_PROXY']  = 'http://proxy.example.com:8080'
+        options[:url] = 'http://localhost'
+        expect(HTTPClient).to receive(:new).with(proxy: 'http://proxy.example.com:8080')
+        client
+      end
+
+      it 'initializes with http_proxy when using http endpoint (lower-case backwards compat)' do
+        ENV['https_proxy'] = 'https://proxy.example.com:8080'
+        ENV['http_proxy']  = 'http://proxy.example.com:8080'
         options[:url] = 'http://localhost'
         expect(HTTPClient).to receive(:new).with(proxy: 'http://proxy.example.com:8080')
         client
       end
 
       it 'initializes with https_proxy when using https endpoint' do
-        ENV['HTTPS_PROXY'] = ENV['https_proxy'] = 'https://proxy.example.com:8080'
-        ENV['HTTP_PROXY']  = ENV['http_proxy']  = 'http://proxy.example.com:8080'
+        ENV['HTTPS_PROXY']= 'https://proxy.example.com:8080'
+        ENV['HTTP_PROXY'] = 'http://proxy.example.com:8080'
+        options[:url] = 'https://localhost'
+        expect(HTTPClient).to receive(:new).with(proxy: 'https://proxy.example.com:8080')
+        client
+      end
+
+      it 'initializes with https_proxy when using https endpoint (lower-case backwards compat)' do
+        ENV['https_proxy'] = 'https://proxy.example.com:8080'
+        ENV['http_proxy']  = 'http://proxy.example.com:8080'
         options[:url] = 'https://localhost'
         expect(HTTPClient).to receive(:new).with(proxy: 'https://proxy.example.com:8080')
         client
       end
 
       it 'initializes without proxy settings when env is not set' do
-        ENV['HTTPS_PROXY'] = ENV['https_proxy'] = nil
-        ENV['HTTP_PROXY']  = ENV['http_proxy']  = nil
+        ENV['HTTPS_PROXY'] = nil
+        ENV['HTTP_PROXY']  = nil
+        options[:url] = 'https://localhost'
+        expect(HTTPClient).to receive(:new)
+        client
+      end
+
+      it 'initializes without proxy settings when env is not set (lower-case backwards compat)' do
+        ENV['https_proxy'] = nil
+        ENV['http_proxy']  = nil
         options[:url] = 'https://localhost'
         expect(HTTPClient).to receive(:new)
         client

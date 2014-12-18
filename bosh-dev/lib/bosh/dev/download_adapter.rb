@@ -17,7 +17,8 @@ module Bosh::Dev
     private
 
     def download_file(uri, write_path)
-      proxy = ENV['http_proxy'] ? URI.parse(ENV['http_proxy']) : NullUri.new
+      http_proxy = ENV['HTTP_PROXY'] || ENV['http_proxy']
+      proxy = http_proxy ? URI.parse(http_proxy) : NullUri.new
 
       proxy = NullUri.new if bypass_proxy?(uri)
 
@@ -48,7 +49,7 @@ module Bosh::Dev
     end
 
     def bypass_proxy_uris
-      uris = ENV['no_proxy']
+      uris = ENV['NO_PROXY'] || ENV['no_proxy']
 
       return [] unless uris
 

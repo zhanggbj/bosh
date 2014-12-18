@@ -10,13 +10,15 @@ To run tests locally, follow these steps...
 1. (If running in VM) Bring up the VM
     
     ```
-    # if behind a proxy, set http_proxy, https_proxy and no_proxy first
-    export http_proxy=http://user:pwd@myproxy.example.com:8080
-    export https_proxy=http://user:pwd@myproxy.example.com:8080
-    export no_proxy=localhost
+    # if behind a proxy, set HTTP_PROXY, HTTPS_PROXY and NO_PROXY first:
+    export HTTP_PROXY=http://user:pwd@myproxy.example.com:8080
+    export HTTPS_PROXY=http://user:pwd@myproxy.example.com:8080
+    export NO_PROXY=localhost
+
     cd gocd/docker
     vagrant up --provider virtualbox
-    # if behind a proxy, reload to propagate settings to docker in VM
+
+    # if behind a proxy, reload to propagate settings to docker in VM:
     vagrant reload
     ```
 

@@ -22,9 +22,9 @@ docker run \
   -e DB \
   -e CODECLIMATE_REPO_TOKEN \
   -e COVERAGE \
-  -e http_proxy=$http_proxy \
-  -e https_proxy=$https_proxy \
-  -e no_proxy=$no_proxy \
+  -e HTTP_PROXY=$HTTP_PROXY \
+  -e HTTPS_PROXY=$HTTPS_PROXY \
+  -e NO_PROXY=$NO_PROXY \
   $DOCKER_IMAGE \
   $@ \
   &
