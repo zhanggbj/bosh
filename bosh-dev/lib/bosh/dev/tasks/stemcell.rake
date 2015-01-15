@@ -106,7 +106,6 @@ namespace :stemcell do
 
     sh(environment.os_image_rspec_command)
 
-    collection = Bosh::Stemcell::StageCollection.new(definition)
     runner = Bosh::Stemcell::StageRunner.new(
       build_path: environment.build_path,
       command_env: environment.command_env,
@@ -117,8 +116,8 @@ namespace :stemcell do
     builder = Bosh::Stemcell::StemcellBuilder.new(
       gem_components: gem_components,
       environment: environment,
-      collection: collection,
       runner: runner,
+      definition: definition,
     )
     builder.build
 

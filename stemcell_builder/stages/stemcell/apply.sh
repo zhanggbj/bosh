@@ -26,6 +26,10 @@ version = "$stemcell_version"
 bosh_protocol = 1
 stemcell_infrastructure = "$stemcell_infrastructure"
 stemcell_checksum = "$stemcell_checksum"
+hypervisor = "$stemcell_hypervisor"
+disk_format = "$stemcell_disk_format"
+container_format = "$stemcell_container_format"
+os_distro = "$stemcell_operating_system"
 
 manifest = {
     "name" => stemcell_name,
@@ -36,6 +40,10 @@ manifest = {
         "name" => stemcell_name,
         "version" => version,
         "infrastructure" => stemcell_infrastructure,
+        "disk_format" => disk_format,
+        "container_format" => container_format,
+        "os_type" => "linux",
+        "os_distro" => os_distro,
         "architecture" => "x86_64",
         "root_device_name" => "/dev/sda1"
     }

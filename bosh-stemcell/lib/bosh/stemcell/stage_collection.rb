@@ -49,17 +49,15 @@ module Bosh::Stemcell
       end
     end
 
-    def package_stemcell_stages
-      case infrastructure
-        when Infrastructure::Aws then
-          aws_package_stages
-        when Infrastructure::OpenStack then
-          openstack_package_stages
-        when Infrastructure::Vsphere then
-          vmware_package_stages
-        when Infrastructure::Vcloud then
-          vmware_package_stages
-        when Infrastructure::Warden then
+    def package_stemcell_stages(disk_format)
+      case disk_format
+        when "raw" then
+          raw_package_stages
+        when "qcow2" then
+          qcow2_package_stages
+        when "ovf" then
+          ovf_package_stages
+        when "???" then
           warden_package_stages
       end
     end
@@ -187,7 +185,7 @@ module Bosh::Stemcell
         # Image/bootloader
         :image_create,
         :image_install_grub,
-        :image_aws_update_grub,
+        :image_aws_update_grub, # todo: this stage is a no-op
       ]
     end
 
@@ -253,33 +251,33 @@ module Bosh::Stemcell
       ]
     end
 
-    def aws_package_stages
+    def raw_package_stages # raw
       [
-        :image_aws_prepare_stemcell,
+        :prepare_raw_image_stemcell,
         # Final stemcell
         :stemcell,
       ]
     end
 
-    def openstack_package_stages
+    def qcow2_package_stages
       [
-        :image_openstack_qcow2,
-        :image_openstack_prepare_stemcell,
+        :package_qcow2_image,
+        :prepare_qcow2_image_stemcell,
         # Final stemcell
-        :stemcell_openstack,
+        :stemcell,
       ]
     end
 
-    def vmware_package_stages
+    def ovf_package_stages
       [
         :image_ovf_vmx,
         :image_ovf_generate,
-        :image_ovf_prepare_stemcell,
+        :prepare_ovf_image_stemcell,
         :stemcell,
       ]
     end
 
-    def warden_package_stages
+    def warden_package_stages # todo whuh?
       [
         # Final stemcell
         :stemcell,

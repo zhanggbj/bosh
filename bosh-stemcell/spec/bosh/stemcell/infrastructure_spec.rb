@@ -67,6 +67,7 @@ module Bosh::Stemcell
     its(:name)              { should eq('aws') }
     its(:hypervisor)        { should eq('xen') }
     its(:default_disk_size) { should eq(2048) }
+    its(:disk_formats)      { should eq(['raw']) }
 
     it { should eq Infrastructure.for('aws') }
     it { should_not eq Infrastructure.for('openstack') }
@@ -76,6 +77,7 @@ module Bosh::Stemcell
     its(:name)              { should eq('openstack') }
     its(:hypervisor)        { should eq('kvm') }
     its(:default_disk_size) { should eq(3072) }
+    its(:disk_formats) {should eq(['raw','qcow2'])}
 
     it { should eq Infrastructure.for('openstack') }
     it { should_not eq Infrastructure.for('vsphere') }
@@ -85,6 +87,7 @@ module Bosh::Stemcell
     its(:name)              { should eq('vsphere') }
     its(:hypervisor)        { should eq('esxi') }
     its(:default_disk_size) { should eq(3072) }
+    its(:disk_formats)      { should eq(['ovf']) }
 
     it { should eq Infrastructure.for('vsphere') }
     it { should_not eq Infrastructure.for('aws') }
@@ -94,5 +97,9 @@ module Bosh::Stemcell
     its(:name)              { should eq('vcloud') }
     its(:hypervisor)        { should eq('esxi') }
     its(:default_disk_size) { should eq(3072) }
+    its(:disk_formats)      { should eq(['ovf']) }
+
+    it { should eq Infrastructure.for('vcloud') }
+    it { should_not eq Infrastructure.for('vsphere') }
   end
 end

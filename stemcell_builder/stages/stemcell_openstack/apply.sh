@@ -19,8 +19,8 @@ stemcell_name = "$stemcell_name"
 stemcell_tgz = "$stemcell_tgz"
 version = "$stemcell_version"
 bosh_protocol = 1
-stemcell_checksum = "$stemcell_checksum"
 stemcell_infrastructure = "$stemcell_infrastructure"
+stemcell_checksum = "$stemcell_checksum"
 hypervisor = "${stemcell_hypervisor:-kvm}"
 
 case hypervisor

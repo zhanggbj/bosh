@@ -91,7 +91,7 @@ module Bosh::Stemcell
         [
           :image_ovf_vmx,
           :image_ovf_generate,
-          :image_ovf_prepare_stemcell,
+          :prepare_ovf_image_stemcell,
           :stemcell
         ]
       }
@@ -115,7 +115,7 @@ module Bosh::Stemcell
 
         let(:aws_package_stemcell_stages) {
           [
-            :image_aws_prepare_stemcell,
+            :prepare_raw_image_stemcell,
             :stemcell
           ]
         }
@@ -161,8 +161,8 @@ module Bosh::Stemcell
             )
             expect(stage_collection.package_stemcell_stages).to eq(
                 [
-                :image_openstack_qcow2,
-                :image_openstack_prepare_stemcell,
+                :package_qcow2_image,
+                :prepare_qcow2_image_stemcell,
                 :stemcell_openstack
               ]
             )
@@ -189,8 +189,8 @@ module Bosh::Stemcell
             )
             expect(stage_collection.package_stemcell_stages).to eq(
                 [
-                  :image_openstack_qcow2,
-                  :image_openstack_prepare_stemcell,
+                  :package_qcow2_image,
+                  :prepare_qcow2_image_stemcell,
                   :stemcell_openstack
                 ]
             )
