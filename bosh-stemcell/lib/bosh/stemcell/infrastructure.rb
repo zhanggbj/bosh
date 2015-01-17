@@ -30,6 +30,10 @@ module Bosh::Stemcell
         @disk_formats = options.fetch(:disk_formats)
       end
 
+      def default_disk_format
+        disk_formats.first
+      end
+
       def ==(other)
         name == other.name &&
           hypervisor == other.hypervisor &&
@@ -45,7 +49,7 @@ module Bosh::Stemcell
 
     class OpenStack < Base
       def initialize
-        super(name: 'openstack', hypervisor: 'kvm', default_disk_size: 3072, disk_formats: ['raw', 'qcow2'])
+        super(name: 'openstack', hypervisor: 'kvm', default_disk_size: 3072, disk_formats: ['qcow2', 'raw'])
       end
     end
 
@@ -69,7 +73,7 @@ module Bosh::Stemcell
 
     class Warden < Base
       def initialize
-        super(name: 'warden', hypervisor: 'boshlite', default_disk_size: 2048, disk_formats: []) # todo wha???
+        super(name: 'warden', hypervisor: 'boshlite', default_disk_size: 2048, disk_formats: ['?warden?'])
       end
     end
   end

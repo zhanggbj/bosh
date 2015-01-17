@@ -90,6 +90,7 @@ namespace :stemcell do
     require 'bosh/stemcell/definition'
     require 'bosh/stemcell/stage_collection'
     require 'bosh/stemcell/stage_runner'
+    require 'bosh/stemcell/stemcell_packager'
     require 'bosh/stemcell/stemcell_builder'
 
     # build stemcell
@@ -119,11 +120,25 @@ namespace :stemcell do
       runner: runner,
       definition: definition,
     )
+
+    packager = Bosh::Stemcell::StemcellPackager.new(
+      definition,
+      environment.version,
+      environment.work_path,
+      environment.stemcell_tarball_path,
+      runner,
+      Bosh::Stemcell::StageCollection.new(definition),
+    )
+
     builder.build
 
-    sh(environment.stemcell_rspec_command)
-
     mkdir_p('tmp')
-    cp(environment.stemcell_file, 'tmp')
+    definition.disk_formats.each do |disk_format|
+      puts "Packaging #{disk_format}..."
+      stemcell_tarball = packager.package(disk_format)
+      cp(stemcell_tarball, 'tmp')
+    end
+
+    sh(environment.stemcell_rspec_command)
   end
 end

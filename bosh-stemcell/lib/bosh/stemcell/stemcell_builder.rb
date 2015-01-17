@@ -1,3 +1,6 @@
+require 'fileutils'
+require 'bosh/stemcell/stage_collection'
+
 module Bosh::Stemcell
   class StemcellBuilder
     def initialize(dependencies = {})
@@ -8,18 +11,14 @@ module Bosh::Stemcell
     end
 
     def build
-      collection = Bosh::Stemcell::StageCollection.new(definition)
-
       gem_components.build_release_gems
       environment.prepare_build
+
+      collection = Bosh::Stemcell::StageCollection.new(definition)
       stemcell_stages = collection.extract_operating_system_stages +
         collection.agent_stages +
         collection.build_stemcell_image_stages
       runner.configure_and_apply(stemcell_stages)
-
-      definition.disk_formats.each do |disk_format|
-        runner.configure_and_apply(collection.package_stemcell_stages(disk_format))
-      end
     end
 
     private

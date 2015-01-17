@@ -51,13 +51,13 @@ module Bosh::Stemcell
 
     def package_stemcell_stages(disk_format)
       case disk_format
-        when "raw" then
+        when 'raw' then
           raw_package_stages
-        when "qcow2" then
+        when 'qcow2' then
           qcow2_package_stages
-        when "ovf" then
+        when 'ovf' then
           ovf_package_stages
-        when "???" then
+        when '?warden?' then
           warden_package_stages
       end
     end
@@ -254,17 +254,12 @@ module Bosh::Stemcell
     def raw_package_stages # raw
       [
         :prepare_raw_image_stemcell,
-        # Final stemcell
-        :stemcell,
       ]
     end
 
     def qcow2_package_stages
       [
-        :package_qcow2_image,
         :prepare_qcow2_image_stemcell,
-        # Final stemcell
-        :stemcell,
       ]
     end
 
@@ -273,14 +268,11 @@ module Bosh::Stemcell
         :image_ovf_vmx,
         :image_ovf_generate,
         :prepare_ovf_image_stemcell,
-        :stemcell,
       ]
     end
 
     def warden_package_stages # todo whuh?
       [
-        # Final stemcell
-        :stemcell,
       ]
     end
 
