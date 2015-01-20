@@ -39,6 +39,11 @@ module Bosh::Stemcell
         Infrastructure::Base.new(name: 'foo', hypervisor: 'xen')
       }.to raise_error /key not found: :default_disk_size/
     end
+
+    it 'defaults to no additional cloud properties' do
+      infrastructure = Infrastructure::Base.new(name: 'foo', hypervisor: 'xen', default_disk_size: 1024, disk_formats: [])
+      expect(infrastructure.additional_cloud_properties).to eq({})
+    end
   end
 
   describe Infrastructure::NullInfrastructure do
@@ -61,6 +66,11 @@ module Bosh::Stemcell
       expect(subject).to_not eq(Infrastructure.for('aws'))
       expect(subject).to_not eq(Infrastructure.for('vsphere'))
     end
+
+    it 'defaults to no additional cloud properties' do
+      infrastructure = Infrastructure::Base.new(name: 'foo', hypervisor: 'xen', default_disk_size: 1024, disk_formats: [])
+      expect(infrastructure.additional_cloud_properties).to eq({})
+    end
   end
 
   describe Infrastructure::Aws do
@@ -71,16 +81,24 @@ module Bosh::Stemcell
 
     it { should eq Infrastructure.for('aws') }
     it { should_not eq Infrastructure.for('openstack') }
+
+    it 'has aws specific additional cloud properties' do
+      expect(subject.additional_cloud_properties).to eq({'root_device_name' => '/dev/sda1'})
+    end
   end
 
   describe Infrastructure::OpenStack do
     its(:name)              { should eq('openstack') }
     its(:hypervisor)        { should eq('kvm') }
     its(:default_disk_size) { should eq(3072) }
-    its(:disk_formats) {should eq(['raw','qcow2'])}
+    its(:disk_formats) {should eq(['qcow2', 'raw'])}
 
     it { should eq Infrastructure.for('openstack') }
     it { should_not eq Infrastructure.for('vsphere') }
+
+    it 'has openstack specific additional cloud properties' do
+      expect(subject.additional_cloud_properties).to eq({'auto_disk_config' => true})
+    end
   end
 
   describe Infrastructure::Vsphere do
@@ -91,6 +109,10 @@ module Bosh::Stemcell
 
     it { should eq Infrastructure.for('vsphere') }
     it { should_not eq Infrastructure.for('aws') }
+
+    it 'has vsphere specific additional cloud properties' do
+      expect(subject.additional_cloud_properties).to eq({'root_device_name' => '/dev/sda1'})
+    end
   end
 
   describe Infrastructure::Vcloud do
@@ -101,5 +123,9 @@ module Bosh::Stemcell
 
     it { should eq Infrastructure.for('vcloud') }
     it { should_not eq Infrastructure.for('vsphere') }
+
+    it 'has vcloud specific additional cloud properties' do
+      expect(subject.additional_cloud_properties).to eq({'root_device_name' => '/dev/sda1'})
+    end
   end
 end

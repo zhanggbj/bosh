@@ -11,10 +11,7 @@ module Bosh
       end
 
       def package(disk_format)
-        FileUtils.mkdir_p(stemcell_build_path)
-
-        image_path = File.join(stemcell_build_path, 'image')
-        File.delete(image_path) if File.exist?(image_path)
+        File.delete(stemcell_image_path) if File.exist?(stemcell_image_path)
 
         runner.configure_and_apply(collection.package_stemcell_stages(disk_format))
 
@@ -38,6 +35,7 @@ module Bosh
           'operating_system' => definition.operating_system.name,
           'operating_system_version' => definition.operating_system.version,
           'agent' => definition.agent.name,
+          'disk_format' => disk_format,
           'sha1' => image_checksum,
           'cloud_properties' => {
             'name' => definition.stemcell_name,
@@ -48,8 +46,7 @@ module Bosh
             'os_type' => 'linux',
             'os_distro' => definition.operating_system.name,
             'architecture' => 'x86_64',
-            'root_device_name' => '/dev/sda1'
-          }
+          }.merge(infrastructure.additional_cloud_properties)
         }
 
         manifest_filename = File.join(stemcell_build_path, "stemcell.MF")
@@ -70,7 +67,11 @@ module Bosh
       end
 
       def image_checksum
-        `shasum -a 1 #{File.join(stemcell_build_path, 'image')}`.split(/\s/).first
+        `shasum -a 1 #{stemcell_image_path}`.split(/\s/).first
+      end
+
+      def stemcell_image_path
+        File.join(stemcell_build_path, 'image')
       end
     end
   end

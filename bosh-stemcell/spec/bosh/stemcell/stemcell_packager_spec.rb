@@ -12,11 +12,17 @@ describe Bosh::Stemcell::StemcellPackager do
     Bosh::Stemcell::StemcellPackager.new(definition, version, work_dir, tarball_dir, runner, collection)
   end
 
+  class FakeInfrastructure < Bosh::Stemcell::Infrastructure::Base
+    def additional_cloud_properties
+      { 'fake_infra_specific_property' => 'some_value'}
+    end
+  end
+
   let(:runner) { instance_double('Bosh::Stemcell::StageRunner') }
   let(:collection) { Bosh::Stemcell::StageCollection.new(definition) }
   let(:env) { {} }
   let(:infrastructure) do
-    Bosh::Stemcell::Infrastructure::Base.new(
+    FakeInfrastructure.new(
       name: 'fake_infra',
       hypervisor: 'fake_hypervisor',
       default_disk_size: -1,
@@ -41,11 +47,13 @@ describe Bosh::Stemcell::StemcellPackager do
   let(:tmp_dir) { Dir.mktmpdir }
   let(:work_dir) { File.join(tmp_dir, 'stemcell-work').tap {|f| FileUtils.mkdir_p(f)} }
   let(:tarball_dir) { File.join(tmp_dir, 'tarballs').tap {|f| FileUtils.mkdir_p(f)} }
-  let(:image_file_existed) { [nil] }
+
   before do
+    FileUtils.mkdir_p(File.join(work_dir, 'stemcell'))
+
     allow(runner).to receive(:configure_and_apply) do
       image_file = File.join(work_dir, 'stemcell/image')
-      image_file_existed[0] = File.exist?(image_file)
+      raise "this step fails if the image already exists!" if File.exist?(image_file)
       File.write(image_file, "i'm an image!")
     end
   end
@@ -73,6 +81,7 @@ describe Bosh::Stemcell::StemcellPackager do
         'operating_system' => 'centos',
         'operating_system_version' => nil,
         'agent' => 'go',
+        'disk_format' => 'raw',
         'sha1' => 'c1ebdefc3f8282a9d7d47803fb5030b61ffc793d', # SHA-1 of image above
         # todo: shall we copy generic stuff out of cloud_properties? e.g. infrastructure
 
@@ -85,7 +94,7 @@ describe Bosh::Stemcell::StemcellPackager do
           'os_type' => 'linux',
           'os_distro' => 'centos',
           'architecture' => 'x86_64',
-          'root_device_name' => '/dev/sda1'
+          'fake_infra_specific_property' => 'some_value'
         }
       })
     end
@@ -100,9 +109,8 @@ describe Bosh::Stemcell::StemcellPackager do
         File.write(File.join(work_dir, 'stemcell/image'), 'bad image!')
       end
 
-      it 'deletes it first' do
-        packager.package(disk_format)
-        expect(image_file_existed[0]).to eq(false)
+      it 'deletes it first so that applying the package_stemcell_stages doesnt blow up' do
+        expect { packager.package(disk_format) }.not_to raise_error
       end
     end
 

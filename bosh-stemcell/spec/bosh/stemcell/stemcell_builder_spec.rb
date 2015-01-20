@@ -13,7 +13,7 @@ describe Bosh::Stemcell::StemcellBuilder do
       gem_components: gem_components,
       environment: environment,
       runner: runner,
-      definition: definition,
+      collection: collection
     )
   end
 
@@ -46,7 +46,6 @@ describe Bosh::Stemcell::StemcellBuilder do
   let(:runner) { instance_double('Bosh::Stemcell::StageRunner', configure_and_apply: nil) }
   let(:tmp_dir) { Dir.mktmpdir }
   before do
-    allow(Bosh::Stemcell::StageCollection).to receive(:new).and_return(collection)
     allow(environment).to receive(:prepare_build)
     allow(environment).to receive(:base_directory).and_return(tmp_dir)
   end

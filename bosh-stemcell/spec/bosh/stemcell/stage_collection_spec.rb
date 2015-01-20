@@ -92,7 +92,6 @@ module Bosh::Stemcell
           :image_ovf_vmx,
           :image_ovf_generate,
           :prepare_ovf_image_stemcell,
-          :stemcell
         ]
       }
 
@@ -116,7 +115,6 @@ module Bosh::Stemcell
         let(:aws_package_stemcell_stages) {
           [
             :prepare_raw_image_stemcell,
-            :stemcell
           ]
         }
 
@@ -134,7 +132,7 @@ module Bosh::Stemcell
 
           it 'returns the correct stages' do
             expect(stage_collection.build_stemcell_image_stages).to eq(aws_build_stemcell_image_stages)
-            expect(stage_collection.package_stemcell_stages).to eq(aws_package_stemcell_stages)
+            expect(stage_collection.package_stemcell_stages('raw')).to eq(aws_package_stemcell_stages)
           end
 
         end
@@ -159,11 +157,9 @@ module Bosh::Stemcell
                 :image_install_grub,
               ]
             )
-            expect(stage_collection.package_stemcell_stages).to eq(
+            expect(stage_collection.package_stemcell_stages('qcow2')).to eq(
                 [
-                :package_qcow2_image,
                 :prepare_qcow2_image_stemcell,
-                :stemcell_openstack
               ]
             )
           end
@@ -187,11 +183,9 @@ module Bosh::Stemcell
                 :image_install_grub,
               ]
             )
-            expect(stage_collection.package_stemcell_stages).to eq(
+            expect(stage_collection.package_stemcell_stages('qcow2')).to eq(
                 [
-                  :package_qcow2_image,
                   :prepare_qcow2_image_stemcell,
-                  :stemcell_openstack
                 ]
             )
           end
@@ -216,7 +210,7 @@ module Bosh::Stemcell
                 :image_install_grub,
               ]
             )
-            expect(stage_collection.package_stemcell_stages).to eq(vmware_package_stemcell_steps)
+            expect(stage_collection.package_stemcell_stages('ovf')).to eq(vmware_package_stemcell_steps)
           end
         end
 
@@ -258,7 +252,7 @@ module Bosh::Stemcell
                 :image_install_grub,
               ]
             )
-            expect(stage_collection.package_stemcell_stages).to eq(vmware_package_stemcell_steps)
+            expect(stage_collection.package_stemcell_stages('ovf')).to eq(vmware_package_stemcell_steps)
           end
         end
 
@@ -277,7 +271,7 @@ module Bosh::Stemcell
                 :image_install_grub,
               ]
             )
-            expect(stage_collection.package_stemcell_stages).to eq(vmware_package_stemcell_steps)
+            expect(stage_collection.package_stemcell_stages('ovf')).to eq(vmware_package_stemcell_steps)
           end
         end
       end

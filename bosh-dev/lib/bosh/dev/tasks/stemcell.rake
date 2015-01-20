@@ -114,11 +114,14 @@ namespace :stemcell do
       work_path: environment.work_path,
     )
 
+    stemcell_building_stages = Bosh::Stemcell::StageCollection.new(definition)
+
     builder = Bosh::Stemcell::StemcellBuilder.new(
       gem_components: gem_components,
       environment: environment,
       runner: runner,
       definition: definition,
+      collection: stemcell_building_stages
     )
 
     packager = Bosh::Stemcell::StemcellPackager.new(
@@ -127,7 +130,7 @@ namespace :stemcell do
       environment.work_path,
       environment.stemcell_tarball_path,
       runner,
-      Bosh::Stemcell::StageCollection.new(definition),
+      stemcell_building_stages,
     )
 
     builder.build

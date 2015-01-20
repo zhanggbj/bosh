@@ -34,6 +34,10 @@ module Bosh::Stemcell
         disk_formats.first
       end
 
+      def additional_cloud_properties
+        {}
+      end
+
       def ==(other)
         name == other.name &&
           hypervisor == other.hypervisor &&
@@ -51,11 +55,19 @@ module Bosh::Stemcell
       def initialize
         super(name: 'openstack', hypervisor: 'kvm', default_disk_size: 3072, disk_formats: ['qcow2', 'raw'])
       end
+
+      def additional_cloud_properties
+        {'auto_disk_config' => true}
+      end
     end
 
     class Vsphere < Base
       def initialize
         super(name: 'vsphere', hypervisor: 'esxi', default_disk_size: 3072, disk_formats: ['ovf'])
+      end
+
+      def additional_cloud_properties
+        {'root_device_name' => '/dev/sda1'}
       end
     end
 
@@ -63,17 +75,29 @@ module Bosh::Stemcell
       def initialize
         super(name: 'vcloud', hypervisor: 'esxi', default_disk_size: 3072, disk_formats: ['ovf'])
       end
+
+      def additional_cloud_properties
+        {'root_device_name' => '/dev/sda1'}
+      end
     end
 
     class Aws < Base
       def initialize
         super(name: 'aws', hypervisor: 'xen', supports_light_stemcell: true, default_disk_size: 2048, disk_formats: ['raw'])
       end
+
+      def additional_cloud_properties
+        {'root_device_name' => '/dev/sda1'}
+      end
     end
 
     class Warden < Base
       def initialize
-        super(name: 'warden', hypervisor: 'boshlite', default_disk_size: 2048, disk_formats: ['?warden?'])
+        super(name: 'warden', hypervisor: 'boshlite', default_disk_size: 2048, disk_formats: ['files'])
+      end
+
+      def additional_cloud_properties
+        {'root_device_name' => '/dev/sda1'}
       end
     end
   end
