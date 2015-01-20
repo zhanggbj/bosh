@@ -126,10 +126,9 @@ module Bosh::Dev
         release.dev_tarball_path
       end
 
-      def download_stemcell(name, definition, output_directory)
-        filename = Bosh::Stemcell::ArchiveFilename.new(number.to_s, definition, name).to_s
-        download_adapter.download("tmp/#{filename}", File.join(output_directory, filename))
-        filename
+      def download_stemcell(stemcell, output_directory)
+        download_adapter.download("tmp/#{stemcell.name}", File.join(output_directory, stemcell.name))
+        stemcell.name
       end
     end
 

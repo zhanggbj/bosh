@@ -1,5 +1,6 @@
 require 'bosh/dev/build'
 require 'bosh/stemcell/definition'
+require 'bosh/stemcell/stemcell'
 require 'bosh/dev/aws/runner_builder'
 require 'bosh/dev/openstack/runner_builder'
 require 'bosh/dev/vsphere/runner_builder'
@@ -14,6 +15,7 @@ module Bosh::Dev
         Bosh::Stemcell::Definition.for(args.infrastructure_name, args.hypervisor_name, args.operating_system_name, args.operating_system_version, args.agent_name, args.light),
         Build.candidate,
         args.net_type,
+        args.disk_format
       )
     end
 
@@ -25,11 +27,12 @@ module Bosh::Dev
       }[name]
     end
 
-    def initialize(runner_builder, artifact_definition, build, net_type)
+    def initialize(runner_builder, artifact_definition, build, net_type, disk_format)
       @runner_builder   = runner_builder
       @artifact_definition = artifact_definition
       @build    = build
       @net_type = net_type
+      @stemcell = Bosh::Stemcell::Stemcell.new(artifact_definition, 'bosh-stemcell', build.number, disk_format)
 
       artifacts_path = File.join(
         ENV.fetch('WORKSPACE', '/tmp'),
@@ -41,8 +44,7 @@ module Bosh::Dev
         artifact_definition.agent.name,
         'deployments'
       )
-
-      @artifacts = Bosh::Dev::Bat::Artifacts.new(artifacts_path, build, artifact_definition)
+      @artifacts = Bosh::Dev::Bat::Artifacts.new(artifacts_path, build, stemcell)
     end
 
     def deploy_microbosh_and_run_bats
@@ -52,9 +54,10 @@ module Bosh::Dev
 
     def deploy_bats_microbosh
       artifacts.prepare_directories
+
+
       build.download_stemcell(
-        'bosh-stemcell',
-        artifact_definition,
+        stemcell,
         artifacts.path,
       )
 
@@ -66,7 +69,7 @@ module Bosh::Dev
     end
 
     private
-    attr_reader :build, :net_type, :artifact_definition, :artifacts
+    attr_reader :build, :net_type, :artifact_definition, :artifacts, :stemcell
 
     def bats_runner
       @runner_builder.build(artifacts, net_type)

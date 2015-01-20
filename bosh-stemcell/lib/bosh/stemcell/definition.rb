@@ -54,6 +54,7 @@ module Bosh::Stemcell
     end
 
     def light?
+      return false #FIXME: wat
       @light
     end
   end
