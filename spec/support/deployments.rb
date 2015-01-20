@@ -34,15 +34,19 @@ module Bosh::Spec
       }
     end
 
-    def self.simple_manifest
+    def self.test_release_manifest
       minimal_manifest.merge(
         'name' => 'simple',
 
         'releases' => [{
           'name'    => 'bosh-release',
           'version' => '0.1-dev',
-        }],
+        }]
+      )
+    end
 
+    def self.simple_manifest
+      test_release_manifest.merge({
         'networks' => [{
           'name'    => 'a',
           'subnets' => [{
@@ -59,11 +63,21 @@ module Bosh::Spec
           'name' => 'a',
           'size' => 3,
           'cloud_properties' => {},
-          'network'   => 'a',
-          'stemcell'  => {
-            'name'    => 'ubuntu-stemcell',
+          'network' => 'a',
+          'stemcell' => {
+            'name' => 'ubuntu-stemcell',
             'version' => '1',
-          },
+          }
+        },
+        {
+          'name' => 'b',
+          'size' => 3,
+          'cloud_properties' => {},
+          'network' => 'a',
+          'stemcell' => {
+            'name' => 'ubuntu-stemcell',
+            'version' => '1',
+          }
         }],
 
         'jobs' => [{
@@ -72,8 +86,8 @@ module Bosh::Spec
           'resource_pool' => 'a',
           'instances'     => 3,
           'networks'      => [{ 'name' => 'a' }],
-        }],
-      )
+        }]
+      })
     end
 
     def self.manifest_with_errand

@@ -16,7 +16,7 @@ module Bosh::Director
         let(:disk_detacher) { instance_double('Bosh::Director::InstanceUpdater::VmUpdater::DiskDetacher', detach: nil) }
 
         let(:vm_deleter) { instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmDeleter') }
-        let(:vm_creator) { instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreator') }
+        let(:vm_creator) { instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreatorBla') }
         let(:disk_attacher) { instance_double('Bosh::Director::InstanceUpdater::VmUpdater::DiskAttacher') }
 
         it 'updates vm and returns new vm model and agent client' do
@@ -31,7 +31,7 @@ module Bosh::Director
             with(instance, vm_model, cloud, logger).
             and_return(vm_deleter)
 
-          expect(InstanceUpdater::VmUpdater::VmCreator).to receive(:new).
+          expect(InstanceUpdater::VmUpdater::VmCreatorBla).to receive(:new).
             with(instance, cloud, logger).
             and_return(vm_creator)
 
@@ -65,8 +65,8 @@ module Bosh::Director
             @vm_deleter1 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmDeleter')
             @vm_deleter2 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmDeleter')
 
-            @vm_creator1 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreator')
-            @vm_creator2 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreator')
+            @vm_creator1 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreatorBla')
+            @vm_creator2 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreatorBla')
 
             @disk_attacher2 = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::DiskAttacher')
           end
@@ -81,7 +81,7 @@ module Bosh::Director
                 with(instance, @vm_model1, cloud, logger).and_return(@vm_deleter2)
               expect(@vm_deleter2).to receive(:delete).once.with(no_args)
 
-              expect(InstanceUpdater::VmUpdater::VmCreator).to receive(:new).
+              expect(InstanceUpdater::VmUpdater::VmCreatorBla).to receive(:new).
                 with(instance, cloud, logger).and_return(@vm_creator1, @vm_creator2)
               expect(@vm_creator1).to receive(:create).once.with(new_disk_cid).and_return([@vm_model1, @agent_client1])
               expect(@vm_creator2).to receive(:create).once.with(new_disk_cid).and_return([@vm_model2, @agent_client2])
@@ -118,7 +118,7 @@ module Bosh::Director
                 with(instance, @vm_model1, cloud, logger).and_return(@vm_deleter2)
               expect(@vm_deleter2).to receive(:delete).once.with(no_args)
 
-              expect(InstanceUpdater::VmUpdater::VmCreator).to receive(:new).
+              expect(InstanceUpdater::VmUpdater::VmCreatorBla).to receive(:new).
                 with(instance, cloud, logger).and_return(@vm_creator1, @vm_creator2)
               expect(@vm_creator1).to receive(:create).once.with(new_disk_cid).and_return([@vm_model1, @agent_client1])
               expect(@vm_creator2).to receive(:create).once.with(new_disk_cid).and_return([@vm_model2, @agent_client2])
@@ -158,8 +158,8 @@ module Bosh::Director
             vm_deleter = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmDeleter')
             allow(InstanceUpdater::VmUpdater::VmDeleter).to receive(:new).and_return(vm_deleter)
 
-            vm_creator = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreator')
-            allow(InstanceUpdater::VmUpdater::VmCreator).to receive(:new).and_return(vm_creator)
+            vm_creator = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreatorBla')
+            allow(InstanceUpdater::VmUpdater::VmCreatorBla).to receive(:new).and_return(vm_creator)
 
             # only first iteration
             expect(vm_deleter).to receive(:delete).once
@@ -186,8 +186,8 @@ module Bosh::Director
             vm_deleter = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmDeleter')
             allow(InstanceUpdater::VmUpdater::VmDeleter).to receive(:new).and_return(vm_deleter)
 
-            vm_creator = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreator')
-            allow(InstanceUpdater::VmUpdater::VmCreator).to receive(:new).and_return(vm_creator)
+            vm_creator = instance_double('Bosh::Director::InstanceUpdater::VmUpdater::VmCreatorBla')
+            allow(InstanceUpdater::VmUpdater::VmCreatorBla).to receive(:new).and_return(vm_creator)
 
             # only first iteration
             expect(vm_deleter).to receive(:delete).once
@@ -324,7 +324,7 @@ module Bosh::Director
     end
   end
 
-  describe InstanceUpdater::VmUpdater::VmCreator do
+  describe InstanceUpdater::VmUpdater::VmCreatorBla do
     subject!(:vm_creator) { described_class.new(instance, cloud, logger) }
     let(:deployment_vm) { instance_double('Bosh::Director::DeploymentPlan::Vm')}
     let(:instance) {

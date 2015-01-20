@@ -47,6 +47,7 @@ module Bosh::Director
     end
 
     def update(options = {})
+      @logger.info "InstanceUpdater#update"
       @canary = options.fetch(:canary, false)
 
       @logger.info("Updating instance #{@instance}, changes: #{@instance.changes.to_a.join(', ')}")

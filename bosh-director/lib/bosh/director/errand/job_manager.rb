@@ -43,6 +43,8 @@ module Bosh::Director
       instance_deleter = InstanceDeleter.new(@deployment)
       instance_deleter.delete_instances(instances, event_log_stage)
 
+      # release network reservations
+
       deallocate_vms
     end
 

@@ -36,17 +36,17 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
 
       # First errand
       manifest_hash['jobs'] << {
-        'name'          => 'errand1-name',
-        'template'      => 'errand1',
-        'lifecycle'     => 'errand',
+        'name' => 'errand1-name',
+        'template' => 'errand1',
+        'lifecycle' => 'errand',
         'resource_pool' => 'a',
-        'instances'     => 1,
-        'networks'      => [{ 'name' => 'a' }],
+        'instances' => 1,
+        'networks' => [{'name' => 'a'}],
         'properties' => {
           'errand1' => {
             'exit_code' => 0,
-            'stdout'    => 'some-errand1-stdout',
-            'stderr'    => 'some-errand1-stderr',
+            'stdout' => 'some-errand1-stdout',
+            'stderr' => 'some-errand1-stderr',
             'run_package_file' => true,
           },
         },
@@ -54,17 +54,17 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
 
       # Second errand
       manifest_hash['jobs'] << {
-        'name'          => 'errand2-name',
-        'template'      => 'errand1',
-        'lifecycle'     => 'errand',
+        'name' => 'errand2-name',
+        'template' => 'errand1',
+        'lifecycle' => 'errand',
         'resource_pool' => 'a',
-        'instances'     => 2,
-        'networks'      => [{ 'name' => 'a' }],
+        'instances' => 2,
+        'networks' => [{'name' => 'a'}],
         'properties' => {
           'errand1' => {
             'exit_code' => 0,
-            'stdout'    => 'some-errand2-stdout',
-            'stderr'    => 'some-errand2-stderr',
+            'stdout' => 'some-errand2-stdout',
+            'stderr' => 'some-errand2-stderr',
             'run_package_file' => true,
           },
         },
@@ -170,6 +170,7 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
         # The network update will fail, by default dummy CPI will
         # raise NotSupported, like the aws cpi.
         manifest_hash = Bosh::Spec::Deployments.manifest_with_errand
+        pp manifest_hash
 
         # get rid of the non-errand job, it's not important
         manifest_hash['jobs'].delete(manifest_hash['jobs'][0])
@@ -177,17 +178,21 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
         # set the errand job to have a static ip to trigger the network update
         # at errand run time.
         subnet = manifest_hash['networks'][0]['subnets'][0]
-        subnet['reserved'] =  [
-          '192.168.1.2 - 192.168.1.10',
+        subnet['reserved'] = [
+          '192.168.1.2 - 192.168.1.10 ',
           '192.168.1.14 - 192.168.1.254']
         subnet['static'] = ['192.168.1.13']
         manifest_hash['jobs'][0]['networks'][0]['static_ips'] = ['192.168.1.13']
+        manifest_hash['jobs'][0]['resource_pool'] = 'b'
 
         # setting the size of the pool causes the empty vm to be created
         # at deploy time, and this vm will not have the static IP the job has requested
         # When the errand runs it will try to reuse this unassigned vm and it will
         # require network update since it has static IP.
         manifest_hash['resource_pools'][0]['size'] = 1
+        manifest_hash['resource_pools'][1]['size'] = 1
+
+        pp manifest_hash
 
         manifest_hash
       end
@@ -195,6 +200,103 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
       it 'should tear down the VM successfully after running the errand' do
         deploy_simple(manifest_hash: manifest_hash)
 
+        _, exit_code = bosh_runner.run('run errand fake-errand-name', return_exit_code: true)
+        expect(exit_code).to eq(0)
+      end
+    end
+
+    context 'when the number of dynamic IPs is equal to the total number of vms' do
+      let(:manifest_hash) do
+        manifest_hash = Bosh::Spec::Deployments.test_release_manifest.merge({
+          'compilation' => {
+            'workers' => 1,
+            'network' => 'fake-network',
+            'cloud_properties' => {},
+          },
+          'networks' => [{
+            'name' => 'fake-network',
+            'subnets' => [{
+              'range' => '192.168.1.0/24',
+              'gateway' => '192.168.1.1',
+              'dns' => ['192.168.1.1', '192.168.1.2'],
+              'reserved' =>
+                ['192.168.1.2 - 192.168.1.12',
+                  '192.168.1.14 - 192.168.1.254'],
+              'cloud_properties' => {}
+            }]}],
+          'resource_pools' => [{
+            'name' => 'fake-resource-pool',
+            'size' => 1,
+            'cloud_properties' => {},
+            'network' => 'fake-network',
+            'stemcell' => {
+              'name' => 'ubuntu-stemcell',
+              'version' => '1',
+            },
+          }],
+          'jobs' => [{
+            'name' => 'fake-errand-name',
+            'template' => 'errand_without_package',
+            'resource_pool' => 'fake-resource-pool',
+            'instances' => 1,
+            'lifecycle' => 'errand',
+            'networks' => [{'name' => 'fake-network'}],
+          }]
+        })
+      end
+
+      before { deploy_simple(manifest_hash: manifest_hash) }
+
+      it 'should have enough IPs to recreate the vm' do
+        _, exit_code = bosh_runner.run('run errand fake-errand-name', return_exit_code: true)
+        expect(exit_code).to eq(0)
+      end
+    end
+
+
+    context 'when the number of dynamic IPs is equal to the total number of vms' do
+      let(:manifest_hash) do
+        manifest_hash = Bosh::Spec::Deployments.test_release_manifest.merge({
+          'compilation' => {
+            'workers' => 1,
+            'network' => 'fake-network',
+            'cloud_properties' => {},
+          },
+          'networks' => [{
+            'name' => 'fake-network',
+            'subnets' => [{
+              'range' => '192.168.1.0/24',
+              'gateway' => '192.168.1.1',
+              'dns' => ['192.168.1.1', '192.168.1.2'],
+              'reserved' =>
+                ['192.168.1.2 - 192.168.1.12',
+                  '192.168.1.14 - 192.168.1.254'],
+              'cloud_properties' => {}
+            }]}],
+          'resource_pools' => [{
+            'name' => 'fake-resource-pool',
+            'size' => 1,
+            'cloud_properties' => {},
+            'network' => 'fake-network',
+            'stemcell' => {
+              'name' => 'ubuntu-stemcell',
+              'version' => '1',
+            },
+          }],
+          'jobs' => [{
+            'name' => 'fake-errand-name',
+            'template' => 'errand_without_package',
+            'resource_pool' => 'fake-resource-pool',
+            'instances' => 1,
+            'lifecycle' => 'errand',
+            'networks' => [{'name' => 'fake-network'}],
+          }]
+        })
+      end
+
+      before { deploy_simple(manifest_hash: manifest_hash) }
+
+      it 'should have enough IPs to recreate the vm' do
         _, exit_code = bosh_runner.run('run errand fake-errand-name', return_exit_code: true)
         expect(exit_code).to eq(0)
       end
@@ -213,17 +315,17 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
 
       # Currently errands are represented via jobs
       manifest_hash['jobs'] << {
-        'name'          => 'errand1-name',
-        'template'      => 'errand1',
-        'lifecycle'     => 'errand',
+        'name' => 'errand1-name',
+        'template' => 'errand1',
+        'lifecycle' => 'errand',
         'resource_pool' => 'a',
-        'instances'     => 1,
-        'networks'      => [{ 'name' => 'a' }],
+        'instances' => 1,
+        'networks' => [{'name' => 'a'}],
         'properties' => {
           'errand1' => {
             'exit_code' => 0,
-            'stdout'    => 'some-stdout',
-            'stderr'    => 'some-stderr',
+            'stdout' => 'some-stdout',
+            'stderr' => 'some-stderr',
             'run_package_file' => true,
           },
         },
@@ -234,7 +336,7 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
       expect_errands('errand1-name')
 
       @output, @exit_code = bosh_runner.run("run errand errand1-name --download-logs --logs-dir #{@tmp_dir}",
-                                            {return_exit_code: true})
+        {return_exit_code: true})
     end
 
     it 'shows bin/run stdout and stderr' do

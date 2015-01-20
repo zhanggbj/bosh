@@ -11,6 +11,7 @@ module Bosh::Director
     end
 
     def update(new_disk_cid)
+      @logger.info "VmUpdater#update, resource pool changed?: #{@instance.resource_pool_changed?}"
       if !@instance.resource_pool_changed? && !new_disk_cid
         @logger.info('Skipping VM update')
         return [@vm_model, @agent_client]
@@ -23,7 +24,7 @@ module Bosh::Director
         vm_deleter = VmDeleter.new(@instance, @vm_model, @cloud, @logger)
         vm_deleter.delete
 
-        vm_creator = VmCreator.new(@instance, @cloud, @logger)
+        vm_creator = VmCreatorBla.new(@instance, @cloud, @logger)
         @vm_model, @agent_client = vm_creator.create(new_disk_cid)
 
         begin
@@ -77,7 +78,7 @@ module Bosh::Director
 
     private
 
-    class VmCreator
+    class VmCreatorBla
       def initialize(instance, cloud, logger)
         @instance = instance
         @cloud = cloud
