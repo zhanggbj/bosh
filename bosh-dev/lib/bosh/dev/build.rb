@@ -122,7 +122,6 @@ module Bosh::Dev
     class Local < self
       def release_tarball_path
         release = BoshRelease.build
-        GemComponents.new(@number).build_release_gems
         release.dev_tarball_path
       end
 

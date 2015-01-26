@@ -78,13 +78,15 @@ EOS
       mkdir -p /mnt/stemcells
       chown -R ubuntu /mnt/stemcells
       mkdir -p /bosh/tmp
-      (
-        cd /bosh
-        git init
-        git add -A
-        git commit -m "updated rsync"
-        git submodule foreach 'git checkout .'
-      )
+      # (
+      #   cd /bosh
+      #   rm -f .gitmodules
+      #   rm -f go/src/github.com/cloudfoundry/bosh-agent/.git
+      #   rm -f go/src/github.com/cloudfoundry/bosh-agent/.gitmodules
+      #   git init
+      #   git add -A
+      #   git commit -m "updated rsync"
+      # )
       chown -R ubuntu:ubuntu /bosh
       ( cd /bosh && bundle install --local )
     BASH
@@ -103,8 +105,7 @@ EOS
     }
   end
 
-  files_to_ignore = File.readlines(File.expand_path('../../.gitignore', __FILE__)).map(&:chomp).reject(&:empty?)
-  files_to_ignore << '.git/'
-  config.vm.synced_folder '../.', '/bosh', rsync_excludes: files_to_ignore, rsync__exclude: files_to_ignore
-  config.vm.synced_folder '../.git/modules', '/bosh/.git/modules'
+  # files_to_ignore = File.readlines(File.expand_path('../../.gitignore', __FILE__)).map(&:chomp).reject(&:empty?)
+  # files_to_ignore << '.git/'
+  config.vm.synced_folder '../.', '/bosh'#, rsync_excludes: files_to_ignore, rsync__exclude: files_to_ignore, rsync__args: ["--verbose", "--archive", "--delete", "-z", "--copy-links", "--progress"]
 end

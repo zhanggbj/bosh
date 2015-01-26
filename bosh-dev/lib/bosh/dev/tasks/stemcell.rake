@@ -84,64 +84,16 @@ namespace :stemcell do
 
   desc 'Build a stemcell using a local pre-built base OS image'
   task :build_with_local_os_image, [:infrastructure_name, :hypervisor_name, :operating_system_name, :operating_system_version, :agent_name, :os_image_path] do |_, args|
-    require 'bosh/dev/build'
-    require 'bosh/dev/gem_components'
-    require 'bosh/stemcell/build_environment'
-    require 'bosh/stemcell/definition'
-    require 'bosh/stemcell/stage_collection'
-    require 'bosh/stemcell/stage_runner'
-    require 'bosh/stemcell/stemcell_packager'
-    require 'bosh/stemcell/stemcell_builder'
+    require 'bosh/dev/stemcell/builder'
 
-    # build stemcell
-    build = Bosh::Dev::Build.candidate
-    gem_components = Bosh::Dev::GemComponents.new(build.number)
-    definition = Bosh::Stemcell::Definition.for(args.infrastructure_name, args.hypervisor_name, args.operating_system_name, args.operating_system_version, args.agent_name, false)
-    environment = Bosh::Stemcell::BuildEnvironment.new(
-      ENV.to_hash,
-      definition,
-      build.number,
-      build.release_tarball_path,
-      args.os_image_path,
-    )
-
-    sh(environment.os_image_rspec_command)
-
-    runner = Bosh::Stemcell::StageRunner.new(
-      build_path: environment.build_path,
-      command_env: environment.command_env,
-      settings_file: environment.settings_path,
-      work_path: environment.work_path,
-    )
-
-    stemcell_building_stages = Bosh::Stemcell::StageCollection.new(definition)
-
-    builder = Bosh::Stemcell::StemcellBuilder.new(
-      gem_components: gem_components,
-      environment: environment,
-      runner: runner,
-      definition: definition,
-      collection: stemcell_building_stages
-    )
-
-    packager = Bosh::Stemcell::StemcellPackager.new(
-      definition,
-      environment.version,
-      environment.work_path,
-      environment.stemcell_tarball_path,
-      runner,
-      stemcell_building_stages,
-    )
-
-    builder.build
-
-    mkdir_p('tmp')
-    definition.disk_formats.each do |disk_format|
-      puts "Packaging #{disk_format}..."
-      stemcell_tarball = packager.package(disk_format)
-      cp(stemcell_tarball, 'tmp')
-    end
-
-    sh(environment.stemcell_rspec_command)
+    puts "ENV: #{ENV.inspect}"
+    Bosh::Dev::Stemcell::Builder.new(
+      args.infrastructure_name,
+      args.hypervisor_name,
+      args.operating_system_name,
+      args.operating_system_version,
+      args.agent_name,
+      args.os_image_path
+    ).build(ENV['RESUME_STEMCELL_BUILD'])
   end
 end

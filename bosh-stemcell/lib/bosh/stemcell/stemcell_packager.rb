@@ -19,10 +19,6 @@ module Bosh
         create_tarball(disk_format)
       end
 
-      private
-
-      attr_reader :definition, :version, :stemcell_build_path, :tarball_path, :runner, :collection
-
       def write_manifest(disk_format)
         infrastructure = definition.infrastructure
 
@@ -65,6 +61,12 @@ module Bosh
 
         tarball_name
       end
+
+
+      private
+
+      attr_reader :definition, :version, :stemcell_build_path, :tarball_path, :runner, :collection
+
 
       def image_checksum
         `shasum -a 1 #{stemcell_image_path}`.split(/\s/).first

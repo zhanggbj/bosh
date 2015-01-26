@@ -27,12 +27,26 @@ module Bosh::Stemcell
     attr_reader :version
 
     def prepare_build
-      sanitize
+      prepare_base_directory
       prepare_build_path
       copy_stemcell_builder_to_build_path
       prepare_work_root
       prepare_stemcell_path
       persist_settings_for_bash
+    end
+
+    def sanitize
+      FileUtils.rm(Dir.glob('*.tgz'))
+
+      shell.run("sudo umount #{File.join(work_path, 'mnt/tmp/grub', settings['stemcell_image_name'])} 2> /dev/null",
+        { ignore_failures: true })
+
+      shell.run("sudo umount #{image_mount_point} 2> /dev/null", { ignore_failures: true })
+      shell.run("sudo rm -rf #{base_directory}", { ignore_failures: true })
+    end
+
+    def base_directory
+      File.join('/mnt', 'stemcells', infrastructure.name, infrastructure.hypervisor, operating_system.name)
     end
 
     def os_image_rspec_command
@@ -100,23 +114,16 @@ module Bosh::Stemcell
       :os_image_tarball_path,
     )
 
-    def sanitize
-      FileUtils.rm(Dir.glob('*.tgz'))
-
-      shell.run("sudo umount #{File.join(work_path, 'mnt/tmp/grub', settings['stemcell_image_name'])} 2> /dev/null",
-                { ignore_failures: true })
-
-      shell.run("sudo umount #{image_mount_point} 2> /dev/null", { ignore_failures: true })
-
-      shell.run("sudo rm -rf #{base_directory}", { ignore_failures: true })
-    end
-
     def operating_system_spec_name
       spec_name = operating_system.name
       if operating_system.version
         spec_name = "#{spec_name}_#{operating_system.version}"
       end
       spec_name
+    end
+
+    def prepare_base_directory
+      FileUtils.mkdir_p(base_directory)
     end
 
     def prepare_build_path
@@ -172,10 +179,6 @@ module Bosh::Stemcell
 
     def settings
       stemcell_builder_options.default
-    end
-
-    def base_directory
-      File.join('/mnt', 'stemcells', infrastructure.name, infrastructure.hypervisor, operating_system.name)
     end
 
     def build_root
