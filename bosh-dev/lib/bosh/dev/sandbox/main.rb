@@ -56,7 +56,7 @@ module Bosh::Dev::Sandbox
 
     attr_reader :nats_log_path
 
-    def self.from_env
+    def self.from_env(options={})
       db_opts = {
         type: ENV['DB'] || 'postgresql',
         user: ENV['TRAVIS'] ? 'travis' : 'root',
@@ -68,14 +68,16 @@ module Bosh::Dev::Sandbox
         ENV['DEBUG'],
         ENV['TEST_ENV_NUMBER'].to_i,
         Logging.logger(STDOUT),
+        options
       )
     end
 
-    def initialize(db_opts, debug, test_env_number, logger)
+    def initialize(db_opts, debug, test_env_number, logger, options)
       @debug = debug
       @test_env_number = test_env_number
       @logger = logger
       @name = SecureRandom.uuid.gsub('-', '')
+      @options = options
 
       @logs_path = sandbox_path('logs')
       @dns_db_path = sandbox_path('director-dns.sqlite')
