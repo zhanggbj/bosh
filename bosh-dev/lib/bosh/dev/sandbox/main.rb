@@ -56,7 +56,9 @@ module Bosh::Dev::Sandbox
 
     attr_reader :nats_log_path
 
-    def self.from_env(options={})
+    attr_accessor :user_authentication
+
+    def self.from_env
       db_opts = {
         type: ENV['DB'] || 'postgresql',
         user: ENV['TRAVIS'] ? 'travis' : 'root',
@@ -68,16 +70,14 @@ module Bosh::Dev::Sandbox
         ENV['DEBUG'],
         ENV['TEST_ENV_NUMBER'].to_i,
         Logging.logger(STDOUT),
-        options
       )
     end
 
-    def initialize(db_opts, debug, test_env_number, logger, options)
+    def initialize(db_opts, debug, test_env_number, logger)
       @debug = debug
       @test_env_number = test_env_number
       @logger = logger
       @name = SecureRandom.uuid.gsub('-', '')
-      @options = options
 
       @logs_path = sandbox_path('logs')
       @dns_db_path = sandbox_path('director-dns.sqlite')
@@ -116,6 +116,7 @@ module Bosh::Dev::Sandbox
       FileUtils.mkdir_p(cloud_storage_dir)
       FileUtils.rm_rf(logs_path)
       FileUtils.mkdir_p(logs_path)
+
 
       @redis_process.start
       @redis_socket_connector.try_to_connect
@@ -446,6 +447,26 @@ module Bosh::Dev::Sandbox
       @redis_process = Service.new(%W[redis-server #{sandbox_path(REDIS_CONFIG)}], {}, @logger)
       @redis_socket_connector = SocketConnector.new('redis', 'localhost', redis_port, @logger)
       Bosh::Director::Config.redis_options = {host: 'localhost', port: redis_port}
+    end
+
+    def user_management_provider
+      if user_authentication == 'uaa'
+        'uaa'
+      else
+        'local'
+      end
+    end
+
+    def user_management_options
+      options = if user_authentication == 'uaa'
+        {
+          key: 'uaa-secret-key',
+          url: 'http://localhost:8080/uaa'
+        }
+      else
+        {}
+      end
+      Yajl::Encoder.encode(options)
     end
 
     attr_reader :director_tmp_path, :dns_db_path, :task_logs_dir

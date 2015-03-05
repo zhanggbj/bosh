@@ -164,12 +164,16 @@ module IntegrationSandboxHelpers
     sandbox
   end
 
-  def prepare_sandbox(options = {})
+  def prepare_sandbox
     cleanup_sandbox_dir
     setup_test_release_dir
     setup_bosh_work_dir
     setup_home_dir
-    Thread.current[:sandbox] ||= Bosh::Dev::Sandbox::Main.from_env(options)
+    Thread.current[:sandbox] ||= Bosh::Dev::Sandbox::Main.from_env
+  end
+
+  def set_up_sandbox_user_auth(options)
+    current_sandbox.user_authentication = options.fetch(:user_authentication, 'local')
   end
 
   def reset_sandbox(desc)
@@ -234,7 +238,8 @@ end
 module IntegrationSandboxBeforeHelpers
   def with_reset_sandbox_before_each(options={})
     before do |example|
-      prepare_sandbox(options)
+      prepare_sandbox
+      set_up_sandbox_user_auth(options)
       if !sandbox_started?
         start_sandbox
       elsif !example.metadata[:no_reset]
@@ -247,6 +252,7 @@ module IntegrationSandboxBeforeHelpers
     # `example` is not available in before(:all)
     before(:all) do
       prepare_sandbox
+      set_up_sandbox_user_auth
       if !sandbox_started?
         start_sandbox
       else

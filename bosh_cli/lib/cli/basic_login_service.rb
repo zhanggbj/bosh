@@ -4,7 +4,7 @@ require 'cli/errors'
 
 module Bosh
   module Cli
-    class LoginService
+    class BasicLoginService
       def initialize(terminal, director, config, interactive)
         @terminal = terminal
         @director = director

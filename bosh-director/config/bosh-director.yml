@@ -1,6 +1,6 @@
 ---
 name: Local Director
-port: 8080
+port: 8081
 logging:
   level: DEBUG
 redis:
@@ -50,3 +50,8 @@ cloud:
               - Cluster04
               - Cluster05
               - Cluster06
+user_management:
+  provider: uaa
+  options:
+    key: uaa-secret-key
+    url: http://localhost:8080/uaa

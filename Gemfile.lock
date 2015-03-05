@@ -154,6 +154,7 @@ PATH
       blobstore_client (~> 1.2859.0)
       bosh-template (~> 1.2859.0)
       bosh_common (~> 1.2859.0)
+      cf-uaa-lib (~> 3.1.0)
       highline (~> 1.6.2)
       httpclient (= 2.4.0)
       json_pure (~> 1.7)
@@ -412,7 +413,7 @@ GEM
       coderay (~> 1.1.0)
       method_source (~> 0.8.1)
       slop (~> 3.4)
-    rack (1.5.2)
+    rack (1.6.0)
     rack-protection (1.5.3)
       rack
     rack-test (0.6.2)
@@ -481,7 +482,7 @@ GEM
       multi_json
       simplecov-html (~> 0.8.0)
     simplecov-html (0.8.0)
-    sinatra (1.4.3)
+    sinatra (1.4.5)
       rack (~> 1.4)
       rack-protection (~> 1.4)
       tilt (~> 1.3, >= 1.3.4)
