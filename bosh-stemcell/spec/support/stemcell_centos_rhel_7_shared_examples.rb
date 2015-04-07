@@ -52,7 +52,7 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
       it { should be_file }
       it { should contain 'DEVICE=eth0' }
       it { should contain 'BOOTPROTO=dhcp' }
-      it { should contain 'ONBOOT=on' }
+      it { should contain 'ONBOOT=no' }
       it { should contain 'TYPE="Ethernet"' }
     end
   end

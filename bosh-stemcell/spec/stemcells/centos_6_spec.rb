@@ -52,7 +52,7 @@ describe 'CentOS 6.x stemcell', stemcell_image: true do
     end
   end
 
-  context 'with system-aws-network', exclude_on_vsphere: true, exclude_on_vcloud: true, exclude_on_warden: true do
+  context 'with system-aws-network', exclude_on_warden: true do
     describe file('/etc/sysconfig/network') do
       it { should be_file }
       it { should contain 'NETWORKING=yes' }
@@ -65,7 +65,7 @@ describe 'CentOS 6.x stemcell', stemcell_image: true do
       it { should be_file }
       it { should contain 'DEVICE=eth0' }
       it { should contain 'BOOTPROTO=dhcp' }
-      it { should contain 'ONBOOT=on' }
+      it { should contain 'ONBOOT=no' }
       it { should contain 'TYPE="Ethernet"' }
     end
   end

@@ -20,6 +20,6 @@ EOS
 cat >> $chroot/etc/sysconfig/network-scripts/ifcfg-eth0 <<EOS
 DEVICE=eth0
 BOOTPROTO=dhcp
-ONBOOT=on
+ONBOOT=no
 TYPE="Ethernet"
 EOS

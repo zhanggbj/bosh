@@ -157,6 +157,7 @@ module Bosh::Stemcell
       [
         #:system_open_vm_tools,
         :system_vsphere_cdrom,
+	:system_vsphere_network,
         :system_parameters,
         :bosh_clean,
         :bosh_harden,
