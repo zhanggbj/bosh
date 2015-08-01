@@ -12,43 +12,62 @@ module Bosh::Cli
         start: 'started',
         stop: 'stopped',
         detach: 'detached',
-        restart: 'restart',
-        recreate: 'recreate'
+        restart: 'restart',  # TODO: restarted ???
+        recreate: 'recreate' # TODO: recreated ???
     }
 
     COMPLETION_DESCRIPTIONS = {
-        start: '%s has been started',
-        stop: '%s has been stopped, VM(s) still running',
-        detach: '%s has been detached, VM(s) powered off',
-        restart: '%s has been restarted',
-        recreate: '%s has been recreated'
+        start: '%s started',
+        stop: '%s stopped, VM(s) still running',
+        detach: '%s detached, VM(s) powered off',
+        restart: '%s restarted',
+        recreate: '%s recreated'
     }
 
-    def initialize(command, vm_state)
+    def initialize(command, manifest)
       @command = command
-      @vm_state = vm_state
+      @manifest = manifest
     end
 
-    def change(state, job, index)
-      job_desc = job_description(job, index)
-      op_desc = OPERATION_DESCRIPTIONS.fetch(state) % job_desc
+    def change(job, state, index, force)
+      description = job_description(job, index)
+      operation = OPERATION_DESCRIPTIONS.fetch(state) % description
       new_state = NEW_STATES.fetch(state)
-      completion_desc = COMPLETION_DESCRIPTIONS.fetch(state) % job_desc.make_green
+      completion = COMPLETION_DESCRIPTIONS.fetch(state) % description.make_green
 
-      status, task_id = perform_vm_state_change(job, index, new_state, op_desc)
-
-      [status, task_id, completion_desc]
+      status, task_id = change_vm_state(job, index, new_state, operation, force)
+      [status, task_id, completion]
     end
 
     private
-    attr_reader :command, :vm_state
+    attr_reader :command
 
     def job_description(job, index)
-      index ? "#{job}/#{index}" : "#{job}"
+      return 'all jobs' if job == :all
+      index ? "#{job}/#{index}" : "#{job}/ALL"
     end
 
-    def perform_vm_state_change(job, index, new_state, operation_desc)
-      vm_state.change(job, index, new_state, operation_desc)
+
+    def change_vm_state(job, index, new_state, operation_desc, force)
+      command.say("You are about to #{operation_desc.make_green}")
+
+      check_if_manifest_changed(@manifest.hash, force)
+
+      unless command.confirmed?("#{operation_desc.capitalize}?")
+        command.cancel_deployment
+      end
+
+      command.nl
+      command.say("Performing '#{operation_desc}'...")
+      command.director.change_job_state(@manifest.name, @manifest.yaml, new_state, job, index)
+    end
+
+    def check_if_manifest_changed(manifest_hash, force)
+      other_changes_present = command.inspect_deployment_changes(manifest_hash, show_empty_changeset: false)
+
+      if other_changes_present && !force
+        command.err("Cannot perform job management when other deployment changes are present. Please use '--force' to override.")
+      end
     end
   end
 end

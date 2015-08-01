@@ -381,7 +381,7 @@ describe Bosh::Cli::Client::Director do
         with(:put, '/deployments/foo/jobs/dea?state=stopped',
              { :content_type => 'text/yaml', :payload => 'manifest' }).
         and_return(true)
-      @director.change_job_state('foo', 'manifest', 'dea', nil, 'stopped')
+      @director.change_job_state('foo', 'manifest', 'stopped', 'dea', nil)
     end
 
     it 'changes job instance state' do
@@ -389,7 +389,7 @@ describe Bosh::Cli::Client::Director do
         with(:put, '/deployments/foo/jobs/dea/0?state=detached',
              { :content_type => 'text/yaml', :payload => 'manifest' }).
         and_return(true)
-      @director.change_job_state('foo', 'manifest', 'dea', 0, 'detached')
+      @director.change_job_state('foo', 'manifest', 'detached', 'dea', 0)
     end
 
     it 'changes job instance resurrection state' do

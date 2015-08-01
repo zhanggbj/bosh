@@ -274,11 +274,10 @@ module Bosh
           request_and_track(:post, url, options)
         end
 
-        def change_job_state(deployment_name, manifest_yaml,
-          job_name, index, new_state, options = {})
+        def change_job_state(deployment_name, manifest_yaml, new_state, job, index = nil, options = {})
           options = options.dup
 
-          url = "/deployments/#{deployment_name}/jobs/#{job_name}"
+          url = "/deployments/#{deployment_name}/jobs/#{job}"
           url += "/#{index}" if index
           url += "?state=#{new_state}"
 
@@ -355,7 +354,7 @@ module Bosh
             tmp_file
           else
             raise DirectorError,
-                  "Cannot download resource `#{id}': HTTP status #{status}"
+                  "Cannot download resource '#{id}': HTTP status #{status}"
           end
         end
 

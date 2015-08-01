@@ -1,6 +1,5 @@
 # Copyright (c) 2009-2012 VMware, Inc.
 require 'cli/job_state'
-require 'cli/vm_state'
 
 module Bosh::Cli
   module Command
@@ -12,7 +11,7 @@ module Bosh::Cli
       desc 'Start job/instance'
       option '--force', FORCE
       def start_job(job, index = nil)
-        change_job_state(:start, job, index)
+        change_job_state(job, :start, index)
       end
 
       # bosh stop
@@ -21,11 +20,11 @@ module Bosh::Cli
       option '--soft', 'Stop process only'
       option '--hard', 'Power off VM'
       option '--force', FORCE
-      def stop_job(job, index = nil)
+      def stop_job(job = :all, index = nil)
         if hard?
-          change_job_state(:detach, job, index)
+          change_job_state(job, :detach, index)
         else
-          change_job_state(:stop, job, index)
+          change_job_state(job, :stop, index)
         end
       end
 
@@ -34,7 +33,7 @@ module Bosh::Cli
       desc 'Restart job/instance (soft stop + start)'
       option '--force', FORCE
       def restart_job(job, index = nil)
-        change_job_state(:restart, job, index)
+        change_job_state(job, :restart, index)
       end
 
       # bosh recreate
@@ -42,19 +41,17 @@ module Bosh::Cli
       desc 'Recreate job/instance (hard stop + start)'
       option '--force', FORCE
       def recreate_job(job, index = nil)
-        change_job_state(:recreate, job, index)
+        change_job_state(job, :recreate, index)
       end
 
       private
 
-      def change_job_state(state, job, index = nil)
+      def change_job_state(job, state, index = nil)
         auth_required
-        manifest = parse_manifest(state, job)
+        manifest = parse_manifest(state)
 
-        index = valid_index_for(manifest.hash, job, index)
-        vm_state = VmState.new(self, manifest, force?)
-        job_state = JobState.new(self, vm_state)
-        status, task_id, completion_desc = job_state.change(state, job, index)
+        job_state = JobState.new(self, manifest)
+        status, task_id, completion_desc = job_state.change(job, state, index, force?)
         task_report(status, task_id, completion_desc)
       end
 
@@ -70,16 +67,17 @@ module Bosh::Cli
         options[:force]
       end
 
-      def parse_manifest(operation, job)
+      def parse_manifest(operation)
         manifest = prepare_deployment_manifest(show_state: true)
-        job_must_exist_in_deployment(manifest.hash, job)
 
+        # TODO: doesn't belong here
         if hard? && soft?
           err('Cannot handle both --hard and --soft options, please choose one')
         end
 
+        # TODO: doesn't belong here
         if !hard_and_soft_options_allowed?(operation) && (hard? || soft?)
-          err("--hard and --soft options only make sense for `stop' operation")
+          err("--hard and --soft options only make sense for 'stop' operation")
         end
 
         manifest
