@@ -1,0 +1,87 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	0	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Bosh	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^module Bosh$/;"	module	line:10
+Cli	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^  module Cli$/;"	module	line:11	class:Bosh
+Client	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^    module Client$/;"	module	line:12	class:Bosh.Cli
+Director	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^      class Director$/;"	class	line:13	class:Bosh.Cli.Client
+initialize	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def initialize(director_uri, credentials = nil, options = {})$/;"	method	line:25	class:Bosh.Cli.Client.Director
+uuid	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def uuid$/;"	method	line:40	class:Bosh.Cli.Client.Director
+exists?	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def exists?$/;"	method	line:44	class:Bosh.Cli.Client.Director
+wait_until_ready	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def wait_until_ready$/;"	method	line:53	class:Bosh.Cli.Client.Director
+login	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def login(username, password)$/;"	method	line:60	class:Bosh.Cli.Client.Director
+authenticated?	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def authenticated?$/;"	method	line:65	class:Bosh.Cli.Client.Director
+create_user	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def create_user(username, password)$/;"	method	line:77	class:Bosh.Cli.Client.Director
+delete_user	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_user(username)$/;"	method	line:83	class:Bosh.Cli.Client.Director
+upload_stemcell	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def upload_stemcell(filename, options = {})$/;"	method	line:88	class:Bosh.Cli.Client.Director
+upload_remote_stemcell	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def upload_remote_stemcell(stemcell_location, options = {})$/;"	method	line:95	class:Bosh.Cli.Client.Director
+get_version	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_version$/;"	method	line:104	class:Bosh.Cli.Client.Director
+get_status	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_status$/;"	method	line:108	class:Bosh.Cli.Client.Director
+list_stemcells	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_stemcells$/;"	method	line:112	class:Bosh.Cli.Client.Director
+list_releases	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_releases$/;"	method	line:116	class:Bosh.Cli.Client.Director
+list_deployments	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_deployments$/;"	method	line:120	class:Bosh.Cli.Client.Director
+list_errands	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_errands(deployment_name)$/;"	method	line:124	class:Bosh.Cli.Client.Director
+list_running_tasks	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_running_tasks(verbose = 1)$/;"	method	line:128	class:Bosh.Cli.Client.Director
+list_recent_tasks	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_recent_tasks(count = 30, verbose = 1)$/;"	method	line:132	class:Bosh.Cli.Client.Director
+get_release	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_release(name)$/;"	method	line:136	class:Bosh.Cli.Client.Director
+match_packages	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def match_packages(manifest_yaml)$/;"	method	line:140	class:Bosh.Cli.Client.Director
+get_deployment	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_deployment(name)$/;"	method	line:151	class:Bosh.Cli.Client.Director
+list_vms	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_vms(name)$/;"	method	line:156	class:Bosh.Cli.Client.Director
+upload_release	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def upload_release(filename, options = {})$/;"	method	line:161	class:Bosh.Cli.Client.Director
+upload_remote_release	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def upload_remote_release(release_location, options = {})$/;"	method	line:168	class:Bosh.Cli.Client.Director
+delete_stemcell	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_stemcell(name, version, options = {})$/;"	method	line:177	class:Bosh.Cli.Client.Director
+delete_deployment	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_deployment(name, options = {})$/;"	method	line:189	class:Bosh.Cli.Client.Director
+delete_release	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_release(name, options = {})$/;"	method	line:201	class:Bosh.Cli.Client.Director
+deploy	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def deploy(manifest_yaml, options = {})$/;"	method	line:215	class:Bosh.Cli.Client.Director
+setup_ssh	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def setup_ssh(deployment_name, job, index, user,$/;"	method	line:230	class:Bosh.Cli.Client.Director
+cleanup_ssh	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def cleanup_ssh(deployment_name, job, user_regex, indexes, options = {})$/;"	method	line:256	class:Bosh.Cli.Client.Director
+change_job_state	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def change_job_state(deployment_name, manifest_yaml, new_state, job, index = nil, options = {})$/;"	method	line:277	class:Bosh.Cli.Client.Director
+change_vm_resurrection	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def change_vm_resurrection(deployment_name, job_name, index, value)$/;"	method	line:290	class:Bosh.Cli.Client.Director
+change_vm_resurrection_for_all	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def change_vm_resurrection_for_all(value)$/;"	method	line:296	class:Bosh.Cli.Client.Director
+rename_job	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def rename_job(deployment_name, manifest_yaml, old_name, new_name,$/;"	method	line:302	class:Bosh.Cli.Client.Director
+fetch_logs	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def fetch_logs(deployment_name, job_name, index, log_type,$/;"	method	line:318	class:Bosh.Cli.Client.Director
+fetch_vm_state	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def fetch_vm_state(deployment_name, options = {})$/;"	method	line:331	class:Bosh.Cli.Client.Director
+download_resource	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def download_resource(id)$/;"	method	line:349	class:Bosh.Cli.Client
+create_property	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def create_property(deployment_name, property_name, value)$/;"	method	line:361	class:Bosh.Cli.Client
+update_property	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def update_property(deployment_name, property_name, value)$/;"	method	line:367	class:Bosh.Cli.Client
+delete_property	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_property(deployment_name, property_name)$/;"	method	line:373	class:Bosh.Cli.Client
+get_property	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_property(deployment_name, property_name)$/;"	method	line:378	class:Bosh.Cli.Client
+list_properties	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_properties(deployment_name)$/;"	method	line:383	class:Bosh.Cli.Client
+take_snapshot	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def take_snapshot(deployment_name, job = nil, index = nil, options = {})$/;"	method	line:388	class:Bosh.Cli.Client
+list_snapshots	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_snapshots(deployment_name, job = nil, index = nil)$/;"	method	line:400	class:Bosh.Cli.Client
+delete_all_snapshots	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_all_snapshots(deployment_name, options = {})$/;"	method	line:409	class:Bosh.Cli.Client
+delete_snapshot	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete_snapshot(deployment_name, snapshot_cid, options = {})$/;"	method	line:417	class:Bosh.Cli.Client
+perform_cloud_scan	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def perform_cloud_scan(deployment_name, options = {})$/;"	method	line:425	class:Bosh.Cli.Client
+list_problems	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_problems(deployment_name)$/;"	method	line:432	class:Bosh.Cli.Client
+apply_resolutions	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def apply_resolutions(deployment_name, resolutions, options = {})$/;"	method	line:437	class:Bosh.Cli.Client
+get_current_time	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_current_time$/;"	method	line:447	class:Bosh.Cli.Client
+get_time_difference	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_time_difference$/;"	method	line:452	class:Bosh.Cli.Client
+get_task	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_task(task_id)$/;"	method	line:458	class:Bosh.Cli.Client
+get_task_state	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_task_state(task_id)$/;"	method	line:474	class:Bosh.Cli.Client
+get_task_result	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_task_result(task_id)$/;"	method	line:478	class:Bosh.Cli.Client
+get_task_result_log	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_task_result_log(task_id)$/;"	method	line:482	class:Bosh.Cli.Client
+get_task_output	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_task_output(task_id, offset, log_type = nil)$/;"	method	line:487	class:Bosh.Cli.Client
+cancel_task	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def cancel_task(task_id)$/;"	method	line:511	class:Bosh.Cli.Client
+create_backup	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def create_backup$/;"	method	line:518	class:Bosh.Cli.Client
+fetch_backup	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def fetch_backup$/;"	method	line:522	class:Bosh.Cli.Client
+list_locks	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def list_locks$/;"	method	line:527	class:Bosh.Cli.Client
+request_and_track	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def request_and_track(method, uri, options = {})$/;"	method	line:537	class:Bosh.Cli.Client
+upload_and_track	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def upload_and_track(method, uri, filename, options = {})$/;"	method	line:568	class:Bosh.Cli.Client
+get_cloud_config	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_cloud_config$/;"	method	line:575	class:Bosh.Cli.Client
+update_cloud_config	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def update_cloud_config(cloud_config_yaml)$/;"	method	line:586	class:Bosh.Cli.Client
+post	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def post(uri, content_type = nil, payload = nil, headers = {}, options = {})$/;"	method	line:591	class:Bosh.Cli.Client
+put	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def put(uri, content_type = nil, payload = nil, headers = {}, options = {})$/;"	method	line:595	class:Bosh.Cli.Client
+get	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get(uri, content_type = nil, payload = nil, headers = {}, options = {})$/;"	method	line:599	class:Bosh.Cli.Client
+delete	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def delete(uri, content_type = nil, payload = nil, headers = {}, options = {})$/;"	method	line:603	class:Bosh.Cli.Client
+director_name	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def director_name$/;"	method	line:609	class:Bosh.Cli.Client
+releases_path	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def releases_path(options = {})$/;"	method	line:613	class:Bosh.Cli.Client
+request	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def request(method, uri, content_type = nil, payload = nil, headers = {}, options = {})$/;"	method	line:620	class:Bosh.Cli.Client
+parse_error_message	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def parse_error_message(status, body, uri)$/;"	method	line:671	class:Bosh.Cli.Client
+try_to_perform_http_request	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def try_to_perform_http_request(method, uri, payload, headers, num_retries, retry_wait_interval, &response_reader)$/;"	method	line:685	class:Bosh.Cli.Client
+perform_http_request	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def perform_http_request(method, uri, payload = nil, headers = {}, &block)$/;"	method	line:698	class:Bosh.Cli.Client
+get_json	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_json(url)$/;"	method	line:738	class:Bosh.Cli.Client
+get_json_with_status	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def get_json_with_status(url)$/;"	method	line:745	class:Bosh.Cli.Client
+add_query_string	/Users/pivotal/workspace/bosh/bosh_cli/lib/cli/client/director.rb	/^        def add_query_string(url, parts)$/;"	method	line:753	class:Bosh.Cli.Client

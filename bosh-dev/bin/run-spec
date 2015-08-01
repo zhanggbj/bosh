@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+require 'pathname'
+
+def running_file
+  ARGV.find { |arg| arg.match(/spec\.rb([:0-9]+)?$/) }.split(':').first
+end
+
+if spec = running_file
+  bosh_path = Pathname.new(File.expand_path(File.join(File.dirname(__FILE__), '../..')))
+  spec_path = Pathname.new(spec)
+  proj_path = spec_path.relative_path_from(bosh_path)
+  proj_name = proj_path.to_path.split('/').first
+
+  puts `cd #{File.join(bosh_path, proj_name)} ; bundle exec rspec #{ARGV.join(' ')}`
+end

@@ -12,6 +12,28 @@ require 'restclient'
 require 'bosh/director'
 require 'blue-shell'
 
+# def running_file
+#   cmd = $0.split('/').last
+#   arg = ARGV.find { |arg| arg.match(/spec\.rb([:0-9]+)?$/) }.split(':').first
+#
+#   if cmd == 'rspec' && arg
+#     arg
+#   else
+#     nil
+#   end
+# end
+#
+# if spec = running_file
+#   bosh_path = Pathname.new(File.expand_path(File.join(File.dirname(__FILE__), '..')))
+#   spec_path = Pathname.new(spec)
+#   proj_path = spec_path.relative_path_from(bosh_path)
+#   proj_name = proj_path.to_path.split('/').first
+#
+#   $LOAD_PATH.unshift("#{proj_name}/lib")
+#   $LOAD_PATH.unshift("#{proj_name}/spec")
+#   require "spec_helper"
+# end
+
 SPEC_ROOT = File.expand_path(File.dirname(__FILE__))
 Dir.glob("#{SPEC_ROOT}/support/**/*.rb") { |f| require(f) }
 
