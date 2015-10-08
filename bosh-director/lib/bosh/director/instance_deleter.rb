@@ -16,7 +16,7 @@ module Bosh::Director
 
     def delete_instance_plan(instance_plan, event_log_stage)
       existing_instance = instance_plan.existing_instance
-      @logger.info("Deleting instance '#{existing_instance.inspect}'")
+      @logger.info("Deleting instance '#{existing_instance.to_s}'")
 
       event_log_stage.advance_and_track(existing_instance.to_s) do
 
