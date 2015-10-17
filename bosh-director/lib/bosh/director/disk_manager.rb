@@ -82,6 +82,20 @@ module Bosh::Director
       end
     end
 
+    def delete_orphan_disk(disk_cid)
+      @logger.info("deleting orphan disk: #{disk_cid}")
+      orphan_disk = Bosh::Director::Models::OrphanDisk.where(disk_cid: disk_cid).first
+      if orphan_disk
+        begin
+          @cloud.delete_disk(orphan_disk.disk_cid)
+        rescue Bosh::Clouds::DiskNotFound
+          @logger.debug("Disk not found: #{orphan_disk.disk_cid}")
+          #
+        end
+        orphan_disk.destroy
+      end
+    end
+
     private
 
     def orphan_snapshots(snapshots, orphan_disk)

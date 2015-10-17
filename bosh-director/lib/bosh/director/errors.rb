@@ -253,4 +253,7 @@ module Bosh::Director
 
   # Run errand errors
   RunErrandError = err(510000)
+
+  #Deleting Disk
+  DeletingPersistentDiskError = err(520000)
 end
