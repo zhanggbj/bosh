@@ -76,6 +76,9 @@ module Bosh::Director
 
       # @param resolution desired resolution
       def apply_resolution(resolution)
+
+        raise "BANG!"
+
         action = self.class.action_for(resolution)
         if action.nil?
           handler_error("Cannot find `#{resolution}' resolution for `#{self.class}'")
@@ -150,4 +153,3 @@ module Bosh::Director
     end
   end
 end
-

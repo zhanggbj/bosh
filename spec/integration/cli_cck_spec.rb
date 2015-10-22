@@ -27,6 +27,15 @@ describe 'cli: cloudcheck', type: :integration do
     expect(runner.run('cloudcheck --report')).to match(regexp('No problems found'))
   end
 
+  it 'does something' do
+    current_sandbox.cpi.vm_cids.each do |vm_cid|
+      current_sandbox.cpi.delete_vm(vm_cid)
+    end
+
+    expect(current_sandbox.cpi).to receive(:create_vm).and_raise(:error)
+    bosh_run_cck_with_auto
+  end
+
   it 'properly resurrects VMs with dead agents' do
     current_sandbox.cpi.kill_agents
 
