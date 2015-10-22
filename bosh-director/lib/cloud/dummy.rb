@@ -162,6 +162,7 @@ module Bosh
       ATTACH_DISK_SCHEMA = Membrane::SchemaParser.parse { {vm_cid: String, disk_id: String} }
       def attach_disk(vm_cid, disk_id)
         validate_and_record_inputs(ATTACH_DISK_SCHEMA, __method__, vm_cid, disk_id)
+        raise Bosh::Clouds::CloudError, "Disk `#{disk_id}` already attached." if Dir.glob(attachment_file('**', disk_id))
         file = attachment_file(vm_cid, disk_id)
         FileUtils.mkdir_p(File.dirname(file))
         FileUtils.touch(file)
