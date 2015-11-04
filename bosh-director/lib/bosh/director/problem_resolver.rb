@@ -70,6 +70,7 @@ module Bosh::Director
 
     rescue => e
       log_resolution_error(problem, e)
+      raise e
     end
 
     private

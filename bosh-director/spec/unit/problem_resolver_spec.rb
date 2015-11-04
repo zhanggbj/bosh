@@ -80,18 +80,42 @@ module Bosh::Director
       ])
     end
 
-    it 'receives error logs' do
-      backtrace = anything
-      disk = Models::PersistentDisk.make(:active => false)
-      problem = inactive_disk(disk.id)
-      resolver = make_resolver(@deployment)
+    context 'given an exception is raised' do
+      let(:disk) { Models::PersistentDisk.make(:active => false) }
+      let(:problem) { inactive_disk(disk.id) }
+      let(:resolver) { make_resolver(@deployment) }
+      let(:backtrace) { anything }
 
-      expect(resolver).to receive(:track_and_log)
-        .and_raise(Bosh::Director::ProblemHandlerError)
-      expect(logger).to receive(:error).with("Error resolving problem `1': Bosh::Director::ProblemHandlerError")
-      expect(logger).to receive(:error).with(backtrace)
+      context "and the exception is a ProblemHandlerError" do
+        before do
+          allow(resolver).to receive(:track_and_log).and_raise(Bosh::Director::ProblemHandlerError)
+        end
 
-      expect(resolver.apply_resolutions({ problem.id.to_s => 'ignore' })).to eq(1)
+        it 'logs the error' do
+          expect(logger).to receive(:error).with("Error resolving problem `1': Bosh::Director::ProblemHandlerError")
+          expect(logger).to receive(:error).with(backtrace)
+          resolver.apply_resolutions({ problem.id.to_s => 'ignore' })
+        end
+
+        it 'continues with problem resolution' do
+          resolved_count = resolver.apply_resolutions({ problem.id.to_s => 'ignore' })
+          expect(resolved_count).to eq(1)
+        end
+      end
+
+      context "and the exception is not a ProblemHandlerError" do
+        before do
+          allow(resolver).to receive(:track_and_log).and_raise(StandardError)
+        end
+
+        it 'logs the error and raises the exception' do
+          expect(logger).to receive(:error).with("Error resolving problem `1': StandardError")
+          expect(logger).to receive(:error).with(backtrace)
+          expect {
+            resolver.apply_resolutions({ problem.id.to_s => 'ignore' })
+          }.to raise_error
+        end
+      end
     end
   end
 end
