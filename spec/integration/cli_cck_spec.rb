@@ -107,8 +107,8 @@ describe 'cli: cloudcheck', type: :integration do
   end
 
   def bosh_run_cck_with_auto
-    output = `bosh -c #{ClientSandbox.bosh_config} cloudcheck --auto`
-    if $?.exitstatus != 0
+    output, exitcode = runner.run("cloudcheck --auto", interactive: true, return_exit_code: true)
+    if exitcode != 0
       puts output
     end
     output
