@@ -1,0 +1,8 @@
+---
+platform: linux
+image: docker:///boshcpi/aws-cpi-release
+inputs:
+  - name: bosh-cpi-release
+  - name: version-semver
+run:
+  path: bosh-src/ci/pipelines/global-net-bats/tasks/build-candidate.sh

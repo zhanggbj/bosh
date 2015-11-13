@@ -1,0 +1,11 @@
+---
+platform: linux
+image: docker:///bosh/main
+inputs:
+  - name: bosh-cpi-release
+  - name: version-semver
+run:
+  path: bosh-src/ci/pipelines/global-net-bats/tasks/build-candidate.sh
+
+outputs:
+  - name: foobar
