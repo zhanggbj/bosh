@@ -17,5 +17,3 @@ bundle exec rake release:create_dev_release
 cd release/
 bundle exec bosh create release --with-tarball --force
 mv dev_releases/bosh/bosh*.tgz ../../bosh-dev-release/
-
-sleep 1200
