@@ -2,10 +2,10 @@
 platform: linux
 image: docker:///bosh/main
 inputs:
-  - name: bosh-cpi-release
-  - name: version-semver
-run:
-  path: bosh-src/ci/pipelines/global-net-bats/tasks/build-candidate.sh
-
+  - name: bosh-src
 outputs:
-  - name: foobar
+  - name: bosh-dev-release
+run:
+  path: bosh-src/ci/pipelines/global-net-bats/tasks/create-dev-release.sh
+
+

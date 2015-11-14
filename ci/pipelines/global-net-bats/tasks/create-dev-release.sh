@@ -7,7 +7,10 @@ chruby 2.1.2
 
 #semver=`cat version-semver/number`
 #
-mkdir out
+
+out_dir=$PWD/bosh-dev-release
+mkdir -p $out_dir
+
 #
 #cd bosh-cpi-release
 #
@@ -27,5 +30,5 @@ mkdir out
 
 #mv dev_releases/$cpi_release_name/$cpi_release_name-$semver.tgz ../out/
 
-echo "hello, world!" > out/test
+echo "hello, world!" > $out_dir/test
 

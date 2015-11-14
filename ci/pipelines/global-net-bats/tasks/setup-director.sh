@@ -3,6 +3,7 @@
 set -e
 
 echo "Hello, I'm here!"
+echo bosh-dev-release/test
 echo $PWD
 
 sleep 1200
@@ -59,7 +60,7 @@ sleep 1200
 #
 #releases:
 #- name: bosh
-#  url: file://bosh-release.tgz
+#  url: file://bosh-dev-release/bosh-release.tgz
 #- name: bosh-aws-cpi
 #  url: file://bosh-aws-cpi.tgz
 #
