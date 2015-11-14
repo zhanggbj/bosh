@@ -2,11 +2,8 @@
 
 set -e
 
-#source /etc/profile.d/chruby.sh
-#chruby 2.1.2
-
-#semver=`cat version-semver/number`
-#
+source /etc/profile.d/chruby.sh
+chruby 2.1.2
 
 out_dir=$PWD/bosh-dev-release
 mkdir -p $out_dir
