@@ -6,8 +6,6 @@ echo "Hello, I'm here!"
 echo bosh-dev-release/test
 echo $PWD
 
-sleep 3600
-
 source bosh-src/ci/pipelines/global-net-bats/tasks/utils.sh
 
 check_param base_os
@@ -24,6 +22,8 @@ export AWS_ACCESS_KEY_ID=${aws_access_key_id}
 export AWS_SECRET_ACCESS_KEY=${aws_secret_access_key}
 export AWS_DEFAULT_REGION=${region_name}
 
+echo "check point 1"
+
 stack_info=$(get_stack_info $stack_name)
 
 stack_prefix=${base_os}
@@ -37,7 +37,6 @@ AWS_NETWORK_CIDR=$(get_stack_info_of "${stack_info}" "${stack_prefix}CIDR")
 AWS_NETWORK_GATEWAY=$(get_stack_info_of "${stack_info}" "${stack_prefix}Gateway")
 PRIVATE_DIRECTOR_STATIC_IP=$(get_stack_info_of "${stack_info}" "${stack_prefix}DirectorStaticIP")
 
-semver=`cat version-semver/number`
 cpi_release_name=bosh-aws-cpi
 deployment_dir="${PWD}/deployment"
 manifest_filename="director-manifest.yml"
@@ -45,9 +44,12 @@ private_key=${deployment_dir}/bats.pem
 
 echo "setting up artifacts used in $manifest_filename"
 mkdir -p ${deployment_dir}
-cp ./bosh-aws-cpi-release/${cpi_release_name}-${semver}.tgz ${deployment_dir}/${cpi_release_name}.tgz
-cp ./bosh-release/release.tgz ${deployment_dir}/bosh-release.tgz
+cp ./bosh-aws-cpi-release/release*.tgz ${deployment_dir}/${cpi_release_name}.tgz
+cp ./bosh-dev-release/bosh*.tgz ${deployment_dir}/bosh-release.tgz
 cp ./stemcell/stemcell.tgz ${deployment_dir}/stemcell.tgz
+
+echo "should be good to here"
+
 echo "${private_key_data}" > ${private_key}
 chmod go-r ${private_key}
 eval $(ssh-agent)
@@ -221,3 +223,7 @@ pushd ${deployment_dir}
   cat director-manifest-state.json
   echo "=========================================="
 popd
+
+echo "Worked!"
+
+sleep 3600
