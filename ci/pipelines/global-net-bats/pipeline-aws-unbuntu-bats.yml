@@ -17,7 +17,7 @@ jobs:
 
       - task: setup-infrastructure
         file: bosh-src/ci/pipelines/global-net-bats/tasks/setup-infrastructure.yml
-        config:
+        config: &recreate-primary-config
           params:
             aws_access_key_id:        {{aws_access_key__primary}}
             aws_secret_access_key:    {{aws_secret_key__primary}}
@@ -52,6 +52,10 @@ jobs:
 
       - task: teardown-director
         file: bosh-src/ci/pipelines/global-net-bats/tasks/teardown-director.yml
+
+      - task: teardown-infrastructure
+        file: bosh-src/ci/pipelines/global-net-bats/tasks/teardown-infrastructure.yml
+        config: *recreate-primary-config
 
 resources:
 
