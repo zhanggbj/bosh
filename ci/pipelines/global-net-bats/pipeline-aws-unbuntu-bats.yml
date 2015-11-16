@@ -15,6 +15,15 @@ jobs:
         - {trigger: false, get: bats}
         - {trigger: false, get: bosh-init}
 
+      - task: setup-infrastructure
+        file: bosh-cpi-release/ci/tasks/setup-infrastructure.yml
+        config:
+          params:
+            aws_access_key_id:        {{aws_access_key__primary}}
+            aws_secret_access_key:    {{aws_secret_key__primary}}
+            region_name:              {{aws_region__primary}}
+            stack_name:               primary
+
       - task: create-dev-release
         file: bosh-src/ci/pipelines/global-net-bats/tasks/create-dev-release.yml
 
