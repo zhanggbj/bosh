@@ -16,7 +16,7 @@ jobs:
         - {trigger: false, get: bosh-init}
 
       - task: setup-infrastructure
-        file: bosh-cpi-release/ci/tasks/setup-infrastructure.yml
+        file: bosh-src/ci/pipelines/global-net-bats/tasks/setup-infrastructure.yml
         config:
           params:
             aws_access_key_id:        {{aws_access_key__primary}}
