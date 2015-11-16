@@ -2,10 +2,6 @@
 
 set -e
 
-echo "Hello, I'm here!"
-echo bosh-dev-release/test
-echo $PWD
-
 source bosh-src/ci/pipelines/global-net-bats/tasks/utils.sh
 
 check_param base_os
