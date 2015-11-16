@@ -219,7 +219,3 @@ pushd ${deployment_dir}
   cat director-manifest-state.json
   echo "=========================================="
 popd
-
-echo "Worked!"
-
-sleep 3600

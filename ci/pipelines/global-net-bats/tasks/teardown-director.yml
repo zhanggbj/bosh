@@ -2,7 +2,7 @@
 platform: linux
 image: docker:///boshcpi/aws-cpi-release
 inputs:
-- name: bosh-aws-cpi-release
+- name: bosh-src
 - name: setup-director
 run:
   path: bosh-src/ci/pipelines/global-net-bats/tasks/teardown-director.sh
