@@ -15,14 +15,14 @@ module Bosh::Director
         it "raises an error when #{field_name} is missing from agent run errand result" do
           invalid_errand_result = agent_run_errand_result.reject { |k, _| k == field_name }
           expect {
-            described_class.from_agent_task_results(invalid_errand_result, nil)
+            described_class.from_agent_task_results(invalid_errand_result, nil, false)
           }.to raise_error(AgentInvalidTaskResult, /#{field_name}.*missing/i)
         end
       end
 
       it 'does not raise an error if fetch_logs results is nil (not available)' do
         expect {
-          described_class.from_agent_task_results(agent_run_errand_result, nil)
+          described_class.from_agent_task_results(agent_run_errand_result, nil, false)
         }.to_not raise_error
       end
 
@@ -31,7 +31,7 @@ module Bosh::Director
         errand_result_with_extras['unexpected-key'] = 'extra-value'
 
         subject = described_class.from_agent_task_results(
-          errand_result_with_extras, 'fake-logs-blobstore-id')
+          errand_result_with_extras, 'fake-logs-blobstore-id', false)
 
         expect(subject.to_hash).to eq(
           'exit_code' => 123,
@@ -39,6 +39,7 @@ module Bosh::Director
           'stderr' => 'fake-stderr',
           'logs' => {
             'blobstore_id' => 'fake-logs-blobstore-id',
+            'std_streams_as_files'=> false,
           },
         )
       end
@@ -47,7 +48,7 @@ module Bosh::Director
     describe '#short_description' do
       context 'when errand exit_code is 0' do
         it 'returns successful errand completion message as task short result (not result file)' do
-          subject = described_class.new(0, '', '', '')
+          subject = described_class.new(0, '', '', '', false)
           expect(subject.short_description('fake-job-name')).to eq(
             'Errand `fake-job-name\' completed successfully (exit code 0)')
         end
@@ -55,7 +56,7 @@ module Bosh::Director
 
       context 'when errand exit_code is non-0' do
         it 'returns error errand completion message as task short result (not result file)' do
-          subject = described_class.new(123, '', '', '')
+          subject = described_class.new(123, '', '', '', nil)
           expect(subject.short_description('fake-job-name')).to eq(
             'Errand `fake-job-name\' completed with error (exit code 123)')
         end
@@ -63,7 +64,7 @@ module Bosh::Director
 
       context 'when errand exit_code is >128' do
         it 'returns error errand cancellation message as task short result (not result file)' do
-          subject = described_class.new(143, '', '', '')
+          subject = described_class.new(143, '', '', '', nil)
           expect(subject.short_description('fake-job-name')).to eq(
             'Errand `fake-job-name\' was canceled (exit code 143)')
         end
@@ -72,27 +73,42 @@ module Bosh::Director
 
     describe '#to_hash' do
       it 'returns blobstore_id as when it is available' do
-        subject = described_class.new(0, 'fake-stdout', 'fake-stderr', 'fake-blobstore-id')
+        subject = described_class.new(0, 'fake-stdout', 'fake-stderr', 'fake-blobstore-id', false)
         expect(subject.to_hash).to eq(
           'exit_code' => 0,
           'stdout' => 'fake-stdout',
           'stderr' => 'fake-stderr',
           'logs' => {
             'blobstore_id' => 'fake-blobstore-id',
+            'std_streams_as_files'=> false,
           },
         )
       end
 
       it 'returns blobstore_id as nil when it is not available' do
-        subject = described_class.new(0, 'fake-stdout', 'fake-stderr', nil)
+        subject = described_class.new(0, 'fake-stdout', 'fake-stderr', nil, false)
         expect(subject.to_hash).to eq(
           'exit_code' => 0,
           'stdout' => 'fake-stdout',
           'stderr' => 'fake-stderr',
           'logs' => {
             'blobstore_id' => nil,
+            'std_streams_as_files'=> false,
           },
         )
+      end
+
+      it 'returns std_streams_as_files as nil when it is not available' do
+        subject = described_class.new(0, 'fake-stdout', 'fake-stderr', nil, nil)
+        expect(subject.to_hash).to eq(
+                                       'exit_code' => 0,
+                                       'stdout' => 'fake-stdout',
+                                       'stderr' => 'fake-stderr',
+                                       'logs' => {
+                                           'blobstore_id' => nil,
+                                           'std_streams_as_files'=> nil,
+                                       },
+                                   )
       end
     end
   end

@@ -42,7 +42,7 @@ describe Bosh::Cli::Client::ErrandsClient do
             exit_code: 123,
             stdout: 'fake-stdout',
             stderr: 'fake-stderr',
-            logs: {blobstore_id: 'fake-logs-blobstore-id'},
+            logs: {blobstore_id: 'fake-logs-blobstore-id', std_streams_as_files: true},
           )
 
           expect(director).to receive(:get_task_result_log).
@@ -53,7 +53,7 @@ describe Bosh::Cli::Client::ErrandsClient do
           expect(actual_status).to eq(status)
           expect(task_id).to eq('fake-task-id')
           expect(actual_result).to eq(described_class::ErrandResult.new(
-            123, 'fake-stdout', 'fake-stderr', 'fake-logs-blobstore-id'))
+            123, 'fake-stdout', 'fake-stderr', 'fake-logs-blobstore-id', true))
         end
 
         it 'does not set logs_blobstore_id if director does not include return logs key (older directors)' do
@@ -72,7 +72,7 @@ describe Bosh::Cli::Client::ErrandsClient do
           expect(actual_status).to eq(status)
           expect(task_id).to eq('fake-task-id')
           expect(actual_result).to eq(described_class::ErrandResult.new(
-            123, 'fake-stdout', 'fake-stderr', nil))
+            123, 'fake-stdout', 'fake-stderr', nil, nil))
         end
 
         it 'does not raise an error if output is empty' do

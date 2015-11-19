@@ -10,7 +10,7 @@ module Bosh::Cli
       File.join(directory, "#{job_name}.#{job_index}.#{time}.tgz")
     end
 
-    def download(resource_id, logs_destination_path)
+    def download(resource_id, logs_destination_path, silent = false)
       @ui.say("Downloading log bundle (#{resource_id.to_s.make_green})...")
       @ui.nl
 
@@ -19,7 +19,7 @@ module Bosh::Cli
 
         FileUtils.mv(tmp_file, logs_destination_path)
 
-        @ui.say("Logs saved in `#{logs_destination_path.make_green}'")
+        @ui.say("Logs saved in `#{logs_destination_path.make_green}'") unless silent
         @ui.nl
 
       rescue Bosh::Cli::DirectorError => e

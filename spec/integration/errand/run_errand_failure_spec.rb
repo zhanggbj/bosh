@@ -26,8 +26,10 @@ describe 'run errand failure', type: :integration, with_tmp_dir: true do
       it 'does not delete/create the errand vm' do
         output, exit_code = bosh_runner.run("run errand fake-errand-name --download-logs --logs-dir #{@tmp_dir} --keep-alive",
           {failure_expected: true, return_exit_code: true})
-        expect(output).to include("[stdout]\nNone")
-        expect(output).to include("some-stderr1\nsome-stderr2\nsome-stderr3")
+        expect(output).to include("[/errand1/run.stdout.log]\n\n")
+        expect(output).to include("[/errand1/run.stderr.log]\nsome-stderr1\nsome-stderr2\nsome-stderr3")
+        expect(output).to include("[/custom.log]\nerrand1-custom-log")
+        expect(output).to include("[/errand1/stdout.log]\nerrand1-stdout-log")
         expect(exit_code).to_not eq(0)
         expect_running_vms(%w(fake-errand-name/0 foobar/0 unknown/unknown))
       end
@@ -42,13 +44,15 @@ describe 'run errand failure', type: :integration, with_tmp_dir: true do
 
       expect_running_vms(%w(foobar/0 unknown/unknown unknown/unknown))
 
-      expect(output).to include("[stdout]\nNone")
-      expect(output).to include("some-stderr1\nsome-stderr2\nsome-stderr3")
+      expect(output).to include("[/errand1/run.stdout.log]\n\n")
+      expect(output).to include("[/errand1/run.stderr.log]\nsome-stderr1\nsome-stderr2\nsome-stderr3")
+      expect(output).to include("[/custom.log]\nerrand1-custom-log")
+      expect(output).to include("[/errand1/stdout.log]\nerrand1-stdout-log")
       expect(output).to include('Errand `fake-errand-name\' completed with error (exit code 23)')
       expect(output =~ /Logs saved in `(.*fake-errand-name\.0\..*\.tgz)'/).to_not(be_nil, @output)
       logs_file = Bosh::Spec::TarFileInspector.new($1)
-      expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./custom.log))
-      expect(logs_file.smallest_file_size).to be > 0
+      expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./custom.log ./errand1/run.stderr.log ./errand1/run.stdout.log))
+      expect(logs_file.smallest_file_size).to equal(0)
     end
   end
 

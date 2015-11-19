@@ -74,7 +74,7 @@ module Bosh::Director
             subject.run(&fake_block)
           end
 
-          it 'writes run_errand response with exit_code, stdout, stderr and logs result to task result file' do
+          it 'writes run_errand response with exit_code, stdout, stderr, std_streams_as_files as true, and logs result to task result file' do
             expect(result_file).to receive(:write) do |text|
               expect(JSON.parse(text)).to eq(
                 'exit_code' => 123,
@@ -82,6 +82,7 @@ module Bosh::Director
                 'stderr' => 'fake-stderr',
                 'logs' => {
                   'blobstore_id' => 'fake-logs-blobstore-id',
+                  'std_streams_as_files' => true,
                 },
               )
             end
@@ -103,7 +104,7 @@ module Bosh::Director
                and_return('fake-short-description')
 
             expect(Errand::Result).to receive(:from_agent_task_results).
-              with(agent_task_result, 'fake-logs-blobstore-id').
+              with(agent_task_result, 'fake-logs-blobstore-id', true).
               and_return(errand_result)
 
             expect(subject.run).to eq('fake-short-description')
@@ -122,6 +123,7 @@ module Bosh::Director
                 'stderr' => 'fake-stderr',
                 'logs' => {
                   'blobstore_id' => nil,
+                  'std_streams_as_files' => true,
                 },
               )
             end

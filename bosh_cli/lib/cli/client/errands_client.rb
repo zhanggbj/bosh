@@ -3,13 +3,14 @@ require 'multi_json'
 module Bosh::Cli::Client
   class ErrandsClient
     class ErrandResult
-      attr_reader :exit_code, :stdout, :stderr, :logs_blobstore_id
+      attr_reader :exit_code, :stdout, :stderr, :logs_blobstore_id, :std_streams_as_files
 
-      def initialize(exit_code, stdout, stderr, logs_blobstore_id)
+      def initialize(exit_code, stdout, stderr, logs_blobstore_id, std_streams_as_files)
         @exit_code = exit_code
         @stdout = stdout
         @stderr = stderr
         @logs_blobstore_id = logs_blobstore_id
+        @std_streams_as_files = std_streams_as_files
       end
 
       def ==(other)
@@ -17,8 +18,8 @@ module Bosh::Cli::Client
           raise ArgumentError, "Must be #{self.class} to compare"
         end
 
-        local = [exit_code, stdout, stderr, logs_blobstore_id]
-        other = [other.exit_code, other.stdout, other.stderr, other.logs_blobstore_id]
+        local = [exit_code, stdout, stderr, logs_blobstore_id, std_streams_as_files]
+        other = [other.exit_code, other.stdout, other.stderr, other.logs_blobstore_id, other.std_streams_as_files]
         local == other
       end
     end
@@ -46,6 +47,7 @@ module Bosh::Cli::Client
         errand_result = ErrandResult.new(
           *task_result.values_at('exit_code', 'stdout', 'stderr'),
           task_result.fetch('logs', {})['blobstore_id'],
+          task_result.fetch('logs', {})['std_streams_as_files']
         )
       end
 
