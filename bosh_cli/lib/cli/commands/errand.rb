@@ -53,13 +53,21 @@ module Bosh::Cli::Command
       download_dir = nil
 
       if errand_result.logs_blobstore_id && errand_result.std_streams_as_files
+        # Here we know the director supports std_streams_as_files, and it has sent back a
+        # logs_blobstore_id attribute in the result.
+
         if options[:download_logs]
+          # Keep the downloaded logs somewhere
           download_dir = options[:logs_dir] || Dir.pwd
         else
+          # Make download_logs a tmp directory, as it will be deleted after displaying all the logs
           download_dir =  Dir.tmpdir
         end
 
       else
+        # Here we know it is either a director version that does not support std_streams_as_files, or
+        # the director did not specify a blobstore id. In either case, this means we should fall back to display
+        # errand_result.stdout and errand_result.stderr. The agent may have truncated these to respect NATS message limits
         download_dir = options[:logs_dir] || Dir.pwd
 
         say('[stdout]')
@@ -72,6 +80,9 @@ module Bosh::Cli::Command
       end
 
       if errand_result.logs_blobstore_id && (options[:download_logs] || errand_result.std_streams_as_files)
+        # Here we know that the director specified a blobstore id. We should download the logs if download_logs was passed
+        # or std_streams_as_files is supported by the director. The path to where logs will be downloaded was already
+        # specified through the download_dir variable
         logs_downloader = Bosh::Cli::LogsDownloader.new(director, self)
         logs_path = logs_downloader.build_destination_path(errand_name, 0, download_dir)
 
@@ -82,6 +93,8 @@ module Bosh::Cli::Command
         end
 
         if errand_result.std_streams_as_files
+          # Here we know that the director supports std_streams_as_files, so we unzip the logs in a tmp directory,
+          # read all the log files and then display them in the output.
           Dir.mktmpdir { |unpack_dir|
             unpack_logs(unpack_dir, logs_path)
             unpack_pattern = File.join(unpack_dir, "**", "*")
