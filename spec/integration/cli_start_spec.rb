@@ -3,7 +3,7 @@ require 'spec_helper'
 describe 'start job', type: :integration do
   with_reset_sandbox_before_each
 
-  it 'starts a job instance only' do
+  it 'starts a single job instance when referenced by index' do
     deploy_from_scratch
     expect(director.vms.map(&:last_known_state).uniq).to match_array(['running'])
     bosh_runner.run('stop')
@@ -14,6 +14,17 @@ describe 'start job', type: :integration do
     vm_was_started = director.find_vm(vms_after_instance_started, 'foobar', '0')
     expect(vm_was_started.last_known_state).to eq ('running')
     expect((vms_after_instance_started -[vm_was_started]).map(&:last_known_state).uniq).to match_array(['stopped'])
+  end
+
+  it 'starts a single job instance when referenced by id' do
+    deploy_from_scratch
+    expect(director.vms.map(&:last_known_state).uniq).to match_array(['running'])
+    bosh_runner.run('stop')
+    expect(director.vms.map(&:last_known_state).uniq).to match_array(['stopped'])
+
+    vm_id = director.vms.first.instance_uuid
+    expect(bosh_runner.run("start foobar #{vm_id}")).to match %r{foobar/#{vm_id} started}
+    expect(director.vms.map(&:last_known_state)).to include 'running'
   end
 
   it 'starts vms for a given job / the whole deployment' do

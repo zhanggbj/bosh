@@ -111,8 +111,8 @@ module Bosh::Director
           end
 
           it 'allows putting job instances into different states' do
-            Models::Deployment.
-                create(:name => 'foo', :manifest => Psych.dump({'foo' => 'bar'}))
+            deployment = Models::Deployment.create(:name => 'foo', :manifest => Psych.dump({'foo' => 'bar'}))
+            Models::Instance.make(deployment: deployment, job: 'dea', index: '2')
             put '/foo/jobs/dea/2?state=stopped', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
             expect_redirect_to_queued_task(last_response)
           end
@@ -126,8 +126,8 @@ module Bosh::Director
             allow_any_instance_of(DeploymentManager).to receive(:create_deployment).
                 with(anything(), not_to_have_body(StringIO.new(manifest)), anything(), anything()).
                 and_return(OpenStruct.new(:id => 'no_content_length'))
-            Models::Deployment.
-              create(:name => 'foo', :manifest => Psych.dump({'foo' => 'bar'}))
+            deployment = Models::Deployment.create(:name => 'foo', :manifest => Psych.dump({'foo' => 'bar'}))
+            Models::Instance.make(deployment: deployment, job: 'dea', index: '2')
             put '/foo/jobs/dea/2?state=stopped', manifest, {'CONTENT_TYPE' => 'text/yaml', 'CONTENT_LENGTH' => 0}
 
             match = last_response.location.match(%r{/tasks/no_content_length})
@@ -145,9 +145,22 @@ module Bosh::Director
             expect(instance.reload.resurrection_paused).to be(true)
           end
 
-          it 'does not like invalid indices' do
-            put '/foo/jobs/dea/zb?state=stopped', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
-           expect(last_response.status).to eq(400)
+          it 'raises an error when index is not found' do
+            put '/foo/jobs/dea/100?state=stopped', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+            expect(last_response.status).to eq(404)
+          end
+
+          it 'raises an error when id is not found' do
+            put '/foo/jobs/dea/not_found?state=stopped', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+            expect(last_response.status).to eq(404)
+          end
+
+          it 'can change job state based on id' do
+            deployment = Models::Deployment.make(name: 'foo')
+            Models::Instance.make(deployment: deployment, job: 'dea', uuid: 'valid_id123')
+
+            put '/foo/jobs/dea/valid_id123?state=stopped', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+            expect_redirect_to_queued_task(last_response)
           end
 
           it 'can get job information' do
@@ -176,6 +189,10 @@ module Bosh::Director
 
           describe 'draining' do
             let(:deployment) { Models::Deployment.create(:name => 'test_deployment', :manifest => Psych.dump({'foo' => 'bar'})) }
+
+            before do
+              Models::Instance.make(deployment: deployment, job: 'job_name', index: '0')
+            end
 
             context 'without the "skip_drain" param' do
               it 'drains' do

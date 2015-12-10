@@ -49,18 +49,18 @@ module Bosh::Director
       end
 
       # PUT /deployments/foo/jobs/dea/2?state={started,stopped,detached,restart,recreate}&skip_drain=true
-      put '/:deployment/jobs/:job/:index', :consumes => :yaml do
-        begin
-          index = Integer(params[:index])
-        rescue ArgumentError
-          raise InstanceInvalidIndex, "Invalid instance index `#{params[:index]}'"
+      put '/:deployment/jobs/:job/:index_or_id', :consumes => :yaml do
+        if params[:index_or_id].to_s =~ /^\d+$/
+          instance = @instance_manager.find_by_name(params[:deployment], params[:job], params[:index_or_id])
+        else
+          instance = @instance_manager.filter_by(uuid: params[:index_or_id]).first
         end
 
         options = {
           'job_states' => {
             params[:job] => {
               'instance_states' => {
-                index => params['state']
+                instance.index => params['state']
               },
             }
           },
