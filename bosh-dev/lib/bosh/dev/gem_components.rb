@@ -65,6 +65,7 @@ module Bosh::Dev
     end
 
     def stage_with_dependencies
+      require 'pry' ; binding.pry 
       FileUtils.rm_rf 'pkg'
       FileUtils.mkdir_p stage_dir
 

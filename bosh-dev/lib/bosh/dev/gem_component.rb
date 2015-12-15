@@ -29,7 +29,8 @@ module Bosh
 
       def build_gem(destination_dir)
         gemspec = "#{name}.gemspec"
-        Rake::FileUtilsExt.sh "cd #{name} && gem build #{gemspec} && mv #{dot_gem} #{destination_dir}"
+        # Rake::FileUtilsExt.sh "cd #{name} && gem build #{gemspec} && mv #{dot_gem} #{destination_dir}"
+        # `cd #{name} && gem build #{gemspec} && mv #{dot_gem} #{destination_dir}`
       end
 
       def dependencies

@@ -58,6 +58,7 @@ group :development, :test do
   gem 'codeclimate-test-reporter', require: false
   gem 'vcr'
   gem 'pry'
+  gem 'pry-byebug'
 
   # avoid upgrading until this issue is resolved: https://github.com/eventmachine/eventmachine/issues/633
   gem 'eventmachine', '1.0.3'
