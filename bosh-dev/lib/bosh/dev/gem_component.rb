@@ -1,3 +1,5 @@
+require 'rubygems/package'
+
 module Bosh
   module Dev
     class GemComponent
@@ -7,30 +9,20 @@ module Bosh
 
       def initialize(name, version)
         @name = name
-        @version = version # '1.3153.0'
+        @version = version
       end
 
       def dot_gem
         "#{name}-#{version}.gem"
       end
 
-      def update_version
-        glob = File.join(ROOT, name, 'lib', '**', 'version.rb')
-
-        version_file_paths = Dir.glob(glob)
-        raise if version_file_paths.size > 1
-        version_file_path = version_file_paths.first
-
-        file_contents = File.read(version_file_path)
-        file_contents.gsub!(/^(\s*)VERSION = (.*?)$/, "\\1VERSION = '#{version}'")
-
-        File.open(version_file_path, 'w') { |f| f.write(file_contents) }
-      end
-
-      def build_gem(destination_dir)
-        gemspec = "#{name}.gemspec"
-        # Rake::FileUtilsExt.sh "cd #{name} && gem build #{gemspec} && mv #{dot_gem} #{destination_dir}"
-        # `cd #{name} && gem build #{gemspec} && mv #{dot_gem} #{destination_dir}`
+      def build_gem(destination)
+        Dir.chdir(name) do
+          spec = Gem::Specification.load "#{name}.gemspec"
+          spec.version = version
+          output = Gem::Package.build spec
+          FileUtils.mv(output, destination)
+        end
       end
 
       def dependencies
