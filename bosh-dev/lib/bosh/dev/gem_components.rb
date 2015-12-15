@@ -15,31 +15,34 @@ module Bosh::Dev
 
       stage_with_dependencies
 
-      components.each do |component|
-        finalize_release_directory(component)
-      end
+      # components.each do |component|
+      #   finalize_release_directory(component)
+      # end
 
-      FileUtils.rm_rf build_dir
+      # FileUtils.rm_rf build_dir
     end
 
     def each(&block)
+      # %w(
+      #   agent_client
+      #   blobstore_client
+      #   bosh-core
+      #   bosh-stemcell
+      #   bosh-template
+      #   bosh_cli
+      #   bosh_cli_plugin_aws
+      #   bosh_cli_plugin_micro
+      #   bosh_common
+      #   bosh_cpi
+      #   bosh-registry
+      #   bosh-director
+      #   bosh-director-core
+      #   bosh-monitor
+      #   bosh-release
+      #   simple_blobstore_server
+      # ).each(&block)
       %w(
-        agent_client
-        blobstore_client
-        bosh-core
-        bosh-stemcell
-        bosh-template
-        bosh_cli
-        bosh_cli_plugin_aws
-        bosh_cli_plugin_micro
         bosh_common
-        bosh_cpi
-        bosh-registry
-        bosh-director
-        bosh-director-core
-        bosh-monitor
-        bosh-release
-        simple_blobstore_server
       ).each(&block)
     end
 
@@ -65,11 +68,18 @@ module Bosh::Dev
       FileUtils.rm_rf 'pkg'
       FileUtils.mkdir_p stage_dir
 
-      components.each { |component| component.update_version }
-      components.each { |component| component.build_gem(stage_dir) }
+      # puts "UPDATING VERSIONS..."
+      # components.each { |component| component.update_version }
+      # puts "*" * 80
 
-      Rake::FileUtilsExt.sh "cp #{root}/pkg/gems/*.gem #{build_dir}"
-      Rake::FileUtilsExt.sh "cp #{root}/vendor/cache/*.gem #{build_dir}"
+      puts "BUILDING GEMS..."
+      components.each { |component| component.build_gem(stage_dir) }
+      puts "*" * 80
+      #
+      # # Rake::FileUtilsExt.sh "git checkout Gemfile.lock"
+      #
+      # Rake::FileUtilsExt.sh "cp #{root}/pkg/gems/*.gem #{build_dir}"
+      # Rake::FileUtilsExt.sh "cp #{root}/vendor/cache/*.gem #{build_dir}"
     end
 
     def finalize_release_directory(component)
@@ -83,7 +93,8 @@ module Bosh::Dev
 
       begin
         component.dependencies.each do |dependency|
-          FileUtils.cp "#{build_dir}/#{dependency.name}-#{dependency.version}.gem", "#{dirname}"
+          # FileUtils.cp "#{build_dir}/#{dependency.name}-#{dependency.version}.gem", "#{dirname}"
+          Rake::FileUtilsExt.sh "cp #{build_dir}/#{dependency.name}-*.gem #{dirname}"
         end
       rescue Errno::ENOENT => e
         gemfile = e.message.sub(/^.+#{Regexp.escape(build_dir)}\//, '')

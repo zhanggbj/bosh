@@ -7,7 +7,7 @@ module Bosh
 
       def initialize(name, version)
         @name = name
-        @version = version
+        @version = version # '1.3153.0'
       end
 
       def dot_gem
