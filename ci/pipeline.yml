@@ -5,9 +5,12 @@ groups:
       - start-job
       - unit-1.9
       - unit-2.1
+      - blobstore-client-integration
       - integration-1.9-postgres
       - integration-2.1-mysql
       - integration-2.1-postgres
+      - load-tests
+      - fuzz-tests
       - publish-coverage
       - promote-candidate
 
@@ -60,6 +63,7 @@ jobs:
     serial: true
     plan:
       - { get: bosh-src, trigger: true, passed: [start-job] }
+
       - task: test
         file: bosh-src/ci/tasks/test-unit.yml
         config:
@@ -78,6 +82,21 @@ jobs:
           params:
             RUBY_VERSION: 2.1.7
 
+  - name: blobstore-client-integration
+    public: true
+    serial: true
+    plan:
+      - { get: bosh-src, trigger: true, passed: [start-job] }
+      - task: test
+        file: bosh-src/ci/tasks/test-blobstore-client-integration.yml
+        config:
+          params:
+            access_key_id: {{blobstore_client_aws_access_key_id}}
+            secret_access_key: {{blobstore_client_aws_secret_access_key}}
+            s3_region: {{blobstore_client_aws_s3_region}}
+            s3_host: {{blobstore_client_aws_s3_host}}
+            run_aws_tests: "Not null"
+
   - name: integration-1.9-postgres
     public: true
     serial: true
@@ -87,12 +106,12 @@ jobs:
       - task: test
         privileged: true
         file:  bosh-src/ci/tasks/test-integration.yml
+        tags: ["bosh-integration-1"]
         config:
-          tags: ["bosh-integration"]
           params:
             DB:           postgresql
             RUBY_VERSION: 1.9.3
-            NUM_GROUPS: 16
+            NUM_GROUPS: 8
 
   - name: integration-2.1-mysql
     public: true
@@ -103,12 +122,12 @@ jobs:
       - task: test
         privileged: true
         file: bosh-src/ci/tasks/test-integration.yml
+        tags: ["bosh-integration-2"]
         config:
-          tags: ["bosh-integration"]
           params:
             DB:           mysql
             RUBY_VERSION: 2.1.7
-            NUM_GROUPS: 16
+            NUM_GROUPS: 8
 
   - name: integration-2.1-postgres
     public: true
@@ -119,19 +138,50 @@ jobs:
       - task: test
         privileged: true
         file: bosh-src/ci/tasks/test-integration.yml
+        tags: ["bosh-integration-3"]
         config:
-          tags: ["bosh-integration"]
           params:
             DB:           postgresql
             RUBY_VERSION: 2.1.7
-            NUM_GROUPS: 16
+            NUM_GROUPS: 8
+
+  - name: load-tests
+    public: true
+    serial: true
+    plan:
+    - { get: bosh-src, trigger: true, passed: [start-job] }
+    - { get: bosh-load-tests-workspace }
+
+    - task: test
+      privileged: true
+      file: bosh-load-tests-workspace/ci/tasks/test.yml
+      tags: ["bosh-integration-4"]
+      config:
+        params:
+          RUBY_VERSION: 2.1.7
+
+  - name: fuzz-tests
+    public: true
+    serial: true
+    plan:
+    - { get: fuzz-interval-trigger, trigger: true }
+    - { get: bosh-src, trigger: true, passed: [start-job] }
+    - { get: bosh-fuzz-tests }
+
+    - task: test
+      privileged: true
+      file: bosh-fuzz-tests/ci/tasks/test.yml
+      tags: ["bosh-integration-4"]
+      config:
+        params:
+          RUBY_VERSION: 2.1.7
 
   - name: publish-coverage
     public: true
     serial: true
     plan:
       - trigger: true
-        passed: [integration-2.1-mysql, integration-1.9-postgres, integration-2.1-postgres, unit-2.1, unit-1.9]
+        passed: [integration-2.1-mysql, integration-1.9-postgres, integration-2.1-postgres, unit-2.1, unit-1.9, blobstore-client-integration]
         get: bosh-src
       - task: publish
         file: bosh-src/ci/tasks/publish-coverage.yml
@@ -144,7 +194,7 @@ jobs:
     serial: true
     plan:
       - trigger: true
-        passed: [integration-2.1-mysql, integration-1.9-postgres, integration-2.1-postgres, unit-2.1, unit-1.9]
+        passed: [integration-2.1-mysql, integration-1.9-postgres, integration-2.1-postgres, unit-2.1, unit-1.9, blobstore-client-integration]
         get: bosh-src
 
       - {put: bosh-candidate, params: {repository: bosh-src}}
@@ -161,9 +211,26 @@ resources:
       uri: https://github.com/cloudfoundry/bosh.git
       branch: {{branch}}
 
+  - name: bosh-fuzz-tests
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry-incubator/bosh-fuzz-tests.git
+      branch: master
+
+  - name: bosh-load-tests-workspace
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry-incubator/bosh-load-tests-workspace
+      branch: master
+
   - name: bosh-candidate
     type: git
     source:
       uri: git@github.com:cloudfoundry/bosh.git
       branch: candidate
       private_key: {{github_deployment_key}}
+
+  - name: fuzz-interval-trigger
+    type: time
+    source:
+      interval: 15m

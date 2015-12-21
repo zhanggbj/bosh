@@ -20,22 +20,19 @@ module Bosh::Cli
 
       def shell(*args)
         if args.size > 0
-          job, index, command = JobCommandArgs.new(args).to_a
+          job, id, command = JobCommandArgs.new(args).to_a
         else
           command    = ''
-          job, index = prompt_for_job_and_index
+          job, id = prompt_for_job_and_index
         end
 
         manifest = prepare_deployment_manifest(show_state: true)
-        job_must_exist_in_deployment(manifest.hash, job)
-
-        index = valid_index_for(manifest.hash, job, index, integer_index: true)
 
         if command.empty?
-          setup_interactive_shell(manifest.name, job, index)
+          setup_interactive_shell(manifest.name, job, id)
         else
-          say("Executing `#{command.join(' ')}' on #{job}/#{index}")
-          perform_operation(:exec, manifest.name, job, index, command)
+          say("Executing `#{command.join(' ')}' on #{job}/#{id}")
+          perform_operation(:exec, manifest.name, job, id, command)
         end
       end
 
@@ -60,7 +57,6 @@ module Bosh::Cli
         end
 
         manifest = prepare_deployment_manifest(show_state: true)
-        job_must_exist_in_deployment(manifest.hash, job)
 
         if args.size != 2
           err('Please enter valid source and destination paths')
@@ -79,7 +75,6 @@ module Bosh::Cli
         end
 
         manifest = prepare_deployment_manifest(show_state: true)
-        job_must_exist_in_deployment(manifest.hash, job)
 
         say("Cleaning up ssh artifacts from #{job}/#{index}")
         director.cleanup_ssh(manifest.name, job, "^#{SSH_USER_PREFIX}", [index])
@@ -110,7 +105,7 @@ module Bosh::Cli
       # @param [String] job
       # @param [Integer] index
       # @param [optional,String] password
-      def setup_ssh(deployment_name, job, index, password)
+      def setup_ssh(deployment_name, job, id, password)
 
         say("Target deployment is `#{deployment_name}'")
         nl
@@ -119,7 +114,7 @@ module Bosh::Cli
         ssh_session = SSHSession.new
 
         status, task_id = director.setup_ssh(
-          deployment_name, job, index, ssh_session.user,
+          deployment_name, job, id, ssh_session.user,
           ssh_session.public_key, encrypt_password(password))
 
         unless status == :done
@@ -163,7 +158,7 @@ module Bosh::Cli
           nl
           say('Cleaning up ssh artifacts')
           ssh_session.cleanup
-          indices = sessions.map { |session| session['index'] }
+          indices = sessions.map { |session| session['id'] || session['index'] }
           director.cleanup_ssh(deployment_name, job, "^#{ssh_session.user}$", indices)
           gateway.shutdown! if gateway
         end
@@ -171,17 +166,17 @@ module Bosh::Cli
 
       # @param [String] job Job name
       # @param [Integer] index Job index
-      def setup_interactive_shell(deployment_name, job, index)
+      def setup_interactive_shell(deployment_name, job, id)
         password = options[:default_password] || ''
 
-        setup_ssh(deployment_name, job, index, password) do |sessions, gateway, ssh_session|
+        setup_ssh(deployment_name, job, id, password) do |sessions, gateway, ssh_session|
           session = sessions.first
 
           unless session['status'] == 'success' && session['ip']
-            err("Failed to set up SSH on #{job}/#{index}: #{session.inspect}")
+            err("Failed to set up SSH on #{job}/#{id}: #{session.inspect}")
           end
 
-          say("Starting interactive shell on job #{job}/#{index}")
+          say("Starting interactive shell on job #{job}/#{id}")
 
           skip_strict_host_key_checking = options[:strict_host_key_checking] =~ (/(no|false)$/i) ?
               '-o StrictHostKeyChecking=no' : '-o StrictHostKeyChecking=yes'

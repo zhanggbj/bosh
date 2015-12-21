@@ -1,5 +1,5 @@
-# Copyright (c) 2009-2012 VMware, Inc.
 
+# Copyright (c) 2009-2012 VMware, Inc.
 require "spec_helper"
 
 describe Bosh::Cli::ReleaseTarball do
@@ -66,7 +66,7 @@ foo: bar
       tarball_path = spec_asset('release_no_version.tgz')
       release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
       release_tarball.unpack
-      new_tar_path = File.join(Dir.mktmpdir, "newly-packed.tgz")
+      new_tar_path = Tempfile.new('newly-packed.tgz').path
       release_tarball.create_from_unpacked(new_tar_path)
 
       expect(new_tar_path).to have_same_tarball_contents tarball_path
@@ -76,8 +76,7 @@ foo: bar
       tarball_path = spec_asset('release_no_version.tgz')
       release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
       release_tarball.unpack
-      new_tar_path = File.join(Dir.mktmpdir, "newly-  packed.tgz")
-
+      new_tar_path = Tempfile.new('newly-  packed.tgz').path
       release_tarball.create_from_unpacked(new_tar_path)
 
       expect(new_tar_path).to have_same_tarball_contents tarball_path
@@ -88,12 +87,14 @@ foo: bar
       manifest["extra_stuff"] = "it's here!"
       release_tarball.replace_manifest(manifest)
 
-      new_tar_path = File.join(Dir.mktmpdir, "newly-packed.tgz")
+      # ruby 1.9.3 garbage-collects tmp_file if not assigned to a variable
+      tmp_file = Tempfile.new('newly-packed.tgz')
+      new_tar_path = tmp_file.path
       release_tarball.create_from_unpacked(new_tar_path)
       expect(File.exist?(new_tar_path)).to be(true)
 
       new_tarball = Bosh::Cli::ReleaseTarball.new(new_tar_path)
-      expect(new_tarball).to be_valid, "Tarball is not valid, errors: #{new_tarball.errors}"
+      expect(new_tarball).to be_valid
       expect(new_tarball.manifest).to match release_tarball.manifest
     end
   end
@@ -107,6 +108,120 @@ foo: bar
 
       release_tarball.validate_manifest
       expect(release_tarball).to be_valid
+    end
+  end
+
+  describe 'unpacking using tar' do
+    let(:bsd_tar_version) { 'bsdtar 2.8.3 - libarchive 2.8.3' }
+    let(:gnu_tar_version) do
+        <<-version
+          tar (GNU tar) 1.27.1
+          Copyright (C) 2013 Free Software Foundation, Inc.
+          License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>.
+          This is free software: you are free to change and redistribute it.
+          There is NO WARRANTY, to the extent permitted by law.
+        version
+    end
+
+    let(:unrecognized_tar_version) { 'unrecognized tar' }
+
+    before do
+      @tmpDir = Dir.mktmpdir
+      allow(Kernel).to receive(:system).and_return(true)
+      allow(Dir).to receive(:mktmpdir).and_return(@tmpDir)
+      allow_any_instance_of(Bosh::Cli::ReleaseTarball).to receive(:load_yaml_file).and_return({})
+    end
+
+    context 'when unpacking single file' do
+      it 'calls correct bsd tar command' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(bsd_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "--fast-read", "-xzf", tarball_path, "./release.MF", anything)
+      end
+
+      it 'calls correct GNU tar command' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(gnu_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything,"-xzf", tarball_path,"--occurrence", "./release.MF", anything)
+      end
+
+      it 'calls correct command for unrecognized tar' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(unrecognized_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything,"-xzf", tarball_path, "./release.MF", anything)
+      end
+    end
+
+    context 'when unpacking whole directory' do
+      it 'calls correct bsd tar command' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(bsd_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        release_tarball.unpack_jobs
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "-xzf", tarball_path, "./jobs/", anything)
+      end
+
+      it 'calls correct GNU tar command' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(gnu_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        release_tarball.unpack_jobs
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "-xzf", tarball_path, "--occurrence", "./jobs/", anything)
+      end
+
+      it 'calls correct command for unrecognized tar' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Open3).to receive(:capture3).and_return(unrecognized_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        release_tarball.unpack_jobs
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "-xzf", tarball_path, "./jobs/", anything)
+      end
+
+    end
+    context 'when unpacking a file fails' do
+      it 'removes dot slash prefix and tries again' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Kernel).to receive(:system).with("tar", "-C", anything, "-xzf", tarball_path, "--occurrence", "./jobs/", anything).and_return(false)
+
+        allow(Open3).to receive(:capture3).and_return(gnu_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        release_tarball.unpack_jobs
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "-xzf", tarball_path,  "--occurrence", "jobs/", anything)
+      end
+
+      it 'adds dot slash prefix and tries again' do
+        tarball_path = spec_asset('test_release.tgz')
+
+        allow(Kernel).to receive(:system).with("tar", "-C", anything, "-xzf", tarball_path, "--occurrence", "jobs/", anything).and_return(false)
+
+        allow(Open3).to receive(:capture3).and_return(gnu_tar_version)
+        release_tarball = Bosh::Cli::ReleaseTarball.new(tarball_path)
+
+        release_tarball.unpack_jobs
+
+        expect(Kernel).to have_received(:system).with("tar", "-C", anything, "-xzf", tarball_path,  "--occurrence", "./jobs/", anything)
+      end
     end
   end
 end
