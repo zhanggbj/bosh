@@ -100,18 +100,20 @@ module Bosh::Cli::Command
             unpack_pattern = File.join(unpack_dir, "**", "*")
             log_files = Dir.glob(unpack_pattern).select{ |e| File.file? e }
 
-            log_files.each { |filename|
-              log_file = File.open(filename,"r")
+            log_files.each do |filename|
+              if filename.end_with? '.log'
+                log_file = File.open(filename,"r")
 
-              begin
-                say("[#{filename[unpack_dir.length, filename.length - unpack_dir.length]}]")
-                say(log_file.read)
-              ensure
-                log_file.close unless log_file.nil?
+                begin
+                  say("[#{filename[unpack_dir.length, filename.length - unpack_dir.length]}]")
+                  say(log_file.read)
+                ensure
+                  log_file.close unless log_file.nil?
+                end
+
+                nl
               end
-
-              nl
-            }
+            end
           }
         end
       end

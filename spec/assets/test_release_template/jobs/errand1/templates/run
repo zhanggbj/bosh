@@ -12,6 +12,7 @@ echo -n "<%= properties.errand1.stderr * properties.errand1.stderr_multiplier %>
 # Log files
 mkdir -p sys/log/errand1
 echo -n "<%= properties.errand1.logs.stdout %>" > sys/log/errand1/stdout.log
+echo -n "<%= properties.errand1.logs.stdout %>" > sys/log/errand1/stdout.log.1
 echo -n "<%= properties.errand1.logs.custom %>" > sys/log/custom.log
 
 # Delay
