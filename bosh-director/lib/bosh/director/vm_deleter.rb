@@ -9,17 +9,19 @@ module Bosh::Director
     end
 
     def delete_for_instance_plan(instance_plan)
-      instance_model = instance_plan.instance_model
+      instance_model = instance_plan.existing_instance
 
-      if instance_model.vm
-        delete_vm(instance_model.vm)
+      if instance_model.vm_cid
+        delete_vm(instance_model.vm_cid)
       end
+
+      instance_model.update(vm_cid: nil, agent_id: nil)
     end
 
-    def delete_vm(vm_model)
-      @logger.info('Deleting VM')
-      @error_ignorer.with_force_check { @cloud.delete_vm(vm_model.cid) }
-      vm_model.destroy
+    def delete_vm(vm_cid)
+      @error_ignorer.with_force_check do
+        @cloud.delete_vm(vm_cid)
+      end
     end
   end
 end

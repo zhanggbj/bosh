@@ -89,7 +89,9 @@ module Bosh::Director::Models
     job         { Sham.job }
     index       { Sham.index }
     vm          { Vm.make(deployment: object.deployment) }
-    state       { "started" }
+    state       { 'started' }
+    vm_cid      { Sham.vm_cid }
+    agent_id    { Sham.agent_id }
   end
 
   IpAddress.blueprint do

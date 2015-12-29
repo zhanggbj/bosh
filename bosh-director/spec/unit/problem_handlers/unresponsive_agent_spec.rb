@@ -25,7 +25,15 @@ module Bosh::Director
       deployment_model = Models::Deployment.make(manifest: YAML.dump(Bosh::Spec::Deployments.legacy_manifest))
 
       @vm = Models::Vm.create(cid: 'vm-cid', agent_id: 'agent-007', deployment: deployment_model)
-      @instance = Models::Instance.make(job: 'mysql_node', index: 0, vm: @vm, deployment: deployment_model, cloud_properties_hash: { 'foo' => 'bar' }, spec: {'networks' => networks})
+      @instance = Models::Instance.make(
+        job: 'mysql_node',
+        index: 0,
+        vm: @vm,
+        deployment: deployment_model,
+        cloud_properties_hash: { 'foo' => 'bar' },
+        spec: {'networks' => networks},
+        agent_id: 'agent-007'
+      )
     end
 
     let(:networks) { {'A' => {'ip' => '1.1.1.1'}, 'B' => {'ip' => '2.2.2.2'}, 'C' => {'ip' => '3.3.3.3'}} }
@@ -145,7 +153,7 @@ module Bosh::Director
         it 'recreates the VM' do
           allow(@agent).to receive(:ping).and_raise(RpcTimeout)
 
-          expect(@cloud).to receive(:delete_vm).with('vm-cid')
+          expect(@cloud).to receive(:delete_vm).with(@instance.vm_cid)
           expect(@cloud).
             to receive(:create_vm).with('agent-222', 'sc-302', { 'foo' => 'bar' }, networks, [], { 'key1' => 'value1' })
 
@@ -157,11 +165,11 @@ module Bosh::Director
           expect(fake_new_agent).to receive(:run_script).with('pre-start', {}).ordered
           expect(fake_new_agent).to receive(:start).ordered
 
-          expect(Models::Vm.find(agent_id: 'agent-007')).not_to be_nil
+          expect(Models::Instance.find(agent_id: 'agent-007')).not_to be_nil
 
           handler.apply_resolution(:recreate_vm)
 
-          expect(Models::Vm.find(agent_id: 'agent-007')).to be_nil
+          expect(Models::Instance.find(agent_id: 'agent-007')).to be_nil
         end
       end
     end

@@ -52,7 +52,15 @@ module Bosh::Director
       it 'recreates a VM' do
         prepare_deploy(manifest, manifest)
 
-        instance_model = Models::Instance.make(job: manifest['jobs'].first['name'], index: 0, vm: vm, deployment: deployment_model, cloud_properties_hash: { 'foo' => 'bar' }, spec: spec)
+        instance_model = Models::Instance.make(
+          job: manifest['jobs'].first['name'],
+          index: 0,
+          vm: vm,
+          deployment: deployment_model,
+          cloud_properties_hash: { 'foo' => 'bar' },
+          spec: spec,
+          agent_id: 'agent-007'
+        )
         vm.update(env: { 'key1' => 'value1' }, :instance => instance_model)
 
         allow(SecureRandom).to receive_messages(uuid: 'agent-222')
@@ -66,7 +74,7 @@ module Bosh::Director
         expect(fake_new_agent).to receive(:run_script).with('pre-start', {}).ordered
         expect(fake_new_agent).to receive(:start).ordered
 
-        expect(fake_cloud).to receive(:delete_vm).with('vm-cid')
+        expect(fake_cloud).to receive(:delete_vm).with(instance_model.vm_cid)
         expect(fake_cloud).
           to receive(:create_vm).
           with('agent-222', Bosh::Director::Models::Stemcell.all.first.cid, { 'foo' => 'bar' }, anything, [], { 'key1' => 'value1' }).
@@ -76,7 +84,7 @@ module Bosh::Director
 
         expect {
           handler.apply_resolution(:recreate_vm)
-        }.to change { Models::Vm.where(agent_id: 'agent-007').count }.from(1).to(0)
+        }.to change { Models::Instance.where(agent_id: 'agent-007').count }.from(1).to(0)
       end
 
       it 'deletes VM reference' do

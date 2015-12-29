@@ -46,7 +46,6 @@ describe Bosh::Director::VmCreator do
       logger
     )
     instance.bind_existing_instance_model(instance_model)
-    allow(instance).to receive(:apply_spec).and_return({})
     instance
   end
   let(:reservation) do
@@ -212,7 +211,7 @@ describe Bosh::Director::VmCreator do
 
   it 'should destroy the VM if the Config.keep_unreachable_vms flag is false' do
     Bosh::Director::Config.keep_unreachable_vms = false
-    expect(cloud).to receive(:create_vm)
+    expect(cloud).to receive(:create_vm).and_return('vm-cid')
     expect(cloud).to receive(:delete_vm)
 
     expect(instance).to receive(:update_trusted_certs).once.and_raise(Bosh::Clouds::VMCreationFailed.new(false))

@@ -292,6 +292,7 @@ module Bosh::Director
 
       def bind_to_vm_model(vm_model)
         @model.update(vm: vm_model)
+        @model.update(vm_cid: vm_model.cid)
         @vm.model = vm_model
         @vm.bound_instance = self
       end
