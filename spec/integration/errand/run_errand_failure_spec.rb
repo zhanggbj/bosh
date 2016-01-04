@@ -52,7 +52,7 @@ describe 'run errand failure', type: :integration, with_tmp_dir: true do
       expect(output).to include('Errand `fake-errand-name\' completed with error (exit code 23)')
       expect(output =~ /Logs saved in `(.*fake-errand-name\.0\..*\.tgz)'/).to_not(be_nil, @output)
       logs_file = Bosh::Spec::TarFileInspector.new($1)
-      expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./custom.log ./errand1/run.stderr.log ./errand1/run.stdout.log))
+      expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./custom.log ./errand1/run.stderr.log ./errand1/run.stdout.log ./errand1/stdout.log.1))
       expect(logs_file.smallest_file_size).to equal(0)
     end
   end
