@@ -304,7 +304,7 @@ describe 'run errand success', type: :integration, with_tmp_dir: true do
       it 'downloads errand logs and shows downloaded location' do
         expect(@output =~ /Logs saved in `(.*fake-errand-name\.0\..*\.tgz)'/).to_not(be_nil, @output)
         logs_file = Bosh::Spec::TarFileInspector.new($1)
-        expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./errand1/run.stderr.log ./errand1/run.stdout.log ./custom.log))
+        expect(logs_file.file_names).to match_array(%w(./errand1/stdout.log ./errand1/run.stderr.log ./errand1/run.stdout.log ./custom.log ./errand1/stdout.log.1))
         expect(logs_file.smallest_file_size).to be > 0
       end
 
