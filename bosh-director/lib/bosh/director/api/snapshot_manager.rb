@@ -76,8 +76,8 @@ module Bosh::Director
             index: instance.index,
             director_name: Config.name,
             director_uuid: Config.uuid,
-            agent_id: instance.vm.agent_id,
-            instance_id: instance.vm_id
+            agent_id: instance.agent_id,
+            instance_id: instance.vm_cid
         }
 
         instance.persistent_disks.each do |disk|

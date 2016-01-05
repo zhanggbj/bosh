@@ -17,7 +17,6 @@ module Bosh::Director
     def delete_vm(vm_cid)
       @logger.info('Deleting VM')
       @error_ignorer.with_force_check { @cloud.delete_vm(vm_cid) }
-      # vm_model.destroy
     end
   end
 end
