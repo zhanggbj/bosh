@@ -89,18 +89,14 @@ describe Bosh::Director::VmCreator do
       kind_of(String), 'stemcell-id', {'ram' => '2gb'}, network_settings, ['fake-disk-cid'], {}
     ).and_return('new-vm-cid')
 
-    expect(instance).to receive(:bind_to_vm_model) do
-      vm = Bosh::Director::Models::Vm.first
-      instance_model.update(vm: vm)
-    end
     expect(agent_client).to receive(:wait_until_ready)
     expect(instance).to receive(:update_trusted_certs)
     expect(instance).to receive(:update_cloud_properties!)
 
-    subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
-
-    expect(Bosh::Director::Models::Vm.all.size).to eq(1)
-    expect(Bosh::Director::Models::Vm.first.cid).to eq('new-vm-cid')
+    expect {
+      subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
+    }.to change {
+        Bosh::Director::Models::Instance.where(vm_cid: 'new-vm-cid').count}.from(0).to(1)
   end
 
   it 'sets vm metadata' do
@@ -139,21 +135,22 @@ describe Bosh::Director::VmCreator do
                                              { 'credentials' =>
                                                { 'crypt_key' => kind_of(String),
                                                  'sign_key' => kind_of(String)}}})
+                                        .and_return('new-vm-cid')
 
     subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
 
-    expect(Bosh::Director::Models::Vm.all.size).to eq(1)
-    vm = Bosh::Director::Models::Vm.first
+    instance_with_new_vm = Bosh::Director::Models::Instance.find(vm_cid: 'new-vm-cid')
+    expect(instance_with_new_vm).not_to be_nil
 
-    expect(Base64.strict_decode64(vm.credentials['crypt_key'])).to be_kind_of(String)
-    expect(Base64.strict_decode64(vm.credentials['sign_key'])).to be_kind_of(String)
+    expect(Base64.strict_decode64(instance_with_new_vm.credentials['crypt_key'])).to be_kind_of(String)
+    expect(Base64.strict_decode64(instance_with_new_vm.credentials['sign_key'])).to be_kind_of(String)
 
     expect {
-      Base64.strict_decode64(vm.credentials['crypt_key'] + 'foobar')
+      Base64.strict_decode64(instance_with_new_vm.credentials['crypt_key'] + 'foobar')
     }.to raise_error(ArgumentError, /invalid base64/)
 
     expect {
-      Base64.strict_decode64(vm.credentials['sign_key'] + 'barbaz')
+      Base64.strict_decode64(instance_with_new_vm.credentials['sign_key'] + 'barbaz')
     }.to raise_error(ArgumentError, /invalid base64/)
   end
 
@@ -161,9 +158,10 @@ describe Bosh::Director::VmCreator do
     expect(cloud).to receive(:create_vm).once.and_raise(Bosh::Clouds::VMCreationFailed.new(true))
     expect(cloud).to receive(:create_vm).once.and_return('fake-vm-cid')
 
-    subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
-
-    expect(Bosh::Director::Models::Vm.first.cid).to eq('fake-vm-cid')
+    expect {
+      subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
+    }.to change {
+        Bosh::Director::Models::Instance.where(vm_cid: 'fake-vm-cid').count}.from(0).to(1)
   end
 
   it 'should not retry creating a VM if it is told it is not a retryable error' do
@@ -184,26 +182,9 @@ describe Bosh::Director::VmCreator do
     }.to raise_error(Bosh::Clouds::VMCreationFailed)
   end
 
-  it 'should have deep copy of environment' do
-    Bosh::Director::Config.encryption = true
-    env_id = nil
-
-    expect(cloud).to receive(:create_vm) do |*args|
-      env_id = args[5].object_id
-    end
-
-    subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
-
-    expect(cloud).to receive(:create_vm) do |*args|
-      expect(args[5].object_id).not_to eq(env_id)
-    end
-
-    subject.create_for_instance_plan(instance_plan, ['fake-disk-cid'])
-  end
-
   it 'should not destroy the VM if the Config.keep_unreachable_vms flag is true' do
     Bosh::Director::Config.keep_unreachable_vms = true
-    expect(cloud).to receive(:create_vm)
+    expect(cloud).to receive(:create_vm).and_return('new-vm-cid')
     expect(cloud).to_not receive(:delete_vm)
 
     expect(instance).to receive(:update_trusted_certs).once.and_raise(Bosh::Clouds::VMCreationFailed.new(false))
@@ -215,7 +196,7 @@ describe Bosh::Director::VmCreator do
 
   it 'should destroy the VM if the Config.keep_unreachable_vms flag is false' do
     Bosh::Director::Config.keep_unreachable_vms = false
-    expect(cloud).to receive(:create_vm)
+    expect(cloud).to receive(:create_vm).and_return('new-vm-cid')
     expect(cloud).to receive(:delete_vm)
 
     expect(instance).to receive(:update_trusted_certs).once.and_raise(Bosh::Clouds::VMCreationFailed.new(false))

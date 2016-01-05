@@ -39,7 +39,6 @@ module Bosh::Director::DeploymentPlan
     let(:vm) { Vm.new }
 
     let(:instance_model) { Bosh::Director::Models::Instance.make(deployment: deployment, bootstrap: true, uuid: 'uuid-1') }
-    let(:vm_model) { Bosh::Director::Models::Vm.make }
 
     let(:current_state) { {'current' => 'state'} }
     let(:desired_instance) { DesiredInstance.new(job, current_state, plan, availability_zone, 1)}
@@ -146,10 +145,9 @@ module Bosh::Director::DeploymentPlan
       let(:agent_client) { instance_double('Bosh::Director::AgentClient') }
 
       before do
-        allow(BD::AgentClient).to receive(:with_vm_credentials_and_agent_id).with(vm_model.credentials, vm_model.agent_id).and_return(agent_client)
+        allow(BD::AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance_model.credentials, instance_model.agent_id).and_return(agent_client)
         instance.bind_existing_instance_model(instance_model)
         instance.bind_unallocated_vm
-        instance.bind_to_vm_model(vm_model)
       end
 
       describe 'apply_vm_state' do
@@ -315,6 +313,8 @@ module Bosh::Director::DeploymentPlan
     end
 
     describe '#bind_to_vm_model' do
+      let(:vm_model) { Bosh::Director::Models::Vm.make }
+
       before do
         instance.bind_unallocated_vm
         instance.bind_to_vm_model(vm_model)

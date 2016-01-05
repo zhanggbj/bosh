@@ -40,8 +40,7 @@ module Bosh::Director
     end
     let(:deployment) { Bosh::Director::Models::Deployment.make(name: 'fake-deployment') }
     let(:instance) { DeploymentPlan::Instance.create_from_job(job, 0, instance_state, plan, {}, nil, logger) }
-    let(:instance_model) { Models::Instance.make(vm: vm_model, state: instance_model_state) }
-    let(:vm_model) { Models::Vm.make(cid: 'vm234') }
+    let(:instance_model) { Models::Instance.make(state: instance_model_state) }
     let(:blobstore) { instance_double(Bosh::Blobstore::Client) }
     let(:agent_client) { instance_double(AgentClient) }
     let(:rendered_job_templates_cleaner) { instance_double(RenderedJobTemplatesCleaner) }
@@ -52,7 +51,7 @@ module Bosh::Director
 
     describe 'applying state' do
       before do
-        allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(vm_model.credentials, vm_model.agent_id).and_return(agent_client)
+        allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance_model.credentials_json, instance_model.agent_id).and_return(agent_client)
         allow(agent_client).to receive(:apply)
         allow(agent_client).to receive(:run_script)
         allow(agent_client).to receive(:start)

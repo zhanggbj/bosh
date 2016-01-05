@@ -97,12 +97,25 @@ module Bosh::Director::Models
     end
 
     def env
-      if vm
-        @env = vm.env
-      else
-        @env = {}
-      end
-      @env
+      vm_env
+    end
+
+    def vm_env
+      return nil if vm_env_json.nil?
+      Yajl::Parser.parse(vm_env_json)
+    end
+
+    def vm_env=(vm_env_hash)
+      self.vm_env_json = Yajl::Encoder.encode(vm_env_hash)
+    end
+
+    def credentials
+      return nil if credentials_json.nil?
+      Yajl::Parser.parse(credentials_json)
+    end
+
+    def credentials=(spec)
+      self.credentials_json = Yajl::Encoder.encode(spec)
     end
   end
 

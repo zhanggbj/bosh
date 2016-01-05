@@ -17,7 +17,7 @@ module Bosh::Director
             configure_instance_plan(instance_plan)
             @instance_reuser.add_in_use_instance(instance_plan.instance, stemcell)
           else
-            @logger.info("Reusing compilation VM `#{instance.vm.model.cid}' for stemcell `#{stemcell.model.desc}'")
+            @logger.info("Reusing compilation VM `#{instance.model.vm_cid}' for stemcell `#{stemcell.model.desc}'")
           end
 
           yield instance

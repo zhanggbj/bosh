@@ -196,7 +196,7 @@ module Bosh::Director
 
       def update_trusted_certs
         agent_client.update_settings(Config.trusted_certs)
-        @model.vm.update(:trusted_certs_sha1 => Digest::SHA1.hexdigest(Config.trusted_certs))
+        @model.update(:trusted_certs_sha1 => Digest::SHA1.hexdigest(Config.trusted_certs))
       end
 
       def update_cloud_properties!
@@ -204,7 +204,7 @@ module Bosh::Director
       end
 
       def agent_client
-        @agent_client ||= AgentClient.with_vm_credentials_and_agent_id(@model.vm.credentials, @model.vm.agent_id)
+        @agent_client ||= AgentClient.with_vm_credentials_and_agent_id(@model.credentials_json, @model.agent_id)
       end
 
       ##
