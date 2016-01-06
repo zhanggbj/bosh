@@ -74,7 +74,7 @@ module Bosh::Director
         end
       end
 
-      context 'when disk is attached do different VM' do
+      context 'when disk is attached to different VM' do
         let(:disk_owners) { { disk.disk_cid => owner_vms } }
         let(:owner_vms) { ['different-vm-cid'] }
 

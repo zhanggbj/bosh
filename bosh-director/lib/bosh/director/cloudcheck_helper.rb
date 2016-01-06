@@ -129,15 +129,6 @@ module Bosh::Director
       raise Bosh::Director::ProblemHandlerError, message
     end
 
-    def instance_name(vm)
-      instance = vm.instance
-      return "Unknown VM" if instance.nil?
-
-      job = instance.job || "unknown job"
-      index = instance.index || "unknown index"
-      "#{job}/#{index}"
-    end
-
     def agent_client(vm_credentials, agent_id, timeout = DEFAULT_AGENT_TIMEOUT, retries = 0)
       options = {
         :timeout => timeout,
