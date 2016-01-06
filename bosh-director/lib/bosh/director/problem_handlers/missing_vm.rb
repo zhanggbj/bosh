@@ -5,9 +5,9 @@ module Bosh::Director
       register_as :missing_vm
       auto_resolution :recreate_vm
 
-      def initialize(instance_uuid, data)
+      def initialize(instance_id, data)
         super
-        @instance = Models::Instance.find(uuid: instance_uuid)
+        @instance = Models::Instance.find(id: instance_id)
       end
 
       resolution :ignore do
@@ -16,7 +16,7 @@ module Bosh::Director
       end
 
       resolution :recreate_vm do
-        plan { "Recreate VM for '#{@instance.to_s})'" }
+        plan { "Recreate VM for '#{@instance.to_s}'" }
         action { recreate_vm(@instance) }
       end
 

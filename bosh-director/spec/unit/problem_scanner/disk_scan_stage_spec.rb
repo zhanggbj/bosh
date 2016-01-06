@@ -30,8 +30,7 @@ module Bosh::Director
       let!(:disk) do
         Models::PersistentDisk.make(active: disk_state, instance_id: instance.id, disk_cid: 'fake-disk-cid')
       end
-      let!(:instance) { Models::Instance.make(deployment: deployment, job: 'fake-job', index: 0, vm: vm) }
-      let!(:vm) { Models::Vm.make(cid: 'fake-vm-cid', agent_id: 'fake-agent-id', deployment: deployment) }
+      let!(:instance) { Models::Instance.make(deployment: deployment, job: 'fake-job', index: 0, vm_cid: 'fake-vm-cid') }
       let(:disk_owners) { {'fake-disk-cid' => ['fake-vm-cid']} }
       before { allow(cloud).to receive(:has_disk?).and_return(true) }
 

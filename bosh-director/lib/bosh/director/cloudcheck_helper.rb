@@ -40,7 +40,6 @@ module Bosh::Director
 
     def recreate_vm(instance)
       @logger.debug("Recreating Vm: #{@instance.to_s})")
-      existing_agent_id = instance.agent_id
       existing_vm_env = instance.vm_env
 
       validate_spec(instance.spec)

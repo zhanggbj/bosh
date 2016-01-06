@@ -5,17 +5,17 @@ module Bosh::Director
     before do
       deployment = Models::Deployment.make(name: 'deployment')
 
-      instance = Models::Instance.make(deployment: deployment, job: 'job1', index: 0, uuid: 'uuid-1')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.uuid, type: 'unresponsive_agent')
+      instance = Models::Instance.make(deployment: deployment, job: 'job1', index: 0)
+      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'unresponsive_agent')
 
-      instance = Models::Instance.make(deployment: deployment, job: 'job1', index: 1, uuid: 'uuid-2')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.uuid, type: 'missing_vm')
+      instance = Models::Instance.make(deployment: deployment, job: 'job1', index: 1)
+      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'missing_vm')
 
-      instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 0, uuid: 'uuid-3')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.uuid, type: 'unbound')
+      instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 0)
+      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'unbound')
 
-      instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 1, uuid: 'uuid-4')
-      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.uuid, type: 'missing_vm')
+      instance = Models::Instance.make(deployment: deployment, job: 'job2', index: 1)
+      Models::DeploymentProblem.make(deployment: deployment, resource_id: instance.id, type: 'missing_vm')
       Models::PersistentDisk.make(instance: instance)
     end
 

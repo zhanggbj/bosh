@@ -14,6 +14,7 @@ Sham.define do
   stemcell_cid  { |index| "stemcell-cid-#{index}" }
   blobstore_id  { |index| "blobstore-id-#{index}" }
   agent_id      { |index| "agent-id-#{index}" }
+  uuid          { |index| "uuid-#{index}" }
   index         { |index| index }
   description   { |index| "description #{index}" }
   type          { |index| "type #{index}" }
@@ -92,6 +93,7 @@ module Bosh::Director::Models
     state       { 'started' }
     vm_cid      { Sham.vm_cid }
     agent_id    { Sham.agent_id }
+    uuid        { Sham.uuid}
   end
 
   IpAddress.blueprint do

@@ -5,9 +5,9 @@ module Bosh::Director
       register_as :unresponsive_agent
       auto_resolution :ignore
 
-      def initialize(instance_uuid, data)
+      def initialize(instance_id, data)
         super
-        @instance = Models::Instance.find(uuid: instance_uuid)
+        @instance = Models::Instance.find(id: instance_id)
 
         unless @instance.vm_cid
           handler_error("VM `#{@instance.vm_cid}' is no longer in the database")

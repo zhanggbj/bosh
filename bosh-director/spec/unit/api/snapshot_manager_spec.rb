@@ -150,7 +150,6 @@ module Bosh::Director
         let(:metadata) {
           {
             agent_id: 'agent0',
-            instance_id: 'vm-cid0',
             director_name: 'Test Director',
             director_uuid: Config.uuid,
             deployment: 'deployment',

@@ -101,7 +101,7 @@ module Bosh::Director::Models
     end
 
     def vm_env
-      return nil if vm_env_json.nil?
+      return {} if vm_env_json.nil?
       Yajl::Parser.parse(vm_env_json)
     end
 

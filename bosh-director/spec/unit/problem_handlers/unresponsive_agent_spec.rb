@@ -4,7 +4,7 @@ module Bosh::Director
   describe ProblemHandlers::UnresponsiveAgent do
 
     def make_handler(instance, cloud, _, data = {})
-      handler = ProblemHandlers::UnresponsiveAgent.new(instance.uuid, data)
+      handler = ProblemHandlers::UnresponsiveAgent.new(instance.id, data)
       allow(handler).to receive(:cloud).and_return(cloud)
       allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials_json, @instance.agent_id, anything).and_return(@agent)
       allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials_json, @instance.agent_id).and_return(@agent)
@@ -21,6 +21,7 @@ module Bosh::Director
       @instance = Models::Instance.make(
         job: 'mysql_node',
         index: 0,
+        uuid: 'uuid-1',
         vm_cid: 'vm-cid',
         deployment: deployment_model,
         cloud_properties_hash: { 'foo' => 'bar' },
@@ -36,12 +37,12 @@ module Bosh::Director
     end
 
     it 'registers under unresponsive_agent type' do
-      handler = ProblemHandlers::Base.create_by_type(:unresponsive_agent, @instance.uuid, {})
+      handler = ProblemHandlers::Base.create_by_type(:unresponsive_agent, @instance.id, {})
       expect(handler).to be_kind_of(ProblemHandlers::UnresponsiveAgent)
     end
 
     it 'has well-formed description' do
-      expect(handler.description).to eq('mysql_node/ (0) (vm-cid) is not responding')
+      expect(handler.description).to eq('mysql_node/uuid-1 (0) (vm-cid) is not responding')
     end
 
     describe 'reboot_vm resolution' do

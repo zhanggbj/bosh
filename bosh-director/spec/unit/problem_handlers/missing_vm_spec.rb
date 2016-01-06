@@ -16,7 +16,7 @@ module Bosh::Director
         vm_cid: 'vm-cid'
       )
     end
-    let(:handler) { ProblemHandlers::Base.create_by_type(:missing_vm, instance.uuid, {}) }
+    let(:handler) { ProblemHandlers::Base.create_by_type(:missing_vm, instance.id, {}) }
     let(:spec) do
       {
         'deployment' => 'simple',

@@ -52,10 +52,7 @@ module Bosh::Director::ProblemScanner
       end
 
       disk_cid = disk.disk_cid
-      vm_cid = nil
-      if disk.instance && disk.instance.vm
-        vm_cid = disk.instance.vm.cid
-      end
+      vm_cid = disk.instance.vm_cid if disk.instance
 
       if vm_cid.nil?
         # With the db dependencies this should not happen.
@@ -68,7 +65,7 @@ module Bosh::Director::ProblemScanner
       # active disk is not mounted or mounted more than once -or-
       # the disk is mounted on a vm that is different form the record.
       if owner_vms.size != 1 || owner_vms.first != vm_cid
-        @logger.info("Found problem in mount info: " +
+        @logger.debug("Found problem in mount info: " +
           "active disk #{disk_cid} mounted on " +
           "#{owner_vms.join(', ')}")
         @problem_register.problem_found(:mount_info_mismatch, disk, owner_vms: owner_vms)
