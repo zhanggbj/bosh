@@ -41,7 +41,6 @@ module Bosh::Director
       bind_stemcells
       bind_templates
       bind_properties
-      bind_unallocated_vms
       bind_instance_networks
       bind_dns
       bind_links
@@ -79,14 +78,6 @@ module Bosh::Director
         end
       end
       current_states_by_existing_instance
-    end
-
-    # Looks at every job instance in the deployment plan and binds it to the
-    # instance database model (idle VM is also created in the appropriate
-    # resource pool if necessary)
-    # @return [void]
-    def bind_unallocated_vms
-      @deployment_plan.jobs_starting_on_deploy.each(&:bind_unallocated_vms)
     end
 
     def bind_instance_networks

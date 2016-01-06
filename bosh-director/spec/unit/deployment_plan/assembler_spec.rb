@@ -101,18 +101,6 @@ module Bosh::Director
         end
       end
 
-      it 'binds unallocated VMs for each job' do
-        j1 = instance_double('Bosh::Director::DeploymentPlan::Job')
-        j2 = instance_double('Bosh::Director::DeploymentPlan::Job')
-        expect(deployment_plan).to receive(:jobs_starting_on_deploy).and_return([j1, j2])
-
-        [j1, j2].each do |job|
-          expect(job).to receive(:bind_unallocated_vms).with(no_args).ordered
-        end
-
-        assembler.bind_models
-      end
-
       it 'configures dns' do
         expect(dns_manager).to receive(:configure_nameserver)
         assembler.bind_models

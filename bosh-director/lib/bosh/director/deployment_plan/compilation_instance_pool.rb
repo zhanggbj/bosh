@@ -95,8 +95,6 @@ module Bosh::Director
       end
 
       def configure_instance_plan(instance_plan)
-        instance_plan.instance.bind_unallocated_vm
-
         @deployment_plan.ip_provider.reserve(instance_plan.network_plans.first.reservation)
         @vm_creator.create_for_instance_plan(instance_plan, [])
       end
