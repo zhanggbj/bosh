@@ -38,8 +38,6 @@ module Bosh::Director
       instance_plans_for_obsolete_jobs = instance_planner.plan_obsolete_jobs(desired_jobs, @deployment_plan.existing_instances)
       instance_plans_for_obsolete_jobs.map(&:existing_instance).each { |existing_instance| @deployment_plan.mark_instance_for_deletion(existing_instance) }
 
-      mark_unknown_vms_for_deletion
-
       bind_stemcells
       bind_templates
       bind_properties
@@ -81,19 +79,6 @@ module Bosh::Director
         end
       end
       current_states_by_existing_instance
-    end
-
-    def mark_unknown_vms_for_deletion
-      @deployment_plan.vm_models.select { |vm| vm.instance.nil? }.each do |vm_model|
-        # VM without an instance should not exist any more. But we still
-        # delete those VMs for backwards compatibility in case if it was ever
-        # created incorrectly.
-        # It also means that it was created before global networking
-        # and should not have any network reservations in DB,
-        # so we don't worry about releasing its IPs.
-        @logger.debug('Marking VM for deletion')
-        @deployment_plan.mark_vm_for_deletion(vm_model)
-      end
     end
 
     # Looks at every job instance in the deployment plan and binds it to the
