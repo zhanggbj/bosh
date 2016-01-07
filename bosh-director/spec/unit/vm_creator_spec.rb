@@ -73,8 +73,8 @@ describe Bosh::Director::VmCreator do
     job.templates << template
     job
   end
-  let(:vm) { nil }
-  let(:instance_model) { Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, vm: vm, index: 5, job: 'fake-job', deployment: deployment) }
+
+  let(:instance_model) { Bosh::Director::Models::Instance.make(uuid: SecureRandom.uuid, index: 5, job: 'fake-job', deployment: deployment) }
 
   before do
     allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud)

@@ -3,7 +3,6 @@ require 'securerandom'
 module Bosh::Director::Models
   class Instance < Sequel::Model(Bosh::Director::Config.db)
     many_to_one :deployment
-    many_to_one :vm
     one_to_many :persistent_disks
     one_to_many :rendered_templates_archives
     one_to_many :ip_addresses
@@ -12,7 +11,6 @@ module Bosh::Director::Models
     def validate
       validates_presence [:deployment_id, :job, :index, :state]
       validates_unique [:deployment_id, :job, :index]
-      validates_unique [:vm_id] if vm_id
       validates_integer :index
       validates_includes %w(started stopped detached), :state
     end

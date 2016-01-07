@@ -89,7 +89,6 @@ module Bosh::Director::Models
     deployment  { Deployment.make }
     job         { Sham.job }
     index       { Sham.index }
-    vm          { Vm.make(deployment: object.deployment) }
     state       { 'started' }
     vm_cid      { Sham.vm_cid }
     agent_id    { Sham.agent_id }
