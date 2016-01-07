@@ -24,7 +24,6 @@ module Bosh::Director
         allow(deployment_plan).to receive(:jobs).and_return([])
         allow(deployment_plan).to receive(:existing_instances).and_return([])
         allow(deployment_plan).to receive(:candidate_existing_instances).and_return([])
-        allow(deployment_plan).to receive(:vm_models).and_return([])
         allow(deployment_plan).to receive(:resource_pools).and_return(nil)
         allow(deployment_plan).to receive(:stemcells).and_return({})
         allow(deployment_plan).to receive(:jobs_starting_on_deploy).and_return([])

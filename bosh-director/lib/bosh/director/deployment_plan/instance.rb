@@ -29,9 +29,6 @@ module Bosh::Director
 
       attr_reader :availability_zone
 
-      # @return [DeploymentPlan::Vm] Associated resource pool VM
-      attr_reader :vm
-
       attr_reader :existing_network_reservations
 
       def self.create_from_job(job, index, virtual_state, deployment_model, instance_state, availability_zone, logger)
