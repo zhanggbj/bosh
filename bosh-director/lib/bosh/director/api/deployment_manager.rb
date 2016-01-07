@@ -41,7 +41,7 @@ module Bosh::Director
       def deployment_instances_to_json(deployment)
         instances = []
         filters = {:deployment_id => deployment.id}
-        Models::Instance.filter(filters).all.each do |instance|
+        Models::Instance.filter(filters).exclude(vm_cid: nil).each do |instance|
           instances << {
             'agent_id' => instance.agent_id,
             'cid' => instance.vm_cid,
