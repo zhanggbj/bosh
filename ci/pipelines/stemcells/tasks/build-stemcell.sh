@@ -13,9 +13,9 @@ set_up_vagrant_private_key() {
   ssh-add $key_path
 }
 
-clean_vagrant() {
-  vagrant destroy remote -f || true
-}
+#clean_vagrant() {
+#  vagrant destroy remote -f || true
+#}
 
 get_ip_from_vagrant_ssh_config() {
   config=$(vagrant ssh-config remote)
