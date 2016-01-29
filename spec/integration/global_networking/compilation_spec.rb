@@ -45,6 +45,36 @@ describe 'global networking', type: :integration do
     end
   end
 
+  context 'when reuse_compilation_vms is set to true' do
+    let(:cloud_config_hash) do
+      cloud_config_hash = Bosh::Spec::Deployments.simple_cloud_config
+      cloud_config_hash['compilation']['reuse_compilation_vms'] = true
+      cloud_config_hash['compilation']['network'] = 'compilation'
+      cloud_config_hash['compilation']['workers'] = 2
+      cloud_config_hash['networks'] << {
+          'name' => 'compilation',
+          'subnets' => [
+              'range' => '192.168.2.0/24',
+              'gateway' => '192.168.2.1',
+              'dns' => ['8.8.8.8'],
+              'static' => [],
+              'reserved' => ['192.168.2.4-192.168.2.254'],
+          ]
+      }
+      cloud_config_hash
+    end
+
+    it 'honors the worker property to limits the number of vms' do
+      upload_cloud_config(cloud_config_hash: cloud_config_hash)
+      manifest_hash = Bosh::Spec::NetworkingManifest.deployment_manifest(
+          instances: 1, template: 'job_with_many_packages')
+      deploy_simple_manifest(manifest_hash: manifest_hash)
+
+      #2 for the compilation vms, one for the deployed instance
+      expect(current_sandbox.cpi.invocations_for_method('create_vm').count).to eq(3)
+    end
+  end
+
   context 'when compilation pool configuration contains az information' do
 
     let(:cloud_config_hash) do
