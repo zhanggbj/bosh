@@ -141,6 +141,7 @@ module Bosh::Dev
 
       BATS_ORIGIN = 'git@github.com:cloudfoundry/bosh-acceptance-tests.git'
       BATS_STABLE_BRANCH = 'master'
+      BATS_DEV_BRANCH = 'develop'
 
       def initialize(logger)
         super('Promote BATs submodule to master', logger)
@@ -153,6 +154,7 @@ module Bosh::Dev
       def promote(stage_args)
         candidate_build_number = stage_args.fetch(:candidate_build_number)
         @promoter.promote(bat_sha_to_promote(candidate_build_number), BATS_STABLE_BRANCH, BATS_ORIGIN)
+        @merger.merge(BATS_STABLE_BRANCH, BATS_DEV_BRANCH, 'Merge master to develop')
       end
 
       # returns true if the stable tag's sha has been merged back to the feature branch
@@ -170,7 +172,6 @@ module Bosh::Dev
         final_release_sha = @tagger.stable_tag_sha(candidate_build_number)
         stdout, stderr, status = exec_cmd("git ls-tree #{final_release_sha} -- bat | awk '{ print $3 }'")
         raise "Failed to get BAT sha to promote: stdout: '#{stdout}', stderr: '#{stderr}'" unless status.success?
-
         stdout.strip
       end
     end

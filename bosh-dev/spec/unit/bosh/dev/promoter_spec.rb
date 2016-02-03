@@ -117,6 +117,16 @@ module Bosh::Dev
 
           promoter.promote
         end
+
+        it 'merges master to develop' do
+          expect(git_branch_merger).to receive(:merge).with(
+            'master',
+            'develop',
+            'Merge master to develop'
+          ).ordered
+
+          promoter.promote
+        end
       end
 
       context 'when the current sha has been promoted before' do
@@ -132,6 +142,16 @@ module Bosh::Dev
           promoter.promote
 
           expect(log_string).to include('Skipping Apply, Promote, Tag & Push promotion stage')
+        end
+
+        it 'does not merge master to develop' do
+          expect(git_branch_merger).to_not receive(:merge).with(
+              'master',
+              'develop',
+              'Merge master to develop'
+            ).ordered
+
+          promoter.promote
         end
 
         it 'still attempts to promote the artifacts' do
