@@ -6,7 +6,9 @@ module Bosh::Cli::Command
     desc 'Download the current cloud config for the director'
 
     def show
+      puts "=========== CloudConfig. pre auth_required"
       auth_required
+      puts "=========== CloudConfig. post auth_required"
       show_current_state
 
       config = director.get_cloud_config

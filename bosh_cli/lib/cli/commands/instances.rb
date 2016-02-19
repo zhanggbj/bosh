@@ -9,7 +9,10 @@ module Bosh::Cli::Command
     option '--failing', "Only show failing ones"
     def list
       auth_required
+      puts "==========================> post auth_required"
       deployment_required
+      puts "==========================> post deployment_required"
+
       manifest = Bosh::Cli::Manifest.new(deployment, director)
       manifest.load
       deployment_name = manifest.name

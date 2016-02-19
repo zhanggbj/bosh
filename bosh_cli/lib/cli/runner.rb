@@ -156,8 +156,14 @@ module Bosh::Cli
       opts.on("-h", "--help", "here you go") do
         @args << 'help'
       end
+      opts.on("-c", "--ca-cert FILE", "To be implemented") do |file|
+        @options[:ca_cert] = file
+      end
 
       @args = @option_parser.order!(@args)
+
+      puts "============================= args: #{@args}"
+      puts "============================== options: #{@options}"
     end
 
     def plugins_glob; "bosh/cli/commands/*.rb"; end

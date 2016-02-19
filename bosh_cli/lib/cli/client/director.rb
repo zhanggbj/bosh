@@ -778,6 +778,8 @@ module Bosh
         end
 
         def try_to_perform_http_request(method, uri, payload, headers, num_retries, retry_wait_interval, &response_reader)
+          puts "=========== try_to_perform_http_request method: #{method}, uri: #{uri}"
+
           num_retries.downto(1) do |n|
             begin
               return perform_http_request(method, uri, payload, headers, &response_reader)
@@ -851,6 +853,7 @@ module Bosh
                OpenSSL::X509::StoreError => e
 
           if e.is_a?(OpenSSL::SSL::SSLError) && e.message.include?('certificate verify failed')
+            puts "======== 873"
             err("Invalid SSL Cert for '#{uri}': #{e.message}")
           end
           raise DirectorInaccessible, "cannot access director (#{e.message})"

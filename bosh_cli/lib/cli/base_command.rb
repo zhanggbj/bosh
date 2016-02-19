@@ -113,20 +113,26 @@ module Bosh::Cli
 
       def credentials
         return @credentials if @credentials
-
+        # puts "===================* auth info: #{auth_info.pretty_inspect}"
         if auth_info.uaa?
+          # puts "==================== auth info uaa"
           token_decoder = Client::Uaa::TokenDecoder.new
           uaa_token_provider = Client::Uaa::TokenProvider.new(auth_info, config, token_decoder, target)
           @credentials = Client::UaaCredentials.new(uaa_token_provider)
         elsif username && password
+          # puts "==================== !auth info uaa"
           @credentials = Client::BasicCredentials.new(username, password)
         end
-
         @credentials
       end
 
     def target_name
       options[:target] || config.target_name || target_url
+    end
+
+    def ca_cert
+      # options[:ca_cert] || config.ca_cert(target)
+      config.ca_cert(target)
     end
 
     def cache_dir
@@ -145,7 +151,6 @@ module Bosh::Cli
 
     def auth_info
       @auth_info ||= begin
-        ca_cert = config.ca_cert(target)
         director_client = Client::Director.new(target, nil, ca_cert: ca_cert)
         Client::Uaa::AuthInfo.new(director_client, ENV, ca_cert)
       end
