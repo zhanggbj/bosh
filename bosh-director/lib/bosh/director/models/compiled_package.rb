@@ -5,8 +5,7 @@ module Bosh::Director::Models
     # Creates a dependency_key from a list of dependencies
     # Input MUST include immediate & transitive dependencies
     def self.create_dependency_key(transitive_dependencies)
-      key = transitive_dependencies.to_a.sort_by(&:name).map { |p| [p.name, p.version]}
-      Yajl::Encoder.encode(key)
+      Bosh::Director::DependencyKeyGenerator.new.generate_from_models(transitive_dependencies)
     end
 
     # Creates a 'unique' key to use in the global package cache
