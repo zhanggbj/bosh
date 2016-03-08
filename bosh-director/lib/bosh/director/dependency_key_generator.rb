@@ -1,8 +1,8 @@
 module Bosh
   module Director
     class DependencyKeyGenerator
-      def generate_from_models(packages)
-        package_hashes = packages.map do |package|
+      def generate_from_models(package, release_version)
+        package_hashes = transitive_dependencies(package, release_version).map do |package|
           {
             'name' => package.name,
             'version' => package.version,
@@ -13,6 +13,7 @@ module Bosh
         package_hashes.map do |package_hash|
           arrayify(package_hash, package_hashes.dup)
         end.to_s.gsub(' ', '')
+
       end
 
       def generate_from_manifest(package_name, compiled_packages)
@@ -21,13 +22,32 @@ module Bosh
 
         package['dependencies'].map do |dependency_name|
           arrayify(find_package_hash(dependency_name), all_packages.dup)
-        end.to_s.gsub(' ', '')
+        end.to_s.gsub(' ','')
 
       end
 
       private
 
       attr_reader :all_packages
+
+      def transitive_dependencies(package, release_version)
+        dependency_set = Set.new
+        dependencies(package, release_version).each do |dependency|
+          dependency_set << dependency
+          dependency_set.merge(transitive_dependencies(dependency, release_version))
+        end
+        dependency_set
+      end
+
+      def dependencies(package, release_version)
+        package.dependency_set.map { |package_name| package_by_name_and_release_version(package_name, release_version) }.to_set
+      end
+
+      def package_by_name_and_release_version(package_name, release_version)
+        release_version.packages.find do |p|
+          p.name == package_name
+        end
+      end
 
       def arrayify(package, remaining_packages)
         remaining_packages.delete(package)

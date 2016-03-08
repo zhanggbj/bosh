@@ -2,12 +2,6 @@ module Bosh::Director::Models
   class CompiledPackage < Sequel::Model(Bosh::Director::Config.db)
     many_to_one :package
 
-    # Creates a dependency_key from a list of dependencies
-    # Input MUST include immediate & transitive dependencies
-    def self.create_dependency_key(transitive_dependencies)
-      Bosh::Director::DependencyKeyGenerator.new.generate_from_models(transitive_dependencies)
-    end
-
     # Creates a 'unique' key to use in the global package cache
     def self.create_cache_key(package, transitive_dependencies, stemcell_sha1)
       dependency_fingerprints = transitive_dependencies.to_a.sort_by(&:name).map {|p| p.fingerprint }
