@@ -769,7 +769,7 @@ module Bosh::Director
           ]
         }
 
-        expect(described_class.redact_properties!(manifest_obj)).to eq({
+        expect(described_class.redact_properties(manifest_obj)).to eq({
           'name' => 'test_name',
           'uuid' => '12324234234234234234',
           'env' => {
@@ -826,7 +826,7 @@ module Bosh::Director
             }
           }
 
-          expect(described_class.redact_properties!(manifest_obj)).to eq({
+          expect(described_class.redact_properties(manifest_obj)).to eq({
                 'jobs' => [
                   {
                     'name' => "test_job",
@@ -871,7 +871,7 @@ module Bosh::Director
           ]
         }
 
-        expect(described_class.redact_properties!(manifest_obj)).to eq(manifest_obj)
+        expect(described_class.redact_properties(manifest_obj)).to eq(manifest_obj)
       end
     end
   end

@@ -9,14 +9,9 @@ module Bosh::Director
   class Changeset
     KEY_NAME = 'name'
 
-    REDACT_KEY_NAMES = %w(
-      properties
-      bosh
-    )
-
     def initialize(before, after, redacted_before = nil, redacted_after = nil)
-      @redacted_before = redacted_before.nil? ? Changeset.redact_properties!(Bosh::Common::DeepCopy.copy(before)) : redacted_before
-      @redacted_after = redacted_after.nil? ? Changeset.redact_properties!(Bosh::Common::DeepCopy.copy(after)) : redacted_after
+      @redacted_before = redacted_before.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(before)) : redacted_before
+      @redacted_after = redacted_after.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(after)) : redacted_after
 
       @before = before
       @after = after
@@ -28,41 +23,6 @@ module Bosh::Director
       else
         @merged = @after
       end
-    end
-
-    def self.redact_properties!(obj, redact_key_is_ancestor = false)
-      if redact_key_is_ancestor
-        if obj.respond_to?(:key?)
-          obj.keys.each{ |key|
-            if obj[key].respond_to?(:each)
-              redact_properties!(obj[key], true)
-            else
-              obj[key] = '<redacted>'
-            end
-          }
-        elsif obj.respond_to?(:each_index)
-          obj.each_index { |i|
-            if obj[i].respond_to?(:each)
-              redact_properties!(obj[i], true)
-            else
-              obj[i] = '<redacted>'
-            end
-          }
-        end
-      else
-        if obj.respond_to?(:each)
-          obj.each{ |a|
-            if obj.respond_to?(:key?) && REDACT_KEY_NAMES.any? { |key| key == a.first } && a.last.respond_to?(:key?)
-              redact_properties!(a.last, true)
-            else
-              redact_properties!(a.respond_to?(:last) ? a.last : a)
-            end
-
-          }
-        end
-      end
-
-      obj
     end
 
     def diff(indent = 0)
@@ -106,18 +66,26 @@ module Bosh::Director
       # combine arrays of redacted and unredacted values. unredacted arrays for diff logic, and redacted arrays for output
       combined_old_value = old_value.zip redacted_old_value
       combined_new_value = new_value.zip redacted_new_value
+
       added = combined_new_value - combined_old_value
       removed = combined_old_value - combined_new_value
+
+
 
       lines = DiffLines.new
 
       added.each do |pair|
+
         elem = pair.first
         redacted_elem = pair.last
+        puts "elem #{elem}"
+        puts "redacted_elem #{redacted_elem}"
         if elem.is_a?(Hash)
           using_names = (added+removed).all? { |e| e.first['name'] }
+          puts "using_names #{using_names}"
           using_ranges = (added+removed).all? { |e| e.first['range'] }
           if using_names || using_ranges
+            #clean up duplicate values
             if using_names
               removed_same_name_element = removed.find { |e| e.first['name'] == elem['name'] }
             elsif using_ranges
