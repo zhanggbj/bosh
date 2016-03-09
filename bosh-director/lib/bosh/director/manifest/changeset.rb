@@ -9,9 +9,10 @@ module Bosh::Director
   class Changeset
     KEY_NAME = 'name'
 
-    def initialize(before, after, redacted_before = nil, redacted_after = nil)
-      @redacted_before = redacted_before.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(before)) : redacted_before
-      @redacted_after = redacted_after.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(after)) : redacted_after
+    def initialize(before, after, redact = true,redacted_before = nil, redacted_after = nil)
+      @redact = redact
+      @redacted_before = redacted_before.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(before), redact) : redacted_before
+      @redacted_after = redacted_after.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(after), redact) : redacted_after
 
       @before = before
       @after = after
@@ -39,7 +40,7 @@ module Bosh::Director
           lines.concat(compare_arrays(@before[key], @after[key], @redacted_before[key], @redacted_after[key], key, indent))
 
         elsif value.is_a?(Hash)
-          changeset = Changeset.new(@before[key], @after[key], @redacted_before[key], @redacted_after[key])
+          changeset = Changeset.new(@before[key], @after[key],@redact, @redacted_before[key], @redacted_after[key])
           diff_lines = changeset.diff(indent+1)
           unless diff_lines.empty?
             lines << Line.new(indent, "#{key}:", nil)
@@ -70,19 +71,16 @@ module Bosh::Director
       added = combined_new_value - combined_old_value
       removed = combined_old_value - combined_new_value
 
-
-
       lines = DiffLines.new
 
       added.each do |pair|
 
         elem = pair.first
         redacted_elem = pair.last
-        puts "elem #{elem}"
-        puts "redacted_elem #{redacted_elem}"
+
         if elem.is_a?(Hash)
           using_names = (added+removed).all? { |e| e.first['name'] }
-          puts "using_names #{using_names}"
+
           using_ranges = (added+removed).all? { |e| e.first['range'] }
           if using_names || using_ranges
             #clean up duplicate values
@@ -94,7 +92,7 @@ module Bosh::Director
             removed.delete(removed_same_name_element)
 
             if removed_same_name_element
-              changeset = Changeset.new(removed_same_name_element.first, elem, removed_same_name_element.last, redacted_elem)
+              changeset = Changeset.new(removed_same_name_element.first, elem, @redact, removed_same_name_element.last, redacted_elem)
               diff_lines = changeset.diff(indent+1)
 
               unless diff_lines.empty?
