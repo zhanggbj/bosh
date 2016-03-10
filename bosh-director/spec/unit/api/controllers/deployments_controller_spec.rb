@@ -847,6 +847,42 @@ module Bosh::Director
               expect(last_response.status).to eq(401)
             end
           end
+
+          context 'redacting' do
+
+            let(:manifest) do
+                <<-EOS
+---
+name: fake-dep-name
+releases: [{'name':'simple','version':5}]
+jobs: [{'name': 'test', 'properties': { 'a': 'super-secret'}}]
+              EOS
+            end
+
+            before { authorize 'admin', 'admin' }
+
+            it 'redacts by default when no redact param is passed in' do
+              response = post(
+                '/fake-dep-name/diff',
+                manifest,
+                {'CONTENT_TYPE' => 'text/yaml'}
+              )
+              expect(response.body).to include('<redacted>')
+            end
+
+            context 'when redact param is present and set to false' do
+              it 'returns an un-redacted diff' do
+                response = post(
+                  '/fake-dep-name/diff?redact=false',
+                  manifest,
+                  {'CONTENT_TYPE' => 'text/yaml'}
+                )
+                expect(response.body).not_to include('<redacted>')
+              end
+            end
+
+
+          end
         end
       end
 

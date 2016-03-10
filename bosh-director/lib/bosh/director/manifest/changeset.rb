@@ -9,7 +9,7 @@ module Bosh::Director
   class Changeset
     KEY_NAME = 'name'
 
-    def initialize(before, after, redact = true,redacted_before = nil, redacted_after = nil)
+    def initialize(before, after, redact = true, redacted_before = nil, redacted_after = nil)
       @redact = redact
       @redacted_before = redacted_before.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(before), redact) : redacted_before
       @redacted_after = redacted_after.nil? ? Redactor.redact_properties(Bosh::Common::DeepCopy.copy(after), redact) : redacted_after
