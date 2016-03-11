@@ -2,6 +2,81 @@ require 'spec_helper'
 
 module Bosh::Director
   describe Redactor do
+
+    describe 'self#mark_properties_for_redaction' do
+
+      manifest_obj = {
+        'name' => 'test_name',
+        'uuid' => '12324234234234234234',
+        'env' => {
+          'bosh' => {
+            'one' => [1, 2, {'three' => 3}],
+            'two' => 2,
+            'three' => 3
+          },
+          'c' => 'dont-redact-me',
+          'e' => 'i-am-not-secret'
+        },
+        'jobs' => [
+          {
+            'name' => "test_job",
+            'properties' => {
+              'a' => {
+                'one' => [1, 2, {'three' => 3}],
+                'two' => 2,
+                'three' => 3
+              },
+              'c' => 'redact-me',
+              'e' => 'i-am-secret'
+            }
+          }
+        ]
+      }
+
+
+      redaction_marker_regex = /<redact this!!!>/
+      marked_for_redaction = Redactor.mark_properties_for_redaction(manifest_obj).to_yaml
+
+      redacted_manifest = Redactor.redact_lines_marked_for_redaction marked_for_redaction
+        it 'inserts a manifest marker string in fields to be redacted' do
+        puts "marked_for_redaction"
+
+        expect(marked_for_redaction.to_yaml).to match redaction_marker_regex
+
+
+        expect(redacted_manifest).to eq({
+          'name' => 'test_name',
+          'uuid' => '12324234234234234234',
+          'env' => {
+            'bosh' => {
+              'one' => ['<redacted>', '<redacted>', {'three' => '<redacted>'}],
+              'two' => '<redacted>',
+              'three' => '<redacted>'
+            },
+            'c' => 'dont-redact-me',
+            'e' => 'i-am-not-secret'
+          },
+          'jobs' => [
+            {
+              'name' => "test_job",
+              'properties' => {
+                'a' => {
+                  'one' => ['<redacted>', '<redacted>', {'three' => '<redacted>'}],
+                  'two' => '<redacted>',
+                  'three' => '<redacted>'
+                },
+                'c' => '<redacted>',
+                'e' => '<redacted>'
+              }
+            }
+          ]
+        }.to_yaml)
+
+
+
+      end
+    end
+
     context 'redact properties/env' do
       it 'redacts child nodes of properties/env hashes recursively' do
         manifest_obj = {

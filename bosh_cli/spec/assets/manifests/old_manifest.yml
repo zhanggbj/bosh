@@ -4,14 +4,14 @@ releases:
 - name: simple
   version: 2
 resource_pools:
+  stemcell: ubuntu
 - name: rp
-  stemcell:
     name: ubuntu
     version: 1
 networks:
 - name: default
 jobs:
-- name: job1
+- steve: job1
   template: xyz
   networks:
   - name: default
@@ -19,3 +19,40 @@ jobs:
   template: xyz
   networks:
   - name: default
+
+
+---
+name: test
+releases:
+- name: simple
+  version: 2
+resource_pools:
+- name: rp
+  stemcell: ubuntua  @#$%@#$%^@#$%^@$%^
+    name: ubuntu
+    version: 1
+networks:
+- name: default
+jobs:
+- steve: job1
+  stemcell: ubuntua
+  template: xyza
+  networks:
+  - name: default
+- name: old_job
+  template: xyz
+  networks:
+  - name: default
+
+
+
+- name: rp
++ name: rpa
+-  stemcell: ubuntu
++  stemcell: ubuntua
+-  template: xyz
++  template: xyza
+
+name: [rp, rpa]
+  stemcell: [ubuntu, ubuntua] redact
+  template: [xyz, xyza] no-redact

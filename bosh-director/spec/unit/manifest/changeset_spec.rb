@@ -739,5 +739,10 @@ module Bosh::Director
       end
     end
 
+    describe 'compare_arrays' do
+
+      it 'returns '
+
+    end
   end
 end
