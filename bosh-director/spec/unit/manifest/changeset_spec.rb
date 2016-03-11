@@ -4,7 +4,7 @@ module Bosh::Director
   describe Changeset do
     subject(:changeset) do
       changeset = described_class.new(old, new)
-      changeset.diff.map { |l| [l.to_s, l.status] }
+      changeset.diff.map { |l| p l; [l.to_s, l.status] }
     end
 
     let(:old) do
@@ -80,6 +80,8 @@ module Bosh::Director
             ['    - name: dc2', nil],
             ['      location: Tashkent', 'added'],
           ])
+
+          p changeset
         end
       end
 

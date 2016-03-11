@@ -56,6 +56,11 @@ module Bosh::Director
       lines = DiffLines.new
       value.to_yaml(indent: Line::INDENT).gsub("---\n", '').split("\n").each do |line|
         lines << Line.new(indent, line, state)
+
+        if line.is_kv_pair
+          lines << Line.new(indent, key, value, state)
+        end
+
       end
       lines
     end

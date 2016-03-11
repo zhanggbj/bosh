@@ -3,9 +3,8 @@ require 'spec_helper'
 module Bosh::Director
   describe Redactor do
 
-    describe 'self#mark_properties_for_redaction' do
-
-      manifest_obj = {
+    let(:manifest_obj) do
+      {
         'name' => 'test_name',
         'uuid' => '12324234234234234234',
         'env' => {
@@ -26,25 +25,58 @@ module Bosh::Director
                 'two' => 2,
                 'three' => 3
               },
-              'c' => 'redact-me',
+              'c' => "redact-me\nwith
+\nanother\nline",
               'e' => 'i-am-secret'
             }
           }
         ]
       }
+    end
 
+    let(:manifest_with_redaction_markers) do
+      {
+        'name' => 'test_name',
+        'uuid' => '12324234234234234234',
+        'env' => {
+          'bosh' => {
+            'one' => ["1<redact this!!!>", "2<redact this!!!>", {'three' => "3<redact this!!!>"}],
+            'two' => "2<redact this!!!>",
+            'three' => "3<redact this!!!>"
+          },
+          'c' => 'dont-redact-me',
+          'e' => 'i-am-not-secret'
+        },
+        'jobs' => [
+          {
+            'name' => "test_job",
+            'properties' => {
+              'a' => {
+                'one' => ["1<redact this!!!>", "2<redact this!!!>", {'three' => "3<redact this!!!>"}],
+                'two' => "2<redact this!!!>",
+                'three' => "3<redact this!!!>"
+              },
+              'c' => 'redact-me<redact this!!!>',
+              'e' => 'i-am-secret<redact this!!!>'
+            }
+          }
+        ]
+      }
+    end
 
-      redaction_marker_regex = /<redact this!!!>/
-      marked_for_redaction = Redactor.mark_properties_for_redaction(manifest_obj).to_yaml
+    let (:marked_for_redaction){ Redactor.mark_properties_for_redaction(manifest_obj) }
+    let (:redacted_manifest) { Redactor.redact_text_marked_for_redaction(marked_for_redaction.to_yaml)}
 
-      redacted_manifest = Redactor.redact_lines_marked_for_redaction marked_for_redaction
-        it 'inserts a manifest marker string in fields to be redacted' do
-        puts "marked_for_redaction"
+    describe '#mark_properties_for_redaction' do
+      it "marks appropriate fields in a manifest hash for redaction" do
+        expect(marked_for_redaction.to_yaml).to eq manifest_with_redaction_markers.to_yaml
+      end
+    end
 
-        expect(marked_for_redaction.to_yaml).to match redaction_marker_regex
-
-
-        expect(redacted_manifest).to eq({
+    describe '#redact_text_marked_for_redaction' do
+      it 'redacts a manifest that has been marked for redaction' do
+        print marked_for_redaction.to_yaml
+        expect(redacted_manifest.to_yaml).to eq({
           'name' => 'test_name',
           'uuid' => '12324234234234234234',
           'env' => {
@@ -73,9 +105,24 @@ module Bosh::Director
         }.to_yaml)
 
 
-
       end
+
     end
+
+      it 'inserts a manifest marker string in fields to be redacted' do
+
+      puts "marked_for_redaction"
+
+    # redacted_manifest = Redactor.redact_text_marked_for_redaction marked_for_redaction
+
+        puts marked_for_redaction
+
+
+
+
+
+    end
+
 
     context 'redact properties/env' do
       it 'redacts child nodes of properties/env hashes recursively' do

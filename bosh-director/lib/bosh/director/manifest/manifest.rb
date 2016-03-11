@@ -36,7 +36,7 @@ module Bosh::Director
       new_manifest = Redactor.mark_properties_for_redaction(other_manfiest) if redact
       old_manifest = Redactor.mark_properties_for_redaction(to_hash) if redact
       change_set = Changeset.new(to_hash, other_manifest.to_hash).diff.order
-      change_set = Redactor.redact(change_set) if redact
+      change_set = Redactor.redact_text_marked_for_redaction(change_set.yaml_lines) if redact
     end
 
     def to_hash

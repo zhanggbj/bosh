@@ -9,6 +9,18 @@ module Bosh::Director
     def full_indent
       indent + text[/^ */].size / INDENT
     end
+
+    def is_kv_pair?
+      text[(/:/)]
+    end
+
+    def parse_kv_pair
+      key, value = text.split(':')
+    end
+
+
+
+
   end
 
   class DiffLines < Array
