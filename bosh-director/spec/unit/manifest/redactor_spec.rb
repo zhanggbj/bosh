@@ -25,8 +25,7 @@ module Bosh::Director
                 'two' => 2,
                 'three' => 3
               },
-              'c' => "redact-me\nwith
-\nanother\nline",
+              'c' => "redact-me",
               'e' => 'i-am-secret'
             }
           }
@@ -65,94 +64,169 @@ module Bosh::Director
     end
 
     let (:marked_for_redaction){ Redactor.mark_properties_for_redaction(manifest_obj) }
-    let (:redacted_manifest) { Redactor.redact_text_marked_for_redaction(marked_for_redaction.to_yaml)}
+
+    let (:diffy) {
+      Changeset.new(manifest_obj, manifest_with_redaction_markers).diff
+    }
+    let(:redacted_diff){ Redactor.redact_difflines_marked_for_redaction(diffy)}
 
     describe '#mark_properties_for_redaction' do
+
       it "marks appropriate fields in a manifest hash for redaction" do
         expect(marked_for_redaction.to_yaml).to eq manifest_with_redaction_markers.to_yaml
       end
     end
 
-    describe '#redact_text_marked_for_redaction' do
-      it 'redacts a manifest that has been marked for redaction' do
-        print marked_for_redaction.to_yaml
-        expect(redacted_manifest.to_yaml).to eq({
-          'name' => 'test_name',
-          'uuid' => '12324234234234234234',
-          'env' => {
-            'bosh' => {
-              'one' => ['<redacted>', '<redacted>', {'three' => '<redacted>'}],
-              'two' => '<redacted>',
-              'three' => '<redacted>'
-            },
-            'c' => 'dont-redact-me',
-            'e' => 'i-am-not-secret'
-          },
-          'jobs' => [
-            {
-              'name' => "test_job",
-              'properties' => {
-                'a' => {
-                  'one' => ['<redacted>', '<redacted>', {'three' => '<redacted>'}],
-                  'two' => '<redacted>',
-                  'three' => '<redacted>'
-                },
-                'c' => '<redacted>',
-                'e' => '<redacted>'
-              }
-            }
-          ]
-        }.to_yaml)
+    describe '#redact_difflines_marked_for_redaction' do
+      let(:diff) do
+        Changeset.new(
+          Redactor.mark_properties_for_redaction(old_manifest),
+          Redactor.mark_properties_for_redaction(new_manifest)
+        ).diff
+      end
 
+      let(:redacted_diff) do
+        Redactor.redact_difflines_marked_for_redaction(diff)
+      end
+
+      let(:redacted_diff_arrays) do
+        redacted_diff.map { |l| [l.to_s, l.status] }
+      end
+
+      context 'todo' do
+        let(:old_manifest) do
+          {
+            'networks' => [
+              {
+                'name' => 'default',
+                'subnets' => [
+                  {
+                    'range' => '10.10.10.0/24',
+                    'reserved' => ['10.10.10.15']
+                  },
+                  {
+                    'range' => '10.10.11.0/24',
+                    'reserved' => ['10.10.11.15']
+                  }
+                ]
+              }
+            ],
+            'properties' => {
+              'before' => 'value',
+            }
+          }
+        end
+
+        let (:new_manifest) do
+          {
+            'networks' => [
+              {
+                'name' => 'default',
+                'subnets' => [
+                  {
+                    'range' => '10.10.10.0/24',
+                    'reserved' => ['10.10.10.15']
+                  }
+                ]
+              }
+            ],
+            'properties' => {
+              'blurp' => [ 1, true, 'blahblah'],
+              'adsf' => { 'something' => nil}
+            }
+          }
+        end
+
+        it 'redacts a diff' do
+          expect(redacted_diff_arrays).to eq([
+            ['networks:', nil],
+            ['- name: default', nil],
+            ['  subnets:', nil],
+            ['  - range: 10.10.11.0/24', 'removed'],
+            ['    reserved:', 'removed'],
+            ['    - 10.10.11.15', 'removed'],
+            ['properties:', nil],
+            ['  before: <redacted>', 'removed'],
+            ['  blurp:', 'added'],
+            ['  - <redacted>', 'added'],
+            ['  - <redacted>', 'added'],
+            ['  - <redacted>', 'added'],
+            ['  adsf:', 'added'],
+            ['    something: <redacted>', 'added'],
+          ])
+        end
 
       end
 
     end
 
-      it 'inserts a manifest marker string in fields to be redacted' do
-
-      puts "marked_for_redaction"
-
-    # redacted_manifest = Redactor.redact_text_marked_for_redaction marked_for_redaction
-
-        puts marked_for_redaction
-
-
-
-
-
-    end
 
 
     context 'redact properties/env' do
+
+
+      #TODO!!!
+
+
       it 'redacts child nodes of properties/env hashes recursively' do
-        manifest_obj = {
-          'name' => 'test_name',
-          'uuid' => '12324234234234234234',
-          'env' => {
-            'bosh' => {
-              'one' => [1, 2, {'three' => 3}],
-              'two' => 2,
-              'three' => 3
+        let(:old_manifest) do
+          {
+            'name' => 'test_name',
+              'uuid' => '12324234234234234234',
+              'env' => {
+              'bosh' => {
+                'one' => [1, 2, {'three' => 3}],
+                'two' => 2,
+                'three' => 3
+              },
+              'c' => 'dont-redact-me',
+              'e' => 'i-am-not-secret'
             },
-            'c' => 'dont-redact-me',
-            'e' => 'i-am-not-secret'
-          },
-          'jobs' => [
-            {
-              'name' => "test_job",
-              'properties' => {
-                'a' => {
-                  'one' => [1, 2, {'three' => 3}],
-                  'two' => 2,
-                  'three' => 3
-                },
-                'c' => 'redact-me',
-                'e' => 'i-am-secret'
+              'jobs' => [
+              {
+                'name' => "test_job",
+                'properties' => {
+                  'a' => {
+                    'one' => [1, 2, {'three' => 3}],
+                    'two' => 2,
+                    'three' => 3
+                  },
+                  'c' => 'redact-me',
+                  'e' => 'i-am-secret'
+                }
               }
-            }
-          ]
-        }
+            ]
+          }
+        end
+        let(:new_manifest) do
+          {
+            'name' => 'test_name',
+              'uuid' => '12324234234234234234',
+              'env' => {
+              'bosh' => {
+                'one' => [1, 2, {'three' => 3}],
+                'two' => 2,
+                'three' => 3
+              },
+              'c' => 'dont-redact-me',
+              'e' => 'i-am-not-secret'
+            },
+              'jobs' => [
+              {
+                'name' => "test_job",
+                'properties' => {
+                  'a' => {
+                    'one' => [1, 2, {'three' => 3}],
+                    'two' => 2,
+                    'three' => 3
+                  },
+                  'c' => 'redact-me',
+                  'e' => 'i-am-secret'
+                }
+              }
+            ]
+          }
+        end
 
         expect(described_class.redact_properties(manifest_obj)).to eq({
           'name' => 'test_name',
@@ -239,25 +313,7 @@ module Bosh::Director
         end
       end
 
-      it 'does not redact if properties/env is not a hash' do
-        manifest_obj = {
-          'name' => 'test_name',
-          'uuid' => '12324234234234234234',
-          'env' => 'hello',
-          'jobs' => [
-            {
-              'name' => 'test_job',
-              'properties' => [
-                'a',
-                'b',
-                'c'
-              ]
-            }
-          ]
-        }
 
-        expect(described_class.redact_properties(manifest_obj)).to eq(manifest_obj)
-      end
 
       it 'does not redact when redact parameter is false' do
         manifest_obj = {

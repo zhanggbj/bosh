@@ -10,17 +10,6 @@ module Bosh::Director
       indent + text[/^ */].size / INDENT
     end
 
-    def is_kv_pair?
-      text[(/:/)]
-    end
-
-    def parse_kv_pair
-      key, value = text.split(':')
-    end
-
-
-
-
   end
 
   class DiffLines < Array
