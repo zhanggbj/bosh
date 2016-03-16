@@ -55,6 +55,12 @@ for RELEASE_DIR in $( find . -maxdepth 1 -name '*-release' ) ; do
   # extract our true name and version
   tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
   RELEASE_NAME=$( grep -E '^name: ' release.MF | awk '{print $2}' | tr -d "\"'" )
+  echo "---------------------------------------------"
+  echo "RELEASE NAME IS ${RELEASE_NAME}"
+  if [ ${RELEASE_NAME} == "release-bosh" ]; then
+    RELEASE_NAME="release-bosh-core"
+  fi
+
   RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\"'" )
 
   bosh upload release --skip-if-exists *.tgz
@@ -93,6 +99,7 @@ for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
 
   mv *.tgz compiled-releases
+
 done
 
 
