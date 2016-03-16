@@ -77,6 +77,6 @@ jobs:
       - put: bosh-compiled-release-tarballs
         params:
           file: compiled-releases/release-bosh-aws-cpi*.tgz
-#      - put: bosh-compiled-release-tarballs
-#        params:
-#          file: compiled-releases/release-bosh-*.tgz
+      - put: bosh-compiled-release-tarballs
+        params:
+          file: compiled-releases/bosh.tgz

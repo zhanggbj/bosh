@@ -1,7 +1,6 @@
 #!/bin/sh
 
-set -eu
-
+set -eux
 
 #
 # target/authenticate
@@ -87,7 +86,6 @@ bosh deployment manifest.yml
 
 bosh -n deploy
 
-
 #
 # compile/export all releases
 #
@@ -95,14 +93,13 @@ bosh -n deploy
 for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
   echo "Export release $EXPORT_RELEASE"
-  if [ "$EXPORT_RELEASE" == "bosh" ]; then
-    mv *.tgz compiled-releases/bosh.tgz
+
+  if [ "$(echo $EXPORT_RELEASE | sed -e s/bosh\\/.*/true/ )" == "true" ]; then
+    mv *.tgz $(find *.tgz | sed s/release-bosh/bosh-release/)
   else
     mv *.tgz compiled-releases
   fi
 done
-
-
 
 #
 # cleanup
