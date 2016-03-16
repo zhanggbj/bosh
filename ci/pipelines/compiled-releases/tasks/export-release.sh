@@ -95,7 +95,7 @@ for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   echo "Export release $EXPORT_RELEASE"
 
   if [ "$(echo $EXPORT_RELEASE | sed -e s/bosh\\/.*/true/ )" == "true" ]; then
-    mv *.tgz $(find *.tgz | sed s/release-bosh/bosh-release/)
+    mv *.tgz compiled-releases/$(find *.tgz | sed s/release-bosh/bosh-release/)
   else
     mv *.tgz compiled-releases
   fi

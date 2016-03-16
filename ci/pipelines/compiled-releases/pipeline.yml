@@ -76,7 +76,7 @@ jobs:
           file:  compiled-releases/release-uaa*.tgz
       - put: bosh-compiled-release-tarballs
         params:
-          file: compiled-releases/release-bosh-aws-cpi*.tgz
+          file: compiled-releases/release-bosh*.tgz
       - put: bosh-compiled-release-tarballs
         params:
-          file: compiled-releases/bosh.tgz
+          file: compiled-releases/bosh-release*.tgz
