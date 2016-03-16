@@ -57,9 +57,6 @@ for RELEASE_DIR in $( find . -maxdepth 1 -name '*-release' ) ; do
   RELEASE_NAME=$( grep -E '^name: ' release.MF | awk '{print $2}' | tr -d "\"'" )
   echo "---------------------------------------------"
   echo "RELEASE NAME IS ${RELEASE_NAME}"
-  if [ ${RELEASE_NAME} == "release-bosh" ]; then
-    RELEASE_NAME="release-bosh-core"
-  fi
 
   RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\"'" )
 
@@ -97,10 +94,14 @@ bosh -n deploy
 
 for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
-
-  mv *.tgz compiled-releases
-
+  echo "Export release $EXPORT_RELEASE"
+  if [ "$EXPORT_RELEASE" == "bosh" ]; then
+    mv *.tgz compiled-releases/bosh.tgz
+  else
+    mv *.tgz compiled-releases
+  fi
 done
+
 
 
 #
