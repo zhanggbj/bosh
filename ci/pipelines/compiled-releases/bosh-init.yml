@@ -1,0 +1,147 @@
+# Auto-generated at 2016-02-09 13:55:34 -0800 using ./boshcfg aws template bosh-init
+---
+name: bosh-init
+
+releases:
+- name: bosh
+  url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=255.3
+  sha1: 1a3d61f968b9719d9afbd160a02930c464958bf4
+- name: bosh-aws-cpi
+  url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-aws-cpi-release?v=36
+  sha1: db2a6c6cdd5ff9f77bf083e10118fa72e1f5e181
+
+networks:
+- name: private
+  type: manual
+  subnets:
+    - range: 10.0.0.0/24
+      gateway: 10.0.0.1
+      dns: [8.8.8.8]
+      cloud_properties: {"subnet":"subnet-8b600ab6"}
+- name: public
+  type: vip
+
+resource_pools:
+- name: default
+  network: private
+  stemcell:
+    url: https://bosh.io/d/stemcells/bosh-aws-xen-hvm-ubuntu-trusty-go_agent?v=3202
+    sha1: ca5095fed22439a6238298aa0f8c578b0c11b87c
+  cloud_properties: {"instance_type":"c3.xlarge","availability_zone":"us-east-1e","ephemeral_disk":{"size":25000,"type":"gp2"}}
+
+disk_pools:
+- name: my-persistent-disk
+  disk_size: 25_000
+  cloud_properties: {"type":"gp2"}
+
+jobs:
+- name: bosh
+  templates:
+  - {name: nats, release: bosh}
+  - {name: redis, release: bosh}
+  - {name: postgres-9.4.5, release: bosh}
+  - {name: blobstore, release: bosh}
+  - {name: director, release: bosh}
+  - {name: health_monitor, release: bosh}
+  - {name: registry, release: bosh}
+  - {name: powerdns, release: bosh}
+  - {name: aws_cpi, release: bosh-aws-cpi}
+
+  instances: 1
+  resource_pool: default
+  persistent_disk_pool: my-persistent-disk
+
+  networks:
+  - name: private
+    static_ips: [10.0.0.6]
+    default: [gateway, dns]
+  - name: public
+    static_ips: [54.209.192.141]
+
+  properties:
+    nats:
+      address: 127.0.0.1
+      user: nats
+      password: nats-password
+
+    redis:
+      listen_addresss: 127.0.0.1
+      address: 127.0.0.1
+      password: redis-password
+
+    postgres: &db
+      host: 127.0.0.1
+      user: postgres
+      password: postgres-password
+      database: bosh
+      adapter: postgres
+
+    # Tells the Director/agents how to contact registry
+    registry:
+      address: 10.0.0.6
+      host: 10.0.0.6
+      db: *db
+      http: {user: admin, password: admin, port: 25777}
+      username: admin
+      password: admin
+      port: 25777
+
+    # Tells the Director/agents how to contact blobstore
+    blobstore:
+      address: 10.0.0.6
+      port: 25250
+      provider: dav
+      director: {user: director, password: director-password}
+      agent: {user: agent, password: agent-password}
+
+    director:
+      address: 127.0.0.1
+      name: micro
+      db: *db
+      # Use external CPI
+      cpi_job: aws_cpi
+
+    dns:
+      address: 10.0.0.6
+      db: *db
+      recursor: 208.67.220.220
+
+    hm:
+      http: {user: hm, password: hm-password}
+      director_account: {user: admin, password: admin}
+
+    aws: {"access_key_id":"AKIAJ5RFSVZENQVWZ5DA","secret_access_key":"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","default_key_name":"bosh-dev","default_security_groups":["bosh"],"ec2_endpoint":"ec2.us-east-1.amazonaws.com","region":"us-east-1"}
+
+    # Tells agents how to contact nats
+    agent: {mbus: "nats://nats:nats-password@10.0.0.6:4222"}
+
+    ntp: &ntp
+    - 0.north-america.pool.ntp.org
+    - 1.north-america.pool.ntp.org
+    - 2.north-america.pool.ntp.org
+    - 3.north-america.pool.ntp.org
+
+cloud_provider:
+  template: {name: aws_cpi, release: bosh-aws-cpi}
+
+  # Tells bosh-micro how to SSH into deployed VM
+  ssh_tunnel:
+    host: 54.209.192.141
+    port: 22
+    user: vcap
+    private_key: /Users/pivotal/workspace/bosh-team-deployments/keys/bosh-dev.key
+
+  # Tells bosh-micro how to contact remote agent
+  mbus: https://mbus-user:mbus-password@54.209.192.141:6868
+
+  properties:
+    aws: {"access_key_id":"AKIAJ5RFSVZENQVWZ5DA","secret_access_key":"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","default_key_name":"bosh-dev","default_security_groups":["bosh"],"ec2_endpoint":"ec2.us-east-1.amazonaws.com","region":"us-east-1"}
+
+    # Tells CPI how agent should listen for requests
+    agent: {mbus: "https://mbus-user:mbus-password@0.0.0.0:6868"}
+
+    blobstore:
+      provider: local
+      path: /var/vcap/micro_bosh/data/cache
+
+    ntp: *ntp

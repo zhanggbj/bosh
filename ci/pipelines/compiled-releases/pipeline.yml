@@ -1,0 +1,77 @@
+---
+resources:
+  - name: bosh-src
+    type: git
+    source:
+      uri: https://github.com/cloudfoundry/bosh.git
+      branch: {{branch}}
+
+  - name: uaa-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry/uaa-release
+#  - name: uaa-on-ubuntu-trusty-master
+#    type: s3
+#    source:
+#      bucket: example
+#      versioned_file: uaa-on-ubuntu-trusty-
+  - name: ubuntu-trusty-stemcell
+    type: bosh-io-stemcell
+    source:
+      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+  - name: ubuntu-trusty-3146-stemcell
+    type: s3
+    source:
+      bucket: bosh-jenkins-artifacts
+      regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
+  - name: bosh-aws-cpi-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry-incubator/bosh-aws-cpi-release
+  - name: bosh-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry/bosh
+  - name: bosh-compiled-release-tarballs
+    type: s3
+    source:
+      bucket: bosh-compiled-release-tarballs
+      access_key_id: {{aws_key_id}}
+      secret_access_key: {{aws_secret_access_key}}
+      regexp: (.*).tgz
+
+jobs:
+  - name: ubuntu-trusty-master
+    plan:
+      - aggregate:
+          - { get: bosh-src }
+          - { get: uaa-release }
+          - { get: bosh-release }
+          - { get: bosh-aws-cpi-release }
+          - { get: stemcell, resource: ubuntu-trusty-stemcell }
+      - task: export-release
+        file: bosh-src/ci/pipelines/compiled-release/tasks/export-release.yml
+        params:
+          TARGET: https://54.209.192.141:25555
+          USERNAME: admin
+          PASSWORD: admin
+      - put: bosh-compiled-release-tarballs
+        params:
+          file: compiled-release/*.tgz
+  - name: ubuntu-trusty-3146
+    plan:
+      - aggregate:
+          - { get: bosh-src }
+          - { get: uaa-release }
+          - { get: bosh-release }
+          - { get: bosh-aws-cpi-release }
+          - { get: stemcell, resource: ubuntu-trusty-3146-stemcell }
+      - task: export-release
+        file: bosh-src/ci/pipelines/compiled-release/tasks/export-release.yml
+        params:
+          TARGET: https://54.209.192.141:25555
+          USERNAME: admin
+          PASSWORD: admin
+      - put: bosh-compiled-release-tarballs
+        params:
+          file: compiled-release/*.tgz

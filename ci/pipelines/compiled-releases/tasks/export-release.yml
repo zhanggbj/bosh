@@ -1,0 +1,22 @@
+---
+platform: linux
+
+image: docker:///concourse/bosh-deployment-resource
+
+inputs:
+  - name: uaa-release
+  - name: bosh-release
+  - name: bosh-aws-cpi-release
+  - name: stemcell
+  - name: task
+
+outputs:
+  - name: compiled-releases
+
+run:
+  path: task/export-release.sh
+
+params:
+  TARGET: required
+  USERNAME: required
+  PASSWORD: required
