@@ -50,7 +50,7 @@ jobs:
           - { get: bosh-aws-cpi-release }
           - { get: stemcell, resource: ubuntu-trusty-stemcell }
       - task: export-release
-        file: bosh-src/ci/pipelines/compiled-release/tasks/export-release.yml
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
           TARGET: https://54.209.192.141:25555
           USERNAME: admin
@@ -67,7 +67,7 @@ jobs:
           - { get: bosh-aws-cpi-release }
           - { get: stemcell, resource: ubuntu-trusty-3146-stemcell }
       - task: export-release
-        file: bosh-src/ci/pipelines/compiled-release/tasks/export-release.yml
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
           TARGET: https://54.209.192.141:25555
           USERNAME: admin
