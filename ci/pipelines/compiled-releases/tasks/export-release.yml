@@ -14,7 +14,7 @@ outputs:
   - name: compiled-releases
 
 run:
-  path: task/export-release.sh
+  path: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.sh
 
 params:
   TARGET: required
