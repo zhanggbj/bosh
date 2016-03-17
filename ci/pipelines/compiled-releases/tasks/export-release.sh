@@ -5,6 +5,10 @@ set -eux
 #
 # target/authenticate
 #
+./generate_bosh-init_manifest.sh
+
+tree .
+
 
 bosh -n target "$TARGET"
 bosh login "$USERNAME" "$PASSWORD"
@@ -54,8 +58,6 @@ for RELEASE_DIR in $( find . -maxdepth 1 -name '*-release' ) ; do
   # extract our true name and version
   tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
   RELEASE_NAME=$( grep -E '^name: ' release.MF | awk '{print $2}' | tr -d "\"'" )
-  echo "---------------------------------------------"
-  echo "RELEASE NAME IS ${RELEASE_NAME}"
 
   RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\"'" )
 
@@ -92,7 +94,6 @@ bosh -n deploy
 
 for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
-  echo "Export release $EXPORT_RELEASE"
 
   if [ "$(echo $EXPORT_RELEASE | sed -e s/bosh\\/.*/true/ )" == "true" ]; then
     mv *.tgz compiled-releases/$(find *.tgz | sed s/release-bosh/bosh-release/)
@@ -105,4 +106,5 @@ done
 # cleanup
 #
 
+bosh cleanup --all
 bosh -n delete deployment $DEPLOYMENT_NAME

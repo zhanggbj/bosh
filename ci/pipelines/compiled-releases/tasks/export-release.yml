@@ -20,3 +20,5 @@ params:
   TARGET: required
   USERNAME: required
   PASSWORD: required
+  BOSH_INIT_ACCESS_KEY: required
+  BOSH_INIT_SECRET_KEY: required

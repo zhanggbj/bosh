@@ -4,22 +4,11 @@ name: bosh-init
 
 releases:
 - name: bosh
-  url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=255.3
-  sha1: 1a3d61f968b9719d9afbd160a02930c464958bf4
+  url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=255.5
+  sha1: ffc41db255450cb72b74190c8b9c2a1fe9846ad7
 - name: bosh-aws-cpi
-  url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-aws-cpi-release?v=36
-  sha1: db2a6c6cdd5ff9f77bf083e10118fa72e1f5e181
-
-networks:
-- name: private
-  type: manual
-  subnets:
-    - range: 10.0.0.0/24
-      gateway: 10.0.0.1
-      dns: [8.8.8.8]
-      cloud_properties: {"subnet":"subnet-8b600ab6"}
-- name: public
-  type: vip
+  url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-aws-cpi-release?v=45
+  sha1: 1c8dd94118983080c1f6f1362010d09fa3afc844
 
 resource_pools:
 - name: default
@@ -27,19 +16,30 @@ resource_pools:
   stemcell:
     url: https://bosh.io/d/stemcells/bosh-aws-xen-hvm-ubuntu-trusty-go_agent?v=3202
     sha1: ca5095fed22439a6238298aa0f8c578b0c11b87c
-  cloud_properties: {"instance_type":"c3.xlarge","availability_zone":"us-east-1e","ephemeral_disk":{"size":25000,"type":"gp2"}}
+  cloud_properties: {"instance_type":"c3.xlarge","availability_zone":"us-east-1a","ephemeral_disk":{"size":25000,"type":"gp2"}}
 
 disk_pools:
 - name: my-persistent-disk
   disk_size: 25_000
   cloud_properties: {"type":"gp2"}
 
+networks:
+- name: private
+  type: manual
+  subnets:
+    - range: 10.0.2.0/24
+      gateway: 10.0.2.1
+      dns: [8.8.8.8]
+      cloud_properties: {"subnet":"subnet-20d8bf56"}
+- name: public
+  type: vip
+
 jobs:
-- name: bosh
+- name: bosh-release-compiler
   templates:
   - {name: nats, release: bosh}
   - {name: redis, release: bosh}
-  - {name: postgres-9.4.5, release: bosh}
+  - {name: postgres-9.4, release: bosh}
   - {name: blobstore, release: bosh}
   - {name: director, release: bosh}
   - {name: health_monitor, release: bosh}
@@ -53,10 +53,10 @@ jobs:
 
   networks:
   - name: private
-    static_ips: [10.0.0.6]
+    static_ips: [10.0.2.6]
     default: [gateway, dns]
   - name: public
-    static_ips: [54.209.192.141]
+    static_ips: [52.4.85.16]
 
   properties:
     nats:
@@ -78,17 +78,20 @@ jobs:
 
     # Tells the Director/agents how to contact registry
     registry:
-      address: 10.0.0.6
-      host: 10.0.0.6
+      address: 10.0.2.6
+      host: 10.0.2.6
       db: *db
-      http: {user: admin, password: admin, port: 25777}
+      http:
+        user: admin
+        password: admin
+        port: 25777
       username: admin
       password: admin
       port: 25777
 
     # Tells the Director/agents how to contact blobstore
     blobstore:
-      address: 10.0.0.6
+      address: 10.0.2.6
       port: 25250
       provider: dav
       director: {user: director, password: director-password}
@@ -100,17 +103,28 @@ jobs:
       db: *db
       # Use external CPI
       cpi_job: aws_cpi
+      user_management:
+        provider: local
+        local:
+          users:
+          - {name: admin, password: admin}
+          - {name: hm, password: hm-password}
 
     dns:
-      address: 10.0.0.6
+      address: 10.0.2.6
       db: *db
       recursor: 208.67.220.220
 
     hm:
       http: {user: hm, password: hm-password}
-      director_account: {user: admin, password: admin}
+      director_account: {user: hm, password: hm-password}
 
-    aws: {"access_key_id":"AKIAJ5RFSVZENQVWZ5DA","secret_access_key":"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","default_key_name":"bosh-dev","default_security_groups":["bosh"],"ec2_endpoint":"ec2.us-east-1.amazonaws.com","region":"us-east-1"}
+    aws: &aws
+      access_key_id: "{{access_key_id}}"
+      secret_access_key: "{{secret_key_id}}"
+      default_key_name: "compiled-release"
+      default_security_groups: ["bosh"]
+      region: "us-east-1"
 
     # Tells agents how to contact nats
     agent: {mbus: "nats://nats:nats-password@10.0.0.6:4222"}
@@ -126,16 +140,17 @@ cloud_provider:
 
   # Tells bosh-micro how to SSH into deployed VM
   ssh_tunnel:
-    host: 54.209.192.141
+    host: 52.4.85.16
     port: 22
     user: vcap
-    private_key: /Users/pivotal/workspace/bosh-team-deployments/keys/bosh-dev.key
+    private_key: ssh_tunnel_key
+    #/Users/pivotal/workspace/bosh-team-deployments/keys/bosh-dev.key
 
   # Tells bosh-micro how to contact remote agent
-  mbus: https://mbus-user:mbus-password@54.209.192.141:6868
+  mbus: https://mbus-user:mbus-password@54.84.222.154:6868
 
   properties:
-    aws: {"access_key_id":"AKIAJ5RFSVZENQVWZ5DA","secret_access_key":"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","default_key_name":"bosh-dev","default_security_groups":["bosh"],"ec2_endpoint":"ec2.us-east-1.amazonaws.com","region":"us-east-1"}
+    aws: *aws
 
     # Tells CPI how agent should listen for requests
     agent: {mbus: "https://mbus-user:mbus-password@0.0.0.0:6868"}
