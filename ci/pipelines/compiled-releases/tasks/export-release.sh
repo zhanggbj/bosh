@@ -5,9 +5,9 @@ set -eux
 #
 # target/authenticate
 #
-./generate_bosh-init_manifest.sh
+tree ../../
+$PWD/generate_bosh-init_manifest.sh
 
-tree .
 
 
 bosh -n target "$TARGET"
