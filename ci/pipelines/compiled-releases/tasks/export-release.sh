@@ -5,7 +5,7 @@ set -eux
 #
 # target/authenticate
 #
-tree ../../
+
 $PWD/generate_bosh-init_manifest.sh
 
 
