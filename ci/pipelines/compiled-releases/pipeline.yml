@@ -74,6 +74,9 @@ jobs:
           TARGET: https://54.209.192.141:25555
           USERNAME: admin
           PASSWORD: admin
+          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
+          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
+          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
       - put: bosh-compiled-release-tarballs
         params:
           file:  compiled-releases/release-uaa*.tgz
