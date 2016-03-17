@@ -6,7 +6,7 @@ set -eux
 # target/authenticate
 #
 
-$PWD/generate_bosh-init_manifest.sh
+$PWD/bosh-src/ci/pipelines/compiled-releases/tasks/generate_bosh-init_manifest.sh
 
 
 
