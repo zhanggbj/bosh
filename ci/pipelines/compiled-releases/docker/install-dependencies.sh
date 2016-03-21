@@ -28,4 +28,6 @@ rm ruby-install-${RUBY_INSTALL_VER}.tar.gz
 
 ruby-install --sha256 ${RUBY_VER_SHA256} --system ruby ${RUBY_VER}
 
+gem install bundler
+
 gem install bosh_cli --no-ri --no-rdoc

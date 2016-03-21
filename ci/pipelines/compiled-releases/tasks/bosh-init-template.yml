@@ -31,6 +31,8 @@ networks:
       gateway: 10.0.2.1
       dns: [8.8.8.8]
       cloud_properties: {"subnet":"subnet-20d8bf56"}
+- name: public
+  type: vip
 
 jobs:
 - name: bosh-release-compiler
@@ -53,6 +55,8 @@ jobs:
   - name: private
     static_ips: [10.0.2.6]
     default: [gateway, dns]
+  - name: public
+    static_ips: [52.4.85.16]
 
   properties:
     nats:
