@@ -4,7 +4,7 @@ platform: linux
 image: docker:///bosh/compiled-release
 
 run:
-  path: bosh-src/ci/pipelines/compiled-releases/tasks/start-director.sh
+  path: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.sh
 
 params:
   BOSH_INIT_ACCESS_KEY: required
