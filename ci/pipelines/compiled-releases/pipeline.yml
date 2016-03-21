@@ -19,11 +19,13 @@ resources:
     type: bosh-io-stemcell
     source:
       name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+
   - name: ubuntu-trusty-3146-stemcell
     type: s3
     source:
       bucket: bosh-jenkins-artifacts
       regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
+
   - name: bosh-aws-cpi-release
     type: bosh-io-release
     source:

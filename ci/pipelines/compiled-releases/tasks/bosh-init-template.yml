@@ -31,8 +31,6 @@ networks:
       gateway: 10.0.2.1
       dns: [8.8.8.8]
       cloud_properties: {"subnet":"subnet-20d8bf56"}
-- name: public
-  type: vip
 
 jobs:
 - name: bosh-release-compiler
@@ -55,8 +53,6 @@ jobs:
   - name: private
     static_ips: [10.0.2.6]
     default: [gateway, dns]
-  - name: public
-    static_ips: [52.4.85.16]
 
   properties:
     nats:
@@ -140,14 +136,14 @@ cloud_provider:
 
   # Tells bosh-micro how to SSH into deployed VM
   ssh_tunnel:
-    host: 52.4.85.16
+    host: 10.0.2.6
     port: 22
     user: vcap
     private_key: ssh_tunnel_key
     #/Users/pivotal/workspace/bosh-team-deployments/keys/bosh-dev.key
 
   # Tells bosh-micro how to contact remote agent
-  mbus: https://mbus-user:mbus-password@54.84.222.154:6868
+  mbus: https://mbus-user:mbus-password@10.0.2.6:6868
 
   properties:
     aws: *aws
