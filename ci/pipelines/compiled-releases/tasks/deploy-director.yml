@@ -3,6 +3,10 @@ platform: linux
 
 image: docker:///bosh/compiled-release
 
+
+inputs:
+  - name: bosh-src
+
 run:
   path: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.sh
 
