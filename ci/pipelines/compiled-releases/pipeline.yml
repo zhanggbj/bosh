@@ -45,6 +45,10 @@ jobs:
       - get: bosh-src
       - task: deploy-director
         file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
+        params:
+          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
+          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
+          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
 
   - name: ubuntu-trusty-master
     plan:
@@ -62,12 +66,10 @@ jobs:
           TARGET: https://10.0.2.6:25555
           USERNAME: admin
           PASSWORD: admin
-          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
-          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
-          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
       - put: bosh-compiled-release-tarballs
         params:
           file: compiled-releases/*.tgz
+
   - name: ubuntu-trusty-3146
     plan:
       - aggregate:
@@ -84,9 +86,6 @@ jobs:
           TARGET: https://10.0.2.6:25555
           USERNAME: admin
           PASSWORD: admin
-          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
-          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
-          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
       - put: bosh-compiled-release-tarballs
         params:
           file:  compiled-releases/release-uaa*.tgz
