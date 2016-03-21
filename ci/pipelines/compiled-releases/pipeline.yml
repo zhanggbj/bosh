@@ -40,10 +40,18 @@ resources:
       secret_access_key: {{aws_secret_access_key}}
       regexp: .*([1-9\.]+)\.tgz
 jobs:
+  - name: deploy-director
+    plan:
+      - get: bosh-src
+      - task: deploy-director
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
+
   - name: ubuntu-trusty-master
     plan:
       - aggregate:
-          - { get: bosh-src }
+          - get: bosh-src
+            passed:
+              - deploy-director
           - { get: uaa-release }
           - { get: bosh-release }
           - { get: bosh-aws-cpi-release }
@@ -51,7 +59,7 @@ jobs:
       - task: export-release
         file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
-          TARGET: https://54.209.192.141:25555
+          TARGET: https://10.0.2.6:25555
           USERNAME: admin
           PASSWORD: admin
           BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
@@ -63,7 +71,9 @@ jobs:
   - name: ubuntu-trusty-3146
     plan:
       - aggregate:
-          - { get: bosh-src }
+          - get: bosh-src
+            passed:
+              - deploy-director
           - { get: uaa-release }
           - { get: bosh-release }
           - { get: bosh-aws-cpi-release }
@@ -71,7 +81,7 @@ jobs:
       - task: export-release
         file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
-          TARGET: https://54.209.192.141:25555
+          TARGET: https://10.0.2.6:25555
           USERNAME: admin
           PASSWORD: admin
           BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}

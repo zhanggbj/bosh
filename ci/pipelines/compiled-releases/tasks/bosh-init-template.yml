@@ -1,6 +1,6 @@
 # Auto-generated at 2016-02-09 13:55:34 -0800 using ./boshcfg aws template bosh-init
 ---
-name: bosh-init
+name: bosh-init-compiled-release
 
 releases:
 - name: bosh
@@ -99,7 +99,7 @@ jobs:
 
     director:
       address: 127.0.0.1
-      name: micro
+      name: bosh-init-compiled-release
       db: *db
       # Use external CPI
       cpi_job: aws_cpi

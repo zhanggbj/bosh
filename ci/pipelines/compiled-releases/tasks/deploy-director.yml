@@ -1,0 +1,12 @@
+---
+platform: linux
+
+image: docker:///bosh/compiled-release
+
+run:
+  path: bosh-src/ci/pipelines/compiled-releases/tasks/start-director.sh
+
+params:
+  BOSH_INIT_ACCESS_KEY: required
+  BOSH_INIT_SECRET_KEY: required
+  BOSH_SSH_TUNNEL_KEY:  required

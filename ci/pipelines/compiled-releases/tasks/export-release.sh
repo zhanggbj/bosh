@@ -6,10 +6,6 @@ set -eux
 # target/authenticate
 #
 
-$PWD/bosh-src/ci/pipelines/compiled-releases/tasks/generate_bosh-init_manifest.sh
-
-
-
 bosh -n target "$TARGET"
 bosh login "$USERNAME" "$PASSWORD"
 DIRECTOR_UUID=`bosh status --uuid`
@@ -106,5 +102,4 @@ done
 # cleanup
 #
 
-bosh cleanup --all
 bosh -n delete deployment $DEPLOYMENT_NAME

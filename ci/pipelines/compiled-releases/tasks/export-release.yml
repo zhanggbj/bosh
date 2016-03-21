@@ -1,7 +1,7 @@
 ---
 platform: linux
 
-image: docker:///concourse/bosh-deployment-resource
+image: docker:///bosh/compiled-release
 
 inputs:
   - name: uaa-release
@@ -20,6 +20,3 @@ params:
   TARGET: required
   USERNAME: required
   PASSWORD: required
-  BOSH_INIT_ACCESS_KEY: required
-  BOSH_INIT_SECRET_KEY: required
-  BOSH_SSH_TUNNEL_KEY:  required
