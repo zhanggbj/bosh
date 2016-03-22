@@ -8,6 +8,7 @@ inputs:
   - name: bosh-release
   - name: bosh-aws-cpi-release
   - name: stemcell
+  - name: bosh-src
 
 outputs:
   - name: compiled-releases
