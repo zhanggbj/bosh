@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+set -eu
+
+BOSH_RELEASE=$PWD/bosh-release/*.tgz
+BOSH_AWS_CPI_RELEASE=$PWD/bosh-aws-cpi-release/*.tgz
+STEMCELL=$PWD/stemcell/*.tgz
+
 cd bosh-src/ci/pipelines/compiled-releases
 
 sed \
@@ -8,6 +14,9 @@ sed \
   -e "s%{{bosh_username}}%$BOSH_USERNAME%g" \
   -e "s%{{bosh_password}}%$BOSH_PASSWORD%g" \
   -e "s%{{bosh_target_ip}}%$BOSH_TARGET_IP%g" \
+  -e "s%{{bosh_release}}%$BOSH_RELEASE%g" \
+  -e "s%{{bosh_aws_cpi_release}}%$BOSH_AWS_CPI_RELEASE%g" \
+  -e "s%{{stemcell}}%$STEMCELL%g" \
   tasks/bosh-init-template.yml \
   > bosh-init.yml
 
@@ -43,8 +52,7 @@ networks:
         subnet: "subnet-20d8bf56"
 
 compilation:
-  # @todo raise this after initial testing
-  workers: 2
+  workers: 8
   vm_type: default
   network: private
 EOF

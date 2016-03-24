@@ -3,18 +3,15 @@ name: bosh-init-compiled-release
 
 releases:
 - name: bosh
-  url: https://bosh.io/d/github.com/cloudfoundry/bosh?v=255.5
-  sha1: ffc41db255450cb72b74190c8b9c2a1fe9846ad7
+  url: file://{{bosh_release}}
 - name: bosh-aws-cpi
-  url: https://bosh.io/d/github.com/cloudfoundry-incubator/bosh-aws-cpi-release?v=45
-  sha1: 1c8dd94118983080c1f6f1362010d09fa3afc844
+  url: file://{{bosh_aws_cpi_release}}
 
 resource_pools:
 - name: default
   network: private
   stemcell:
-    url: https://bosh.io/d/stemcells/bosh-aws-xen-hvm-ubuntu-trusty-go_agent?v=3202
-    sha1: ca5095fed22439a6238298aa0f8c578b0c11b87c
+    url: file://{{stemcell}}
   cloud_properties:
     instance_type: c4.large
     availability_zone: "us-east-1a"
@@ -35,8 +32,6 @@ networks:
       gateway: 10.0.2.1
       dns: [8.8.8.8]
       cloud_properties: {"subnet":"subnet-20d8bf56"}
-#- name: public
-#  type: vip
 
 jobs:
 - name: bosh-release-compiler
@@ -58,8 +53,6 @@ jobs:
     static_ips:
       - {{bosh_target_ip}}
     default: [gateway, dns]
-#  - name: public
-#    static_ips: [52.4.85.16]
 
   properties:
     nats:
