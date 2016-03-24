@@ -1,4 +1,3 @@
-# Auto-generated at 2016-02-09 13:55:34 -0800 using ./boshcfg aws template bosh-init
 ---
 name: bosh-init-compiled-release
 
@@ -16,7 +15,12 @@ resource_pools:
   stemcell:
     url: https://bosh.io/d/stemcells/bosh-aws-xen-hvm-ubuntu-trusty-go_agent?v=3202
     sha1: ca5095fed22439a6238298aa0f8c578b0c11b87c
-  cloud_properties: {"instance_type":"c3.xlarge","availability_zone":"us-east-1a","ephemeral_disk":{"size":25000,"type":"gp2"}}
+  cloud_properties:
+    instance_type: c4.large
+    availability_zone: "us-east-1a"
+    phemeral_disk:
+      size: 32_768
+      type: "gp2"
 
 disk_pools:
 - name: my-persistent-disk
@@ -31,8 +35,8 @@ networks:
       gateway: 10.0.2.1
       dns: [8.8.8.8]
       cloud_properties: {"subnet":"subnet-20d8bf56"}
-- name: public
-  type: vip
+#- name: public
+#  type: vip
 
 jobs:
 - name: bosh-release-compiler
@@ -42,9 +46,7 @@ jobs:
   - {name: postgres-9.4, release: bosh}
   - {name: blobstore, release: bosh}
   - {name: director, release: bosh}
-  - {name: health_monitor, release: bosh}
   - {name: registry, release: bosh}
-  - {name: powerdns, release: bosh}
   - {name: aws_cpi, release: bosh-aws-cpi}
 
   instances: 1
@@ -53,14 +55,15 @@ jobs:
 
   networks:
   - name: private
-    static_ips: [10.0.2.6]
+    static_ips:
+      - {{bosh_target_ip}}
     default: [gateway, dns]
-  - name: public
-    static_ips: [52.4.85.16]
+#  - name: public
+#    static_ips: [52.4.85.16]
 
   properties:
     nats:
-      address: 127.0.0.1
+      address: {{bosh_target_ip}}
       user: nats
       password: nats-password
 
@@ -78,8 +81,8 @@ jobs:
 
     # Tells the Director/agents how to contact registry
     registry:
-      address: 10.0.2.6
-      host: 10.0.2.6
+      address: {{bosh_target_ip}}
+      host: {{bosh_target_ip}}
       db: *db
       http:
         user: admin
@@ -91,7 +94,7 @@ jobs:
 
     # Tells the Director/agents how to contact blobstore
     blobstore:
-      address: 10.0.2.6
+      address: {{bosh_target_ip}}
       port: 25250
       provider: dav
       director: {user: director, password: director-password}
@@ -107,17 +110,13 @@ jobs:
         provider: local
         local:
           users:
-          - {name: admin, password: admin}
-          - {name: hm, password: hm-password}
+          - name: "{{bosh_username}}"
+            password: "{{bosh_password}}"
 
     dns:
-      address: 10.0.2.6
+      address: {{bosh_target_ip}}
       db: *db
       recursor: 208.67.220.220
-
-    hm:
-      http: {user: hm, password: hm-password}
-      director_account: {user: hm, password: hm-password}
 
     aws: &aws
       access_key_id: "{{access_key_id}}"
@@ -127,7 +126,7 @@ jobs:
       region: "us-east-1"
 
     # Tells agents how to contact nats
-    agent: {mbus: "nats://nats:nats-password@10.0.0.6:4222"}
+    agent: {mbus: "nats://nats:nats-password@{{bosh_target_ip}}:4222"}
 
     ntp: &ntp
     - 0.north-america.pool.ntp.org
@@ -136,18 +135,19 @@ jobs:
     - 3.north-america.pool.ntp.org
 
 cloud_provider:
-  template: {name: aws_cpi, release: bosh-aws-cpi}
+  template:
+    name: aws_cpi
+    release: bosh-aws-cpi
 
   # Tells bosh-micro how to SSH into deployed VM
   ssh_tunnel:
-    host: 10.0.2.6
+    host: {{bosh_target_ip}}
     port: 22
     user: vcap
     private_key: ssh_tunnel_key
-    #/Users/pivotal/workspace/bosh-team-deployments/keys/bosh-dev.key
 
   # Tells bosh-micro how to contact remote agent
-  mbus: https://mbus-user:mbus-password@10.0.2.6:6868
+  mbus: https://mbus-user:mbus-password@{{bosh_target_ip}}:6868
 
   properties:
     aws: *aws

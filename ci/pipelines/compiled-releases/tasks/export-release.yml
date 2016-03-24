@@ -4,11 +4,11 @@ platform: linux
 image: docker:///bosh/compiled-release
 
 inputs:
+  - name: bosh-src
+  - name: stemcell
   - name: uaa-release
   - name: bosh-release
   - name: bosh-aws-cpi-release
-  - name: stemcell
-  - name: bosh-src
 
 outputs:
   - name: compiled-releases
@@ -17,6 +17,6 @@ run:
   path: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.sh
 
 params:
-  TARGET: required
-  USERNAME: required
-  PASSWORD: required
+  BOSH_TARGET_IP: required
+  BOSH_USERNAME: admin
+  BOSH_PASSWORD: admin

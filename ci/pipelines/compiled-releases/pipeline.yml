@@ -6,15 +6,29 @@ resources:
       uri: https://github.com/cloudfoundry/bosh.git
       branch: {{branch}}
 
+  #
+  # releases to compile
+  #
+
   - name: uaa-release
     type: bosh-io-release
     source:
       repository: cloudfoundry/uaa-release
-#  - name: uaa-on-ubuntu-trusty-master
-#    type: s3
-#    source:
-#      bucket: example
-#      versioned_file: uaa-on-ubuntu-trusty-
+
+  - name: bosh-aws-cpi-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry-incubator/bosh-aws-cpi-release
+
+  - name: bosh-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry/bosh
+
+  #
+  # stemcells to compile on
+  #
+
   - name: ubuntu-trusty-stemcell
     type: bosh-io-stemcell
     source:
@@ -26,21 +40,18 @@ resources:
       bucket: bosh-jenkins-artifacts
       regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
 
-  - name: bosh-aws-cpi-release
-    type: bosh-io-release
-    source:
-      repository: cloudfoundry-incubator/bosh-aws-cpi-release
-  - name: bosh-release
-    type: bosh-io-release
-    source:
-      repository: cloudfoundry/bosh
-  - name: bosh-compiled-release-tarballs
+  #
+  # compiled releases
+  #
+
+  - name: uaa-bosh-compiled-release-tarballs
     type: s3
     source:
       bucket: bosh-compiled-release-tarballs
       access_key_id: {{aws_key_id}}
       secret_access_key: {{aws_secret_access_key}}
       regexp: .*([1-9\.]+)\.tgz
+
 jobs:
   - name: deploy-director
     plan:
@@ -51,6 +62,7 @@ jobs:
           BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
+          BOSH_TARGET_IP: 10.0.2.6
 
   - name: ubuntu-trusty-master
     plan:
@@ -65,12 +77,16 @@ jobs:
       - task: export-release
         file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
-          TARGET: https://10.0.2.6:25555
-          USERNAME: admin
-          PASSWORD: admin
+          BOSH_TARGET_IP: 10.0.2.6
       - put: bosh-compiled-release-tarballs
         params:
-          file: compiled-releases/*.tgz
+          file:  compiled-releases/release-uaa*.tgz
+      - put: bosh-compiled-release-tarballs
+        params:
+          file: compiled-releases/release-bosh*.tgz
+      - put: bosh-compiled-release-tarballs
+        params:
+          file: compiled-releases/bosh-release*.tgz
 
   - name: ubuntu-trusty-3146
     plan:
@@ -85,9 +101,7 @@ jobs:
       - task: export-release
         file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
         params:
-          TARGET: https://10.0.2.6:25555
-          USERNAME: admin
-          PASSWORD: admin
+          BOSH_TARGET_IP: 10.0.2.6
       - put: bosh-compiled-release-tarballs
         params:
           file:  compiled-releases/release-uaa*.tgz
