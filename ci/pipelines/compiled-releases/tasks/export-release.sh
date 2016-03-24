@@ -10,6 +10,45 @@ bosh -n target "$TARGET"
 bosh login "$USERNAME" "$PASSWORD"
 DIRECTOR_UUID=`bosh status --uuid`
 
+
+
+#
+# create/upload cloud config
+#
+
+cat > /tmp/cloud-config <<EOF
+---
+vm_types:
+- name: default
+  cloud_properties:
+    instance_type: c4.large
+    ephemeral_disk:
+      size: 8192
+
+networks:
+- name: private
+  subnets:
+  - range: 10.0.2.0/24
+    gateway: 10.0.2.1
+    dns: [169.254.169.253]
+    reserved: [10.0.2.0-10.0.2.10]
+    cloud_properties:
+        subnet: "subnet-20d8bf56"
+
+compilation:
+  workers: 5
+  vm_type: default
+  network: private
+EOF
+
+bosh update cloud-config /tmp/cloud-config
+
+
+
+
+
+
+
 cat > manifest.yml <<EOF
 ---
 director_uuid: "$DIRECTOR_UUID"
