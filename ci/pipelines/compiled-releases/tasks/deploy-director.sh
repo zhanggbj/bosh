@@ -2,6 +2,8 @@
 
 set -eu
 
+export HOME=$PWD/director-state
+
 TASK_DIR=$PWD
 
 cd bosh-src/ci/pipelines/compiled-releases
@@ -49,8 +51,11 @@ networks:
 
 compilation:
   workers: 8
+  reuse_compilation_vms: true
   vm_type: default
   network: private
 EOF
 
 bosh update cloud-config /tmp/cloud-config
+
+cp bosh-init.yml bosh-init-state.json $TASK_DIR/director-state/

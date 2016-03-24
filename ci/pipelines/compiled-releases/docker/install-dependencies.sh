@@ -13,8 +13,8 @@ chmod +x /bin/bosh-init
 RUBY_INSTALL_VER="0.5.0"
 RUBY_INSTALL_SHA1=d8061e46fe2ea40f867e219cdd7d28fea24f47ca
 RUBY_INSTALL_URL=https://github.com/postmodern/ruby-install/archive/v${RUBY_INSTALL_VER}.tar.gz
-RUBY_VER="2.1.3"
-RUBY_VER_SHA256=36ce72f84ae4129f6cc66e33077a79d87b018ea7bf1dbc3d353604bf006f76d6
+RUBY_VER="2.1.7"
+RUBY_VER_SHA256=b02c1a5ecd718e3f6b316384d4ed6572f862a46063f5ae23d0340b0a245859b6
 
 echo "Installing ruby-install v${RUBY_INSTALL_VER}..."
 wget -O ruby-install-${RUBY_INSTALL_VER}.tar.gz $RUBY_INSTALL_URL

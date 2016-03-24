@@ -9,6 +9,9 @@ inputs:
   - name: bosh-aws-cpi-release
   - name: stemcell
 
+outputs:
+  - name: director-state
+
 run:
   path: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.sh
 
