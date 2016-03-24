@@ -2,9 +2,7 @@
 
 set -eu
 
-BOSH_RELEASE=$PWD/bosh-release/*.tgz
-BOSH_AWS_CPI_RELEASE=$PWD/bosh-aws-cpi-release/*.tgz
-STEMCELL=$PWD/stemcell/*.tgz
+TASK_DIR=$PWD
 
 cd bosh-src/ci/pipelines/compiled-releases
 
@@ -14,9 +12,7 @@ sed \
   -e "s%{{bosh_username}}%$BOSH_USERNAME%g" \
   -e "s%{{bosh_password}}%$BOSH_PASSWORD%g" \
   -e "s%{{bosh_target_ip}}%$BOSH_TARGET_IP%g" \
-  -e "s%{{bosh_release}}%$BOSH_RELEASE%g" \
-  -e "s%{{bosh_aws_cpi_release}}%$BOSH_AWS_CPI_RELEASE%g" \
-  -e "s%{{stemcell}}%$STEMCELL%g" \
+  -e "s%{{task_dir}}%$TASK_DIR%g" \
   tasks/bosh-init-template.yml \
   > bosh-init.yml
 

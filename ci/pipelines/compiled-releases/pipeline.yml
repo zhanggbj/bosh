@@ -32,7 +32,7 @@ resources:
   - name: ubuntu-trusty-stemcell
     type: bosh-io-stemcell
     source:
-      name: light-bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
 
   - name: ubuntu-trusty-3146-stemcell
     type: s3
