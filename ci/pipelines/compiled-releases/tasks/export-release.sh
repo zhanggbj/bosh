@@ -90,11 +90,10 @@ bosh -n deploy
 for EXPORT_RELEASE in $EXPORT_RELEASES ; do
   bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
 
-  if [ "$(echo $EXPORT_RELEASE | sed -e s/bosh\\/.*/true/ )" == "true" ]; then
-    mv *.tgz compiled-releases/$(find *.tgz | sed s/release-bosh/bosh-release/)
-  else
-    mv *.tgz compiled-releases
-  fi
+  RELEASE_NAME=$( dirname "$EXPORT_RELEASE" )
+
+  mkdir "compiled-releases/$RELEASE_NAME"
+  mv *.tgz "compiled-releases/$RELEASE_NAME"
 done
 
 #

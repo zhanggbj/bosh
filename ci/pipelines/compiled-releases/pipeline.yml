@@ -117,8 +117,8 @@ jobs:
     plan:
       - aggregate:
           - get: bosh-src
-            passed:
-              - deploy-director
+#            passed:
+#              - deploy-director
           - { get: uaa-release }
           - { get: bosh-release }
           - { get: bosh-aws-cpi-release }
@@ -128,22 +128,22 @@ jobs:
         params:
           BOSH_TARGET_IP: 10.0.2.6
       - aggregate:
-        - put: bosh-aws-cpi-on-ubuntu-trusty-3146
+        - put: bosh-aws-cpi-on-ubuntu-trusty
           params:
-            file: compiled-releases/release-bosh-aws-cpi-*.tgz
-        - put: bosh-on-ubuntu-trusty-3146
+            file: compiled-releases/bosh-aws-cpi/*.tgz
+        - put: bosh-on-ubuntu-trusty
           params:
-            file: "compiled-releases/release-bosh-\\d.+.tgz"
-        - put: uaa-on-ubuntu-trusty-3146
+            file: "compiled-releases/bosh/*.tgz"
+        - put: uaa-on-ubuntu-trusty
           params:
-            file:  compiled-releases/release-uaa-*.tgz
+            file:  compiled-releases/uaa/*.tgz
 
   - name: ubuntu-trusty
     plan:
       - aggregate:
           - get: bosh-src
-            passed:
-              - ubuntu-trusty-3146
+#            passed:
+#              - ubuntu-trusty-3146
           - { get: uaa-release }
           - { get: bosh-release }
           - { get: bosh-aws-cpi-release }
@@ -155,10 +155,10 @@ jobs:
       - aggregate:
         - put: bosh-aws-cpi-on-ubuntu-trusty
           params:
-            file: compiled-releases/release-bosh-aws-cpi-*.tgz
+            file: compiled-releases/bosh-aws-cpi/*.tgz
         - put: bosh-on-ubuntu-trusty
           params:
-            file: "compiled-releases/release-bosh-\\d.+.tgz"
+            file: "compiled-releases/bosh/*.tgz"
         - put: uaa-on-ubuntu-trusty
           params:
-            file:  compiled-releases/release-uaa-*.tgz
+            file:  compiled-releases/uaa/*.tgz
