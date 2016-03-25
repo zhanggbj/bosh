@@ -2,8 +2,6 @@
 
 set -eu
 
-export HOME=$PWD/director-state
-
 TASK_DIR=$PWD
 
 cd bosh-src/ci/pipelines/compiled-releases
@@ -58,4 +56,5 @@ EOF
 
 bosh update cloud-config /tmp/cloud-config
 
+mv $HOME/.bosh_init $TASK_DIR/director-state/
 cp bosh-init.yml bosh-init-state.json $TASK_DIR/director-state/

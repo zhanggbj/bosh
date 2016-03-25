@@ -97,7 +97,7 @@ resources:
       regexp: "todo.tgz"
 
 jobs:
-  - name: compile
+  - name: compile-releases
     plan:
       - aggregate:
           - get: bosh-src
@@ -117,7 +117,7 @@ jobs:
           BOSH_TARGET_IP: 10.0.2.6
       - do:
         - do:
-          - task: export-release-3146
+          - task: ubuntu-trusty-3146
             input_mapping:
               stemcell: ubuntu-trusty-3146-stemcell
             file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
@@ -134,7 +134,7 @@ jobs:
               params:
                 file:  compiled-releases/uaa/*.tgz
         - do:
-          - task: export-release-latest
+          - task: ubuntu-trusty-latest
             input_mapping:
               stemcell: ubuntu-trusty-stemcell
             file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
