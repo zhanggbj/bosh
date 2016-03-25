@@ -94,6 +94,7 @@ for EXPORT_RELEASE in $EXPORT_RELEASES ; do
 
   mkdir "compiled-releases/$RELEASE_NAME"
   mv *.tgz "compiled-releases/$RELEASE_NAME"
+  sha1sum "compiled-release/$RELEASE_NAME/*.tgz"
 done
 
 #
