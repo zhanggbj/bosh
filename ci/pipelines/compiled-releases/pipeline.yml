@@ -1,24 +1,30 @@
 ---
 resources:
+
   - name: bosh-src
     type: git
     source:
       uri: https://github.com/cloudfoundry/bosh.git
       branch: {{branch}}
 
-  #
-  # releases to compile
-  #
-
   - name: bosh-aws-cpi-release
     type: bosh-io-release
     source:
       repository: cloudfoundry-incubator/bosh-aws-cpi-release
 
+  #
+  # releases to compile
+  #
   - name: bosh-release
     type: bosh-io-release
     source:
       repository: cloudfoundry/bosh
+
+#  - name: bosh-release-255.6
+#    type: bosh-io-release
+#    version: 255.6
+#    source:
+#      repository: cloudfoundry/bosh
 
   - name: uaa-release
     type: bosh-io-release
@@ -35,10 +41,10 @@ resources:
       name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
 
   - name: ubuntu-trusty-3146-stemcell
-    type: s3
+    type: bosh-io-stemcell
+    version: 3146.10
     source:
-      bucket: bosh-jenkins-artifacts
-      regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
+      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
 
   #
   # compiled releases
@@ -46,65 +52,43 @@ resources:
 
   # ubuntu-trusty
 
-  - name: bosh-aws-cpi-on-ubuntu-trusty
-    type: s3
-    source:
-      bucket: "bosh-compiled-release-tarballs"
-      access_key_id: {{aws_key_id}}
-      secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
-
   - name: bosh-on-ubuntu-trusty
     type: s3
     source:
-      bucket: "bosh-compiled-release-tarballs"
+      bucket: "test-bosh-compiled-release-tarballs"
       access_key_id: {{aws_key_id}}
       secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
 
   - name: uaa-on-ubuntu-trusty
     type: s3
     source:
-      bucket: "bosh-compiled-release-tarballs"
+      bucket: "test-bosh-compiled-release-tarballs"
       access_key_id: {{aws_key_id}}
       secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
 
   # ubuntu-trusty-3146
-
-  - name: bosh-aws-cpi-on-ubuntu-trusty-3146
-    type: s3
-    source:
-      bucket: "bosh-compiled-release-tarballs"
-      access_key_id: {{aws_key_id}}
-      secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
 
   - name: bosh-on-ubuntu-trusty-3146
     type: s3
     source:
-      bucket: "bosh-compiled-release-tarballs"
+      bucket: "test-bosh-compiled-release-tarballs"
       access_key_id: {{aws_key_id}}
       secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
 
   - name: uaa-on-ubuntu-trusty-3146
     type: s3
     source:
-      bucket: "bosh-compiled-release-tarballs"
+      bucket: "test-bosh-compiled-release-tarballs"
       access_key_id: {{aws_key_id}}
       secret_access_key: {{aws_secret_access_key}}
-      regexp: "todo.tgz"
 
 jobs:
-  - name: compile-releases
+  - name: compile-bosh-release-latest-ubuntu-trusty-latest
     plan:
       - aggregate:
           - get: bosh-src
-          - get: uaa-release
           - get: bosh-release
           - get: bosh-aws-cpi-release
-          - get: ubuntu-trusty-3146-stemcell
           - get: ubuntu-trusty-stemcell
       - task: deploy-director
         file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
@@ -114,42 +98,114 @@ jobs:
           BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
-          BOSH_TARGET_IP: 10.0.2.6
+          BOSH_TARGET_IP: 10.0.2.7
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.19, 10.0.2.30-10.0.2.256]
       - do:
-        - do:
-          - task: ubuntu-trusty-3146
-            input_mapping:
-              stemcell: ubuntu-trusty-3146-stemcell
-            file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
-            params:
-              BOSH_TARGET_IP: 10.0.2.6
-          - aggregate:
-            - put: bosh-aws-cpi-on-ubuntu-trusty-3146
-              params:
-                file: compiled-releases/bosh-aws-cpi/*.tgz
-            - put: bosh-on-ubuntu-trusty-3146
-              params:
-                file: "compiled-releases/bosh/*.tgz"
-            - put: uaa-on-ubuntu-trusty-3146
-              params:
-                file:  compiled-releases/uaa/*.tgz
-        - do:
-          - task: ubuntu-trusty-latest
-            input_mapping:
-              stemcell: ubuntu-trusty-stemcell
-            file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
-            params:
-              BOSH_TARGET_IP: 10.0.2.6
-          - aggregate:
-            - put: bosh-aws-cpi-on-ubuntu-trusty
-              params:
-                file: compiled-releases/bosh-aws-cpi/*.tgz
-            - put: bosh-on-ubuntu-trusty
-              params:
-                file: "compiled-releases/bosh/*.tgz"
-            - put: uaa-on-ubuntu-trusty
-              params:
-                file:  compiled-releases/uaa/*.tgz
+        - task: export-release
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
+          input_mapping:
+            stemcell: ubuntu-trusty-stemcell
+            release: bosh-release
+          params:
+            BOSH_TARGET_IP: 10.0.2.7
+        - put: bosh-on-ubuntu-trusty
+          params:
+            file: "compiled-release/*.tgz"
+        ensure:
+          task: teardown-director
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/teardown-director.yml
+
+  - name: compile-bosh-release-latest-ubuntu-trusty-3146
+    plan:
+      - aggregate:
+          - get: bosh-src
+          - get: bosh-release
+          - get: bosh-aws-cpi-release
+          - get: ubuntu-trusty-3146-stemcell
+      - task: deploy-director
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
+        input_mapping:
+          stemcell: ubuntu-trusty-3146-stemcell
+        params:
+          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
+          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
+          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
+          BOSH_TARGET_IP: 10.0.2.8
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.29, 10.0.2.40-10.0.2.256]
+      - do:
+        - task: export-release
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
+          input_mapping:
+            stemcell: ubuntu-trusty-3146-stemcell
+            release: bosh-release
+          params:
+            BOSH_TARGET_IP: 10.0.2.8
+        - put: bosh-on-ubuntu-trusty-3146
+          params:
+            file: "compiled-release/*.tgz"
+        ensure:
+          task: teardown-director
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/teardown-director.yml
+  - name: compile-uaa-release-latest-ubuntu-trusty-latest
+    plan:
+      - aggregate:
+          - get: bosh-src
+          - get: uaa-release
+          - get: bosh-aws-cpi-release
+          - get: ubuntu-trusty-stemcell
+      - task: deploy-director
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
+        input_mapping:
+          stemcell: ubuntu-trusty-stemcell
+        params:
+          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
+          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
+          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
+          BOSH_TARGET_IP: 10.0.2.9
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.39, 10.0.2.50-10.0.2.256]
+      - do:
+        - task: export-release
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
+          input_mapping:
+            stemcell: ubuntu-trusty-stemcell
+            release: uaa-release
+          params:
+            BOSH_TARGET_IP: 10.0.2.9
+        - put: uaa-on-ubuntu-trusty
+          params:
+            file: "compiled-release/*.tgz"
+        ensure:
+          task: teardown-director
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/teardown-director.yml
+
+  - name: compile-uaa-release-latest-ubuntu-trusty-3146
+    plan:
+      - aggregate:
+          - get: bosh-src
+          - get: uaa-release
+          - get: bosh-aws-cpi-release
+          - get: ubuntu-trusty-3146-stemcell
+      - task: deploy-director
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.yml
+        input_mapping:
+          stemcell: ubuntu-trusty-3146-stemcell
+        params:
+          BOSH_INIT_ACCESS_KEY: {{bosh_init_access_key}}
+          BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
+          BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
+          BOSH_TARGET_IP: 10.0.2.10
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.49, 10.0.2.60-10.0.2.256]
+      - do:
+        - task: export-release
+          file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
+          input_mapping:
+            stemcell: ubuntu-trusty-3146-stemcell
+            release: uaa-release
+          params:
+            BOSH_TARGET_IP: 10.0.2.10
+        - put: uaa-on-ubuntu-trusty-3146
+          params:
+            file: "compiled-release/*.tgz"
         ensure:
           task: teardown-director
           file: bosh-src/ci/pipelines/compiled-releases/tasks/teardown-director.yml

@@ -4,6 +4,8 @@ set -eu
 
 TASK_DIR=$PWD
 
+( cd stemcell && mv *.tgz stemcell.tgz )
+
 cd bosh-src/ci/pipelines/compiled-releases
 
 sed \
@@ -43,7 +45,7 @@ networks:
   - range: 10.0.2.0/24
     gateway: 10.0.2.1
     dns: [169.254.169.253]
-    reserved: [10.0.2.0-10.0.2.10]
+    reserved: $BOSH_RESERVED_RANGES
     cloud_properties:
         subnet: "subnet-20d8bf56"
 

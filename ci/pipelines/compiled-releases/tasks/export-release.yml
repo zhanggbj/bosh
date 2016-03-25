@@ -6,12 +6,10 @@ image: docker:///bosh/compiled-release
 inputs:
   - name: bosh-src
   - name: stemcell
-  - name: uaa-release
-  - name: bosh-release
-  - name: bosh-aws-cpi-release
+  - name: release
 
 outputs:
-  - name: compiled-releases
+  - name: compiled-release
 
 run:
   path: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.sh

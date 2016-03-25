@@ -43,33 +43,25 @@ EOF
 # release metadata/upload
 #
 
-EXPORT_RELEASES=""
-
 echo "releases:" >> manifest.yml
 
-for RELEASE_DIR in $( find . -maxdepth 1 -name '*-release' ) ; do
-  cd $RELEASE_DIR
+cd release
 
-  # extract our true name and version
-  tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
-  RELEASE_NAME=$( grep -E '^name: ' release.MF | awk '{print $2}' | tr -d "\"'" )
+# extract our true name and version
+tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
 
-  RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\"'" )
+RELEASE_NAME=$( grep -E '^name: ' release.MF | awk '{print $2}' | tr -d "\"'" )
+RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\"'" )
 
-  bosh upload release --skip-if-exists *.tgz
+bosh upload release --skip-if-exists *.tgz
 
-  cd ../
+cd ../
 
-  # include ourselves in the manifest
-  cat >> manifest.yml <<EOF
+# include ourselves in the manifest
+cat >> manifest.yml <<EOF
 - name: "$RELEASE_NAME"
   version: "$RELEASE_VERSION"
 EOF
-
-  # remember to export us later
-  EXPORT_RELEASES="$EXPORT_RELEASES $RELEASE_NAME/$RELEASE_VERSION"
-done
-
 
 #
 # compilation deployment
@@ -87,15 +79,13 @@ bosh -n deploy
 # compile/export all releases
 #
 
-for EXPORT_RELEASE in $EXPORT_RELEASES ; do
-  bosh export release $EXPORT_RELEASE $STEMCELL_OS/$STEMCELL_VERSION
+bosh export release $RELEASE_NAME/$RELEASE_VERSION $STEMCELL_OS/$STEMCELL_VERSION
 
-  RELEASE_NAME=$( dirname "$EXPORT_RELEASE" )
+RELEASE_NAME=$( dirname "$RELEASE_NAME/$RELEASE_VERSION" )
 
-  mkdir "compiled-releases/$RELEASE_NAME"
-  mv *.tgz "compiled-releases/$RELEASE_NAME"
-  sha1sum "compiled-release/$RELEASE_NAME/*.tgz"
-done
+mkdir "compiled-release"
+mv *.tgz "compiled-release"
+sha1sum "compiled-release/*.tgz"
 
 #
 # cleanup
