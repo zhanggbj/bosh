@@ -83,7 +83,6 @@ bosh export release $RELEASE_NAME/$RELEASE_VERSION $STEMCELL_OS/$STEMCELL_VERSIO
 
 RELEASE_NAME=$( dirname "$RELEASE_NAME/$RELEASE_VERSION" )
 
-mkdir "compiled-release"
 mv *.tgz "compiled-release"
 sha1sum "compiled-release/*.tgz"
 

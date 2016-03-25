@@ -41,10 +41,10 @@ resources:
       name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
 
   - name: ubuntu-trusty-3146-stemcell
-    type: bosh-io-stemcell
-    version: 3146.10
+    type: s3
     source:
-      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+      bucket: bosh-jenkins-artifacts
+      regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
 
   #
   # compiled releases
@@ -103,7 +103,7 @@ jobs:
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
           BOSH_TARGET_IP: 10.0.2.7
-          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.19, 10.0.2.30-10.0.2.256]
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.19, 10.0.2.30-10.0.2.255]
       - do:
         - task: export-release
           file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
@@ -141,7 +141,7 @@ jobs:
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
           BOSH_TARGET_IP: 10.0.2.8
-          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.29, 10.0.2.40-10.0.2.256]
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.29, 10.0.2.40-10.0.2.255]
       - do:
         - task: export-release
           file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
@@ -178,7 +178,7 @@ jobs:
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
           BOSH_TARGET_IP: 10.0.2.9
-          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.39, 10.0.2.50-10.0.2.256]
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.39, 10.0.2.50-10.0.2.255]
       - do:
         - task: export-release
           file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
@@ -216,7 +216,7 @@ jobs:
           BOSH_INIT_SECRET_KEY: {{bosh_init_secret_key}}
           BOSH_SSH_TUNNEL_KEY: {{bosh_ssh_tunnel_key}}
           BOSH_TARGET_IP: 10.0.2.10
-          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.49, 10.0.2.60-10.0.2.256]
+          BOSH_RESERVED_RANGES: [10.0.2.0-10.0.2.49, 10.0.2.60-10.0.2.255]
       - do:
         - task: export-release
           file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
