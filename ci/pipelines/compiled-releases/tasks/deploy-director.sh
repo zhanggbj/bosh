@@ -4,7 +4,9 @@ set -eu
 
 TASK_DIR=$PWD
 
-( cd stemcell && [ ! -f stemcell.tgz ] && mv *.tgz stemcell.tgz )
+set +e
+( cd stemcell; mv *.tgz stemcell.tgz )
+set -e
 
 cd bosh-src/ci/pipelines/compiled-releases
 
