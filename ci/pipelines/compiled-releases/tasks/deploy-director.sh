@@ -6,15 +6,13 @@ set +e
 ( cd stemcell; mv *.tgz stemcell.tgz )
 set -e
 
-cd bosh-src/ci/pipelines/compiled-releases
-
 sed \
   -e "s%{{access_key_id}}%$BOSH_INIT_ACCESS_KEY%g" \
   -e "s%{{secret_key_id}}%$BOSH_INIT_SECRET_KEY%g" \
   -e "s%{{bosh_username}}%$BOSH_USERNAME%g" \
   -e "s%{{bosh_password}}%$BOSH_PASSWORD%g" \
   -e "s%{{bosh_target_ip}}%$BOSH_TARGET_IP%g" \
-  tasks/bosh-init-template.yml \
+  bosh-src/ci/pipelines/compiled-releases/tasks/bosh-init-template.yml \
   > bosh-init.yml
 
 echo "$BOSH_SSH_TUNNEL_KEY" > ssh_tunnel_key
