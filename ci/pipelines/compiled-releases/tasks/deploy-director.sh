@@ -2,8 +2,6 @@
 
 set -eu
 
-TASK_DIR=$PWD
-
 set +e
 ( cd stemcell; mv *.tgz stemcell.tgz )
 set -e
@@ -16,7 +14,6 @@ sed \
   -e "s%{{bosh_username}}%$BOSH_USERNAME%g" \
   -e "s%{{bosh_password}}%$BOSH_PASSWORD%g" \
   -e "s%{{bosh_target_ip}}%$BOSH_TARGET_IP%g" \
-  -e "s%{{task_dir}}%$TASK_DIR%g" \
   tasks/bosh-init-template.yml \
   > bosh-init.yml
 

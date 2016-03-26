@@ -45,7 +45,7 @@ EOF
 
 echo "releases:" >> manifest.yml
 
-cd release
+pushd release
 
 # extract our true name and version
 tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
@@ -55,7 +55,7 @@ RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\
 
 bosh upload release --skip-if-exists *.tgz
 
-cd ../
+popd
 
 # include ourselves in the manifest
 cat >> manifest.yml <<EOF
@@ -83,8 +83,8 @@ bosh export release $RELEASE_NAME/$RELEASE_VERSION $STEMCELL_OS/$STEMCELL_VERSIO
 
 RELEASE_NAME=$( dirname "$RELEASE_NAME/$RELEASE_VERSION" )
 
-mv *.tgz "compiled-release"
-sha1sum "compiled-release/*.tgz"
+mv *.tgz compiled-release
+sha1sum compiled-release/*.tgz
 
 #
 # cleanup

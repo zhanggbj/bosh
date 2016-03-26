@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-export HOME=$PWD/director-state
+cp -r director-state/* .
 
-cd director-state
+export HOME=$PWD
 
 bosh-init delete bosh-init.yml
