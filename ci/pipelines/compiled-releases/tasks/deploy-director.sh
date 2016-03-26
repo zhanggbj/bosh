@@ -55,5 +55,5 @@ EOF
 
 bosh update cloud-config /tmp/cloud-config
 
-mv $HOME/.bosh_init $TASK_DIR/director-state/
-cp bosh-init.yml bosh-init-state.json $TASK_DIR/director-state/
+mv $HOME/.bosh_init director-state/
+cp bosh-init.yml bosh-init-state.json director-state/
