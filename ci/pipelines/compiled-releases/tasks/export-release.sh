@@ -45,7 +45,7 @@ EOF
 
 echo "releases:" >> manifest.yml
 
-pushd release
+cd release
 
 # extract our true name and version
 tar -xzf *.tgz $( tar -tzf *.tgz | grep 'release.MF' )
@@ -55,7 +55,7 @@ RELEASE_VERSION=$( grep -E '^version: ' release.MF | awk '{print $2}' | tr -d "\
 
 bosh upload release --skip-if-exists *.tgz
 
-popd
+cd ../
 
 # include ourselves in the manifest
 cat >> manifest.yml <<EOF
