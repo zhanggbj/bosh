@@ -48,7 +48,7 @@ module Bosh::Director
 
         context 'when the task does not exist' do
           it 'responds with status 404' do
-            delete '/unknown-task'
+            delete '/1'
             expect(last_response.status).to eq(404)
           end
         end

@@ -74,8 +74,8 @@ module SpecHelper
     end
 
     def connect_database(path)
-      db     = ENV['DB_CONNECTION']     || "sqlite://#{File.join(path, "director.db")}"
-      dns_db = ENV['DNS_DB_CONNECTION'] || "sqlite://#{File.join(path, "dns.db")}"
+      db     = ENV['DB_CONNECTION']     || "postgres://postgres:@localhost/director"
+      dns_db = ENV['DNS_DB_CONNECTION'] || "postgres://postgres:@localhost/dns"
 
       db_opts = {:max_connections => 32, :pool_timeout => 10}
 
@@ -105,17 +105,15 @@ module SpecHelper
       Sequel::Migrator.apply(@db, @director_migrations, nil)
     end
 
-    def reset_database
-      disconnect_database
+    def reset(logger)
+      Bosh::Director::Config.clear
+      Bosh::Director::Config.db = @db
+      Bosh::Director::Config.dns_db = @dns_db
+      Bosh::Director::Config.logger = logger
+      Bosh::Director::Config.trusted_certs = ''
+      Bosh::Director::Config.max_threads = 1
 
-      if @db_dir && File.directory?(@db_dir)
-        FileUtils.rm_rf(@db_dir)
-      end
-
-      @db_dir = Dir.mktmpdir(nil, @temp_dir)
-      FileUtils.cp(Dir.glob(File.join(@temp_dir, "*.db")), @db_dir)
-
-      connect_database(@db_dir)
+      reset_database
 
       Bosh::Director::Models.constants.each do |e|
         c = Bosh::Director::Models.const_get(e)
@@ -133,14 +131,22 @@ module SpecHelper
       end
     end
 
-    def reset(logger)
-      reset_database
+    def reset_database
+      # Sequel.transaction([@db, @dns_db], :rollback=>:always, :auto_savepoint=>true) { example.run }
 
-      Bosh::Director::Config.clear
-      Bosh::Director::Config.db = @db
-      Bosh::Director::Config.dns_db = @dns_db
-      Bosh::Director::Config.logger = logger
-      Bosh::Director::Config.trusted_certs = ''
+      director_tables = @db.tables.map { |t| %("#{t}") }.join(',')
+      @db.run "TRUNCATE TABLE #{director_tables} RESTART IDENTITY;"
+      dns_tables = @dns_db.tables.map { |t| %("#{t}") }.join(',')
+      @dns_db.run "TRUNCATE TABLE #{dns_tables} RESTART IDENTITY;"
+
+      # @db.foreign_keys = false
+      # @dns_db.foreign_keys = false
+      # @db.tables.each{|x| @db.from(x).truncate}
+      # @dns_db.tables.each{|x| @dns_db.from(x).truncate}
+      # @db.run('UPDATE sqlite_sequence SET seq = 0')
+      # @dns_db.run('UPDATE sqlite_sequence SET seq = 0')
+      # @db.foreign_keys = true
+      # @dns_db.foreign_keys = true
     end
   end
 end
