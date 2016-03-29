@@ -63,8 +63,6 @@ module SpecHelper
     end
 
     def init_database
-      Bosh::Director::Config.patch_sqlite
-
       @dns_migrations = File.expand_path("../../db/migrations/dns", __FILE__)
       @director_migrations = File.expand_path("../../db/migrations/director", __FILE__)
       Sequel.extension :migration
