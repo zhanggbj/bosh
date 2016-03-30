@@ -6,6 +6,10 @@ module Bosh::Director::DeploymentPlan
 
     before do
       allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud)
+      pool = instance_double(Bosh::Director::ThreadPool)
+      allow(Bosh::Director::ThreadPool).to receive(:new).and_return(pool)
+      allow(pool).to receive(:wrap).and_yield(pool)
+      allow(pool).to receive(:process).and_yield
     end
 
     context 'the director database contains an instance with a static ip but no vm assigned (due to deploy failure)' do

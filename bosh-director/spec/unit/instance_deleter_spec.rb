@@ -79,13 +79,9 @@ module Bosh::Director
         end
 
         let(:persistent_disks) do
-          disk = Models::PersistentDisk.make(disk_cid: 'fake-disk-cid-1')
+          disk = Models::PersistentDisk.make(disk_cid: 'fake-disk-cid-1', instance: existing_instance)
           Models::Snapshot.make(persistent_disk: disk)
-          [Models::PersistentDisk.make(disk_cid: 'instance-disk-cid'), disk]
-        end
-
-        before do
-          persistent_disks.each { |disk| existing_instance.persistent_disks << disk }
+          [Models::PersistentDisk.make(disk_cid: 'instance-disk-cid', instance: existing_instance), disk]
         end
 
         it 'should delete the instances with the config max threads option' do
