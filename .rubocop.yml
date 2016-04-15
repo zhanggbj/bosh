@@ -48,9 +48,6 @@ MethodLength:
   CountComments: false
   Max: 20
 
-Blocks:
-  Enabled: false # {} for multi-line blocks in RSpec expectations is very common
-
 TrivialAccessors:
   Enabled: false # Bosh::Stemcell::Infrastructure#light? was a false positive
 
@@ -63,7 +60,10 @@ AlignParameters:
 IfUnlessModifier:
   Enabled: false # It's nice to be able to use an if on its line
 
-TrailingComma:
+TrailingCommaInLiteral:
+  Enabled: false
+
+TrailingCommaInArguments:
   Enabled: false
 
 WordArray:
