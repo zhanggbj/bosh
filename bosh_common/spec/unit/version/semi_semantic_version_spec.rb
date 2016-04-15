@@ -3,6 +3,28 @@ require 'common/version/semi_semantic_version'
 module Bosh::Common::Version
   describe SemiSemanticVersion do
 
+    context 'when comparing nil members against non-nil members of .versions' do
+      it 'does not raise an error' do
+        ssv1 = described_class.parse('1.0.1')
+        ssv2 = described_class.parse('1.0.1-alpha.1')
+        puts ssv1.pretty_inspect
+        puts ssv2.pretty_inspect
+        expect{
+          ssv2.version.pre_release == ssv1.version.pre_release
+          ssv1.version.pre_release == ssv2.version.pre_release
+        }.to_not raise_exception
+        expect{
+          ssv2.version.release == ssv1.version.release
+          ssv1.version.release == ssv2.version.release
+        }.to_not raise_exception
+        expect{
+          ssv2.version.post_release == ssv1.version.post_release
+          ssv1.version.post_release == ssv2.version.post_release
+        }.to_not raise_exception
+
+      end
+    end
+
     describe 'parse' do
       it 'creates a new object' do
         expect(described_class.parse('1.0.1')).to be_instance_of(described_class)
@@ -113,11 +135,13 @@ module Bosh::Common::Version
       let(:a) { described_class.parse('1.0.1') }
       let(:a2) { described_class.parse('1.0.1') }
       let(:b) { described_class.parse('1.0.2') }
+      let(:c) { described_class.parse(nil) }
 
       it 'compares two versions' do
         expect(a).to be < b
         expect(b).to be > a
         expect(a).to eq a2
+        expect(c).to eq b
       end
     end
 
