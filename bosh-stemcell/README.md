@@ -91,6 +91,10 @@ Substitute *\<current_build\>* with the current build number, which can be found
 
     bundle exec rake stemcell:build_with_local_os_image[aws,xen,ubuntu,trusty,go,$PWD/tmp/ubuntu_base_image.tgz]
 
+You can speed up the stemcell building process by not bundling MicroBOSH on the stemcells. This option can be enabled by setting the `BOSH_MICRO_ENABLED` environment variable to `no`.
+
+    BOSH_MICRO_ENABLED=no bundle exec rake stemcell:build_with_local_os_image[aws,xen,ubuntu,trusty,go,$PWD/tmp/ubuntu_base_image.tgz]
+
 
 Public OS images can be obtained here:
 

@@ -64,7 +64,7 @@ group :development, :test do
   gem 'pry'
 
   # avoid upgrading until this issue is resolved: https://github.com/eventmachine/eventmachine/issues/633
-  gem 'eventmachine', '1.0.4'
+  gem 'eventmachine', '1.0.6'
 
   # Explicitly do not require serverspec dependency
   # so that it could be monkey patched in a deterministic way
