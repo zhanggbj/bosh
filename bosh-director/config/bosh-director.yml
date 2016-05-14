@@ -5,8 +5,8 @@ logging:
   level: DEBUG
 dir: /tmp/boshdir
 db:
-  adapter: sqlite
-  database: /tmp/director.db
+  adapter: postgres
+  database: postgres://postgres:postgres@localhost:5432/director
   max_connections: 32
   pool_timeout: 10
 blobstore:

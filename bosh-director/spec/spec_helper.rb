@@ -74,8 +74,17 @@ module SpecHelper
     end
 
     def connect_database(path)
-      db     = ENV['DB_CONNECTION']     || "sqlite://#{File.join(path, "director.db")}"
-      dns_db = ENV['DNS_DB_CONNECTION'] || "sqlite://#{File.join(path, "dns.db")}"
+      puts ENV['DB']
+      case @db.class.to_s
+        when /postgresql/
+          db     = ENV['DB_CONNECTION']     || "postgres://postgres:postgres@localhost:5432/director"
+          dns_db = ENV['DNS_DB_CONNECTION'] || "postgres://postgres:postgres@localhost:5432/dns"
+        when /mysql/
+          raise "mysql not supported!!!"
+        else
+          db     = ENV['DB_CONNECTION']     || "sqlite://#{File.join(path, "director.db")}"
+          dns_db = ENV['DNS_DB_COzNNECTION'] || "sqlite://#{File.join(path, "dns.db")}"
+      end
 
       db_opts = {:max_connections => 32, :pool_timeout => 10}
 
@@ -133,8 +142,28 @@ module SpecHelper
     def reset_database(example)
       Sequel.transaction([@db, @dns_db], :rollback=>:always, :auto_savepoint=>true) { example.run }
 
-      @db.run('UPDATE sqlite_sequence SET seq = 0')
-      @dns_db.run('UPDATE sqlite_sequence SET seq = 0')
+
+      case @db.class.to_s
+        when /Postgres/
+          # select 'alter sequence '||relname||' restart with 1 ;' from pg_class where relkind='S' ;
+          # for each: Select setval('mytable_id_seq',1);
+
+          commands_string = @db["select 'alter sequence '||relname||' restart with 1 ;' from pg_class where relkind='S' ;"]
+          puts "commands string"
+          puts commands_string.pretty_inspect
+          commands_string.map {|x| puts 'a thing'; x["?column?".to_sym]}.each{|command| @db.run(command)}
+          # commands_string.each {|x| @db.run(x['?column?'])}
+        # commands_string.split(';').each {|command| @db.run("#{command};")}
+          # @db.run('UPDATE postgres_sequence SET seq = 0')
+          # @dns_db.run('UPDATE postgres_sequence SET seq = 0')
+        when /Mysql/
+
+        when /Sqlite/
+          @db.run('UPDATE sqlite_sequence SET seq = 0')
+          @dns_db.run('UPDATE sqlite_sequence SET seq = 0')
+
+      end
+
     end
   end
 end

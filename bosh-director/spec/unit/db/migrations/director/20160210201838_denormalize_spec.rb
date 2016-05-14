@@ -1,9 +1,12 @@
+
+
 require 'db_spec_helper'
+raise "after the require"
 
 module Bosh::Director
   describe 'add_vm_attributes_to_instance' do
     let(:db) { DBSpecHelper.db }
-    let(:migration_file) { '20160210201838_denormalize_compiled_package_stemcell_id_to_stemcell_name_and_version.rb' }
+    let(:migration_file) { '20160210201838_denormalize_spec.rb' }
 
     before do
       DBSpecHelper.migrate_all_before(migration_file)
