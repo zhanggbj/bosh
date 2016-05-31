@@ -277,9 +277,11 @@ module Bosh::Director
         context 'when virtual_delete_vm option is passed in' do
           let(:options) { {virtual_delete_vm: true} }
 
-          it 'deletes snapshots, persistent disk, releases old reservations, vm should not delete from cloud' do
+          it 'deletes snapshots, persistent disk, releases old reservations, vm should not be deleted from cloud' do
+
             expect(stopper).to receive(:stop)
-            expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
+            expect(cloud).not_to receive(:delete_vm)
+
             expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
             expect(dns_manager).to receive(:delete_dns_for_instance).with(existing_instance)
             expect(ip_provider).to receive(:release).with(reservation)
