@@ -39,6 +39,7 @@ module Bosh::Director
         :generate_vm_passwords,
         :remove_dev_tools,
         :director_ips,
+        :local_dns,
       )
 
       attr_reader(
@@ -160,6 +161,7 @@ module Bosh::Director
         @remove_dev_tools = config['remove_dev_tools']
         @director_ips = config.fetch('director_ips', [])
         @record_events = config.fetch('record_events', false)
+        @local_dns = config.fetch('local_dns', false)
 
         Bosh::Clouds::Config.configure(self)
 
