@@ -15,6 +15,10 @@ module Bosh::Director
 
       private
 
+      def deployment_name
+        @deployment.name if @deployment
+      end
+
       def parse_releases(runtime_manifest)
         @release_specs = []
 
@@ -60,6 +64,14 @@ module Bosh::Director
       def parse_addons(runtime_manifest)
         addons = safe_property(runtime_manifest, 'addons', :class => Array, :default => [])
         addons.each do |addon_spec|
+
+          if (addon_include = safe_property(addon_spec, 'include', :class => Hash, :optional => true))
+            addon_include_in_deployments = safe_property(addon_include, 'deployments', :class => Array, :default => [])
+            # addon_include_in_jobs = safe_property(addon_include, 'jobs', :class => Array, :default => [])
+            next if !addon_include_in_deployments.include?(deployment_name)
+
+          end
+
           deployment_plan_templates = []
 
           addon_jobs = safe_property(addon_spec, 'jobs', :class => Array, :default => [])
