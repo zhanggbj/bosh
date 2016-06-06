@@ -66,3 +66,8 @@ run_in_chroot $chroot "yum update --assumeyes"
 
 exclusions="mlocate firewalld"
 pkg_mgr erase $exclusions
+
+mkdir -p $chroot/etc/init
+
+cp $(dirname $0)/assets/etc/init/rpcbind.conf $chroot/etc/init/
+cp $(dirname $0)/assets/etc/init/rpcbind-boot.conf $chroot/etc/init/

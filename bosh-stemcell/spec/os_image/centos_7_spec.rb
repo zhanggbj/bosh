@@ -229,4 +229,22 @@ describe 'CentOS 7 OS image', os_image: true do
       it { should_not be_installed }
     end
   end
+
+  context 'ensure rpcbind is not enabled (cis: 6.7)' do
+    describe file('/etc/init/rpcbind-boot.conf') do
+      it { should be_file }
+
+      it 'should not have the start command' do
+        should_not contain /^[\s]*start[\s]+on[\s]/
+      end
+    end
+
+    describe file ('/etc/init/rpcbind.conf') do
+      it { should be_file }
+
+      it 'should not have the exec command' do
+        should_not contain /[\s]*exec[\s]/
+      end
+    end
+  end
 end
