@@ -61,6 +61,7 @@ module Bosh::Dev
         ApplyPromoteTagPushStage.new(@logger),
         BuildCandidateArtifactPromotionStage.new(@logger),
         GitBranchMergeStage.new(@logger),
+        BatsTaggerStage.new(@logger),
       ]
     end
 
@@ -68,7 +69,7 @@ module Bosh::Dev
       def initialize(logger)
         super('Apply, Promote, Tag & Push', logger)
         @promoter = GitPromoter.new(Dir.pwd, logger)
-        @tagger = GitTagger.new(logger)
+        @tagger = GitTagger.new(Dir.pwd, logger)
         @downloader = DownloadAdapter.new(logger)
       end
 
@@ -114,7 +115,7 @@ module Bosh::Dev
     class GitBranchMergeStage < Stage
       def initialize(logger)
         super('Merge Release Commit to Feature Branch', logger)
-        @tagger = GitTagger.new(logger)
+        @tagger = GitTagger.new(Dir.pwd, logger)
         @merger = GitBranchMerger.new(Dir.pwd, logger)
       end
 
@@ -137,6 +138,25 @@ module Bosh::Dev
 
         final_release_sha = @tagger.stable_tag_sha(candidate_build_number)
         @merger.branch_contains?(feature_branch, final_release_sha)
+      end
+    end
+
+    class BatsTaggerStage < Stage
+      include CommandHelper
+
+      BATS_ORIGIN = 'git@github.com:cloudfoundry/bosh-acceptance-tests.git'
+
+      def initialize(logger)
+        super('Tag passing BATs with stable', logger)
+        @tagger = GitTagger.new(File.join(Dir.pwd, 'bat'), logger)
+      end
+
+      def promote(stage_args)
+        @tagger.tag_and_push('HEAD', stage_args.fetch(:candidate_build_number), BATS_ORIGIN)
+      end
+
+      def promoted?(stage_args)
+        @tagger.tag_exists?(@tagger.stable_tag_name(stage_args.fetch(:candidate_build_number)))
       end
     end
   end

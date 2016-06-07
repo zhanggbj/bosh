@@ -31,12 +31,13 @@ module Bosh::Dev
       let(:stable_branch) { 'fake-stable_branch' }
       let(:feature_branch) { 'fake-feature-branch' }
       let(:final_release_sha) { 'fake-final-release-sha' }
-      let(:stable_tag_name) { 'fake-stable-tag-name' }
+      let(:stable_tag_name) { 'stable-fake-candidate_build_number' }
       let(:stable_tag_sha) { 'fake-stable-tag-sha' }
 
       let(:build) { instance_double('Bosh::Dev::Build', promote: nil) }
       let(:git_promoter) { instance_double('Bosh::Dev::GitPromoter', promote: nil) }
       let(:git_tagger) { instance_double('Bosh::Dev::GitTagger', tag_and_push: nil) }
+      let(:bats_git_tagger) { instance_double('Bosh::Dev::GitTagger', tag_and_push: nil, stable_tag_name: nil) }
       let(:git_branch_merger) { instance_double('Bosh::Dev::GitBranchMerger', merge: nil) }
       let(:download_adapter) { instance_double('Bosh::Dev::DownloadAdapter', download: nil) }
       let(:release_change_promoter) { instance_double('Bosh::Dev::ReleaseChangePromoter', promote: nil) }
@@ -46,9 +47,9 @@ module Bosh::Dev
       before do
         allow(Build).to receive(:candidate).and_return(build)
         allow(GitPromoter).to receive(:new).and_return(git_promoter)
-        allow(GitTagger).to receive(:new).and_return(git_tagger)
+        allow(GitTagger).to receive(:new).with(/\/bat$/, Logging::Logger).and_return(bats_git_tagger)
+        allow(GitTagger).to receive(:new).with(Dir.pwd, Logging::Logger).and_return(git_tagger)
         allow(GitBranchMerger).to receive(:new).and_return(git_branch_merger)
-
         allow(Bosh::Dev::DownloadAdapter).to receive(:new).and_return(download_adapter)
         allow(Bosh::Dev::ReleaseChangePromoter).to receive(:new).with(
           candidate_build_number,
@@ -77,6 +78,9 @@ module Bosh::Dev
         allow(git_tagger).to receive(:stable_tag_sha).with(candidate_build_number).and_return(stable_tag_sha)
         allow(git_tagger).to receive(:stable_tag_for?).with(candidate_sha).and_return(false)
 
+        allow(bats_git_tagger).to receive(:stable_tag_name).with(candidate_build_number).and_return("stable-#{candidate_build_number}")
+        allow(bats_git_tagger).to receive(:tag_exists?).with(stable_tag_name).and_return(false)
+
         allow(git_branch_merger).to receive(:branch_contains?).with(feature_branch, stable_tag_sha).and_return(false)
 
         allow(Open3).to receive(:capture3).with("git ls-tree #{stable_tag_sha} -- bat | awk '{ print $3 }'", chdir: Dir.pwd).
@@ -88,6 +92,7 @@ module Bosh::Dev
         let(:should_skip_release_promotion) { true }
 
         it 'should initialize the ReleaseChangePromoter so that it does not promote the release' do
+          expect(bats_git_tagger).to receive(:tag_and_push)
           expect(Bosh::Dev::ReleaseChangePromoter).to receive(:new).with(
             candidate_build_number,
             candidate_sha,
@@ -141,6 +146,7 @@ module Bosh::Dev
       context 'when the current sha has been promoted before' do
         before do
           allow(git_tagger).to receive(:stable_tag_for?).with(candidate_sha).and_return(true)
+          allow(bats_git_tagger).to receive(:tag_exists?).with(stable_tag_name).and_return(true)
         end
 
         it 'skips git promotion' do

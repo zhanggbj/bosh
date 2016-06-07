@@ -3,7 +3,7 @@ require 'bosh/dev/git_tagger'
 
 module Bosh::Dev
   describe GitTagger do
-    subject(:git_tagger) { described_class.new(logger) }
+    subject(:git_tagger) { described_class.new('fake-dir', logger) }
     before { allow(Dir).to receive(:pwd).and_return('fake-dir') }
 
     describe '#tag_and_push' do
@@ -45,6 +45,17 @@ module Bosh::Dev
           expect {
             git_tagger.tag_and_push(sha, build_number)
           }.to raise_error(/Failed to push tags/)
+        end
+      end
+
+      context 'when pushing to a custom origin' do
+        let(:git_uri) { 'git@git.example.com:somewhere/else.git' }
+
+        it 'raises an error' do
+          expect(Open3).to receive(:capture3).with("git push #{git_uri} --tags", chdir: 'fake-dir').and_return(success)
+          git_tagger.tag_and_push(sha, build_number, git_uri)
+
+          git_tagger.tag_and_push(sha, build_number, git_uri)
         end
       end
 
@@ -106,6 +117,38 @@ module Bosh::Dev
         )
 
         expect(git_tagger.stable_tag_for?(commit_sha)).to eq(false)
+      end
+    end
+
+    describe '#tag_exists?' do
+      before {
+        expect(Open3).to receive(:capture3).with('git fetch --tags', chdir: 'fake-dir').and_return(
+            [ '', nil, instance_double('Process::Status', success?: true) ]
+          )
+      }
+
+      context 'tag exists' do
+        let(:tag_name) { 'known-tag' }
+
+        it 'returns true' do
+          expect(Open3).to receive(:capture3).with("git rev-parse #{tag_name}^{}", chdir: 'fake-dir').and_return(
+              [ 'a1b2c3d4', nil, instance_double('Process::Status', success?: true) ]
+            )
+
+          expect(git_tagger.tag_exists?(tag_name)).to eq(true)
+        end
+      end
+
+      context 'tag does not exist' do
+        let(:tag_name) { 'unknown-tag' }
+
+        it 'returns false' do
+          expect(Open3).to receive(:capture3).with("git rev-parse #{tag_name}^{}", chdir: 'fake-dir').and_return(
+              [ tag_name, 'error', instance_double('Process::Status', success?: false) ]
+            )
+
+          expect(git_tagger.tag_exists?(tag_name)).to eq(false)
+        end
       end
     end
 
