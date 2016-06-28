@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `x2_FVfGn0gf54_BX79gD7B4zJ2ENMXYy`
+  - USN-3020-1: Linux kernel (Vivid HWE) vulnerabilities
+  - built from develop (383e11d66bb5326eaa342ca695e1b416b50b5c56)
+
 * `OIJ7Qeu3QZMG3J0rSoI6lx8hdcZfaV5R`
   - update for CIS tests
   - built from develop (99aebc025dc4093981395d75be52369ced2d7131)
@@ -673,6 +677,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `feT5j7pbSjOLz6DmTq2.yvnoDiutWbt7`
+  - periodic bump
+  - built from develop (383e11d66bb5326eaa342ca695e1b416b50b5c56)
 
 * `yhFKKsGF1r62vIA4UpTjc1qcRCT1fJVp`
   - update for CIS tests
