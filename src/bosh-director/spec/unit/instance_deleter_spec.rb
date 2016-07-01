@@ -16,7 +16,7 @@ module Bosh::Director
     end
 
     let(:ip_provider) { instance_double(DeploymentPlan::IpProvider) }
-    let(:dns_manager) { instance_double(DnsManager, delete_dns_for_instance: nil, cleanup_dns_records: nil, publish_dns_records: nil) }
+    let(:dns_manager) { instance_double(DnsManager, delete_dns_for_instance: nil) }
     let(:options) { {} }
     let(:deleter) { InstanceDeleter.new(ip_provider, dns_manager, disk_manager, options) }
     let(:disk_manager) { DiskManager.new(logger) }
@@ -169,8 +169,6 @@ module Bosh::Director
         it 'drains, deletes snapshots, dns records, persistent disk, releases old reservations' do
           expect(stopper).to receive(:stop)
           expect(dns_manager).to receive(:delete_dns_for_instance).with(existing_instance)
-          expect(dns_manager).to receive(:cleanup_dns_records)
-          expect(dns_manager).to receive(:publish_dns_records)
           expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
           expect(ip_provider).to receive(:release).with(reservation)
 
@@ -197,8 +195,6 @@ module Bosh::Director
             it 'deletes snapshots, persistent disk, releases old reservations' do
               expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
               expect(dns_manager).to receive(:delete_dns_for_instance).with(existing_instance)
-              expect(dns_manager).to receive(:cleanup_dns_records)
-              expect(dns_manager).to receive(:publish_dns_records)
               expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
               expect(ip_provider).to receive(:release).with(reservation)
 
@@ -223,8 +219,6 @@ module Bosh::Director
               expect(stopper).to receive(:stop)
               expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
               expect(dns_manager).to receive(:delete_dns_for_instance).with(existing_instance)
-              expect(dns_manager).to receive(:cleanup_dns_records)
-              expect(dns_manager).to receive(:publish_dns_records)
               expect(ip_provider).to receive(:release).with(reservation)
 
               expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
@@ -240,8 +234,6 @@ module Bosh::Director
           context 'when deleting dns fails' do
             before do
               allow(dns_manager).to receive(:delete_dns_for_instance).and_raise('failed')
-              allow(dns_manager).to receive(:cleanup_dns_records)
-              allow(dns_manager).to receive(:publish_dns_records)
             end
 
             it 'drains, deletes vm, snapshots, disks, releases old reservations' do
@@ -291,8 +283,6 @@ module Bosh::Director
 
             expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
             expect(dns_manager).to receive(:delete_dns_for_instance).with(existing_instance)
-            expect(dns_manager).to receive(:cleanup_dns_records)
-            expect(dns_manager).to receive(:publish_dns_records)
             expect(ip_provider).to receive(:release).with(reservation)
 
             expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
