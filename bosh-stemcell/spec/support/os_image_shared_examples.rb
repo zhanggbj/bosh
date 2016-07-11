@@ -153,7 +153,7 @@ shared_examples_for 'every OS image' do
       expect(sshd_config).to be_mode('600')
     end
 
-    it 'disallows root login (stig: V-38613)' do
+    it 'disallows root login (stig: V-38613)', exclude_on_softlayer: true do
       expect(sshd_config).to contain(/^PermitRootLogin no$/)
     end
 
@@ -353,7 +353,7 @@ shared_examples_for 'every OS image' do
   # NOTE: These shared examples are executed in the OS image building spec,
   # suites and the Stemcell building spec suites. In the OS image suites
   # nothing will be excluded, which is the desired behavior... we want all OS
-  # images to perform theses stages. For the Stemcell suites the exlude flags
+  # images to perform theses stages. For the Stemcell suites the exclude flags
   # here apply.
   describe 'exceptions' do
     context 'unless: vcloud / vsphere / warden / softlayer', {
@@ -366,14 +366,6 @@ shared_examples_for 'every OS image' do
         expect(sshd_config).to contain(/^PasswordAuthentication no$/)
       end
     end
-
-    context 'unless: softlayer', {
-        exclude_on_softlayer: true,
-    } do
-      it 'disallows root login (stig: V-38613)' do
-        expect(sshd_config).to contain(/^PermitRootLogin no$/)
-      end
-    end
   end
 
   describe package('xinetd') do
@@ -381,7 +373,7 @@ shared_examples_for 'every OS image' do
   end
 
   context 'The root account must be the only account having a UID of 0 (stig: V-38500)' do
-    describe command("awk -F: '($3 == 0) {print}' /etc/passwd") do
+    describe command("awk -F: '($3 == 0) {print}' /etc/passwd"), exclude_on_softlayer: true do
       its (:stdout) { should eq("root:x:0:0:root:/root:/bin/bash\n") }
     end
   end
