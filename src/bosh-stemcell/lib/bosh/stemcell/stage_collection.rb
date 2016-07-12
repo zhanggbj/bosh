@@ -194,7 +194,6 @@ module Bosh::Stemcell
           :bosh_softlayer_agent_settings,
           :bosh_config_root_ssh_login,
           :bosh_clean_ssh,
-          :bosh_users_bluemix,
           :image_create,
           :image_install_grub,
       ]
