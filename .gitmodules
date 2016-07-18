@@ -6,5 +6,5 @@
 	url = https://github.com/cloudfoundry/bosh-acceptance-tests.git
 [submodule "go/src/github.com/cloudfoundry/bosh-agent"]
 	path = go/src/github.com/cloudfoundry/bosh-agent
-	url = https://github.com/cloudfoundry/bosh-agent
-	branch = 256.x-softlayer
+	url = https://github.com/jianqiu/bosh-agent
+	branch = baremetal
