@@ -6,7 +6,7 @@ mkdir -p $work_dir
 
 echo "Install openssl module"
 cd $work_dir
-wget http://openssl.org/source/openssl-fips-2.0.11.tar.gz
+wget http://openssl.org/source/openssl-fips-2.0.12.tar.gz
 tar zxvf openssl-fips*.tar.gz
 cd openssl-fips*
 ./config
