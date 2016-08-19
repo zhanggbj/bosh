@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `B8ZrdTEOOuTzSCuJBnKnglDNkXm5VYqY`
+  - USN-3065-1: Libgcrypt vulnerability
+  - built from 257.x (a6ba6c7cb071aee92374a61f0aeef4be46482390)
+
 * `OSizSd9nykb4nJhqibd1_fygZxqVoqam`
   - revert xenial -> vivid
   - built from 257.x (a6ba6c7cb071aee92374a61f0aeef4be46482390)
@@ -686,6 +690,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `fTH4anHUFhp9yY6AqJTT3QEO3eYAvmBm`
+  - USN-3065-1: Libgcrypt vulnerability
+  - built from 257.x (a6ba6c7cb071aee92374a61f0aeef4be46482390)
 
 * `EMmtKu8QybBV_V15316Qn9kcRUfVtJB1`
   - periodic bump
