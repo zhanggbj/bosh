@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `H2G5oPd_fOiXTlHxX7voCR4E3ncxQAO3`
+  - backport IPv6, /var/log, and /tmp mount fixes
+  - built from 257.x (8f958578de96af4234a0b4262c77d0778cdecd3a)
+
 * `YYoAwl99cHkRiGPU9zLy74qQuWuPbl1W`
   - USN-3065-1: Libgcrypt vulnerability
   - built from 257.x (623309e8f61b317ad0b01b32a14c9516910b0851)
@@ -690,6 +694,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `KvA3dqrWMunJgR.tfjk_MinflPVIdnjU`
+  - backport IPv6, /var/log, and /tmp mount fixes
+  - built from 257.x (8f958578de96af4234a0b4262c77d0778cdecd3a)
 
 * `rwv9Gt_k8k94lpIbZpvDIpfuHNAK1.x8`
   - USN-3065-1: Libgcrypt vulnerability
