@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `CLLx.YB7_OnssvekBlIRFOeWSQw4La8j`
+  - rsyslog is started with upstart
+  - built from 257.x (bc7bca3351bdbb8b34caf070a4e38222cdd45f63)
+
 * `H2G5oPd_fOiXTlHxX7voCR4E3ncxQAO3`
   - backport IPv6, /var/log, and /tmp mount fixes
   - built from 257.x (8f958578de96af4234a0b4262c77d0778cdecd3a)
