@@ -51,6 +51,7 @@ module Bosh::Stemcell
               :escape_ctrl_alt_del,
               :system_users,
               :bosh_audit,
+              :bosh_audit_bluemix,
               :bosh_log_audit_start,
             ].reject{ |s| Bosh::Stemcell::Arch.ppc64le? and s ==  :system_ixgbevf }
           )
