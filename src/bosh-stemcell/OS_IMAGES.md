@@ -121,6 +121,17 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `sKQZ9Gaut79JCdB5_OTZP55rvnKCd9Hl`
+  - Backport azure ephemeral disk on root (4548e8e)
+  - Backport google file perms fix (d5b1ac9)
+  - Backport disable ssh host key gen (444bb0e)
+  - Backport hostname length fix (74893f2)
+  - Backport udf kernel change (38d42b7)
+  - Backport tcp keepalive (079d956)
+  - Add logic to check if rsyslogd pid file exists before attempting to kill the process by pid (506c939)
+  - kill HUP rsyslog upon logrotation (4395509)
+  - build from 257.x (2dcd4799eaf8ee8daf44a5d3dfeed8b58cdf9fe9)
+
 * `CLLx.YB7_OnssvekBlIRFOeWSQw4La8j`
   - rsyslog is started with upstart
   - built from 257.x (bc7bca3351bdbb8b34caf070a4e38222cdd45f63)
@@ -698,6 +709,17 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `3MOAZkHJszaepuCsTUpqtIuOFNAYkpWg`
+  - Backport azure ephemeral disk on root (4548e8e)
+  - Backport google file perms fix (d5b1ac9)
+  - Backport disable ssh host key gen (444bb0e)
+  - Backport hostname length fix (74893f2)
+  - Backport udf kernel change (38d42b7)
+  - Backport tcp keepalive (079d956)
+  - Add logic to check if rsyslogd pid file exists before attempting to kill the process by pid (506c939)
+  - kill HUP rsyslog upon logrotation (4395509)
+  - build from 257.x (2dcd4799eaf8ee8daf44a5d3dfeed8b58cdf9fe9)
 
 * `KvA3dqrWMunJgR.tfjk_MinflPVIdnjU`
   - backport IPv6, /var/log, and /tmp mount fixes
