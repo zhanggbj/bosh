@@ -10,6 +10,10 @@ source $base_dir/lib/prelude_apply.bash
 # Copy google daemon packages into chroot
 cp -R $assets_dir/usr $chroot/
 
+# Configure the Google guest environment
+# https://github.com/GoogleCloudPlatform/compute-image-packages#configuration
+cp $assets_dir/instance_configs.cfg.template $chroot/etc/default/
+
 os_type="$(get_os_type)"
 if [ "${os_type}" == "ubuntu" ]
 then
@@ -17,7 +21,7 @@ then
   cp $assets_dir/etc/init/google-accounts-manager-{task,service}.conf $chroot/etc/init/
   cp $assets_dir/google-address-manager.conf $chroot/etc/init/
   cp $assets_dir/google-clock-sync-manager.conf $chroot/etc/init/
-  chmod -x $chroot/etc/init/google*
+  chmod 0644 $chroot/etc/init/google*
 elif [ "${os_type}" == "rhel" -o "${os_type}" == "centos" ]
 then
   run_in_chroot $chroot "/bin/systemctl enable /usr/lib/systemd/system/google-accounts-manager.service"

@@ -49,7 +49,14 @@ describe 'Ubuntu 14.04 stemcell image', stemcell_image: true do
     end
   end
 
-  context 'installed by system-network', {
+  context 'installed by system-network on all IaaSes' do
+    describe file('/etc/hostname') do
+      it { should be_file }
+      its (:content) { should eq('bosh-stemcell') }
+    end
+  end
+
+  context 'installed by system-network on some IaaSes', {
     exclude_on_vsphere: true,
     exclude_on_vcloud: true,
     exclude_on_warden: true,
@@ -60,11 +67,6 @@ describe 'Ubuntu 14.04 stemcell image', stemcell_image: true do
       it { should be_file }
       it { should contain 'auto lo' }
       it { should contain 'iface lo inet loopback' }
-    end
-
-    describe file('/etc/hostname') do
-      it { should be_file }
-      it { should contain 'localhost' }
     end
   end
 
@@ -222,26 +224,6 @@ HERE
     describe file('/var/vcap/bosh/agent.json') do
       it { should be_valid_json_file }
       it { should contain('"Type": "CDROM"') }
-    end
-  end
-
-  context 'installed by bosh_azure_agent_settings', {
-    exclude_on_aws: true,
-    exclude_on_google: true,
-    exclude_on_vcloud: true,
-    exclude_on_vsphere: true,
-    exclude_on_warden: true,
-    exclude_on_openstack: true,
-    exclude_on_softlayer: true,
-  } do
-    describe file('/var/vcap/bosh/agent.json') do
-      it { should be_valid_json_file }
-      it { should contain('"Type": "File"') }
-      it { should contain('"MetaDataPath": ""') }
-      it { should contain('"UserDataPath": "/var/lib/waagent/CustomData"') }
-      it { should contain('"SettingsPath": "/var/lib/waagent/CustomData"') }
-      it { should contain('"UseServerName": true') }
-      it { should contain('"UseRegistry": true') }
     end
   end
 
