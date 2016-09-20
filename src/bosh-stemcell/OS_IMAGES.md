@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `tk6W0QWML8TQi4a6VrEEU8YxUcnzbTcg`
+  - USN-3084-*: kernel vulnerabilities
+  - built from 257.x-3263.x (793365982c27b4f6a49aa90b95f514f1ffe56677)
+
 * `u9jAubTwJXggujmLtC_6g0PiFIY_rGqh`
   - bump kernel to xenial
   - built from 257.x-3263.x (f7d23f435d18b4d7ad1aa1f76ae315630d70d7c9)
@@ -713,6 +717,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `75nXPiK.._zyEyusgiwlQBVlVUc2uq_L`
+  - USN-3084-*: kernel vulnerabilities
+  - built from 257.x-3263.x (793365982c27b4f6a49aa90b95f514f1ffe56677)
 
 * `3MOAZkHJszaepuCsTUpqtIuOFNAYkpWg`
   - Backport azure ephemeral disk on root (4548e8e)
