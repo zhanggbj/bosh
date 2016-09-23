@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `OUw7AQndSV3uHlQkE4VIy5KmI3TkXmnY`
+  - USN-3087-1: OpenSSL vulnerabilities
+  - build from 257.x-3263.x (4a25cba4e8a376337a877cba5ab773fe4512da8a)
+
 * `tk6W0QWML8TQi4a6VrEEU8YxUcnzbTcg`
   - USN-3084-*: kernel vulnerabilities
   - built from 257.x-3263.x (793365982c27b4f6a49aa90b95f514f1ffe56677)
@@ -717,6 +721,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `rf5dgfOjrHVARcLz8.WchFatRffL7U1g`
+  - USN-3087-1: OpenSSL vulnerabilities
+  - build from 257.x-3263.x (4a25cba4e8a376337a877cba5ab773fe4512da8a)
 
 * `75nXPiK.._zyEyusgiwlQBVlVUc2uq_L`
   - USN-3084-*: kernel vulnerabilities
