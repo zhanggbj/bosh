@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `GFaKI0uS.XcY9_tNoI9X61vEQZk6YuR8`
+  - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
+  - build from 257.x-3263.x (07e3b92543834180870f95690fe461c4eeea168f)
+
 * `dVSsaFjz_3O52quVO1vU.Qs.yiETUMm9`
   - Periodic bump
   - build from 257.x-3263.x (11222daab9f797eeeb066388833b6318160ef08b)
@@ -729,6 +733,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `LgCye9HqwJ.k2JMeKVujqPxTJWqly5Jz`
+  - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
+  - build from 257.x-3263.x (07e3b92543834180870f95690fe461c4eeea168f)
 
 * `vxYmuX0JNAyIIOLFz9tgV02lmWTesVqa`
   - systemd starts rsyslog after the ephemeral drive is mounted
