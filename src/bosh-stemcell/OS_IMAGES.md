@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `6nL1sqjjUdmND.rzFJ.lPHTS8BZTcu3a`
+  - USN-3106-2: Linux kernel (Xenial HWE) vulnerability
+  - built from 257.x-3263.x (13d27cdcecad3930b4f2f0ce524daa05de78d53f)
+
 * `GFaKI0uS.XcY9_tNoI9X61vEQZk6YuR8`
   - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
   - build from 257.x-3263.x (07e3b92543834180870f95690fe461c4eeea168f)
@@ -733,6 +737,10 @@ CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
 * `4grMWwbdPN_eKp7rFq6wtOw1k6WOFeCh`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
+
+* `7gR0.9jpw3hOIr_Jfdeu7WiysSiN8BxP`
+  - USN-3106-2: Linux kernel (Xenial HWE) vulnerability
+  - built from 257.x-3263.x (13d27cdcecad3930b4f2f0ce524daa05de78d53f)
 
 * `LgCye9HqwJ.k2JMeKVujqPxTJWqly5Jz`
   - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
