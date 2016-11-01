@@ -121,6 +121,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (fafaffe71b444f444ef8dc9cb95e53d924880b7e)
 
+* `bAUozYGz5QKDerLQxQk282GrXn6Oqr_7`
+  - Periodic Bump
+  - built from 257.x-3263.x (0c333f73313b595d0ee77b33fbfa4dd5b7b1b3f1)
+
 * `6nL1sqjjUdmND.rzFJ.lPHTS8BZTcu3a`
   - USN-3106-2: Linux kernel (Xenial HWE) vulnerability
   - built from 257.x-3263.x (13d27cdcecad3930b4f2f0ce524daa05de78d53f)
