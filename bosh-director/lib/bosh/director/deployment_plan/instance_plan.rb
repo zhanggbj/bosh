@@ -1,3 +1,5 @@
+require 'common/deep_copy'
+
 module Bosh
   module Director
     module DeploymentPlan
@@ -11,9 +13,10 @@ module Bosh
           @recreate_deployment = attrs.fetch(:recreate_deployment, false)
           @logger = attrs.fetch(:logger, Config.logger)
           @dns_manager = DnsManagerProvider.create
+          @tags = attrs.fetch(:tags, {})
         end
 
-        attr_reader :desired_instance, :existing_instance, :instance, :skip_drain, :recreate_deployment
+        attr_reader :desired_instance, :existing_instance, :instance, :skip_drain, :recreate_deployment, :tags
 
         attr_accessor :network_plans
 
@@ -22,6 +25,11 @@ module Bosh
         #   differ from the ones provided by the VM
         def changed?
           !changes.empty?
+        end
+
+        def needs_to_fix?
+          return false if @instance.nil?
+          @instance.current_job_state == 'unresponsive'
         end
 
         ##
@@ -49,19 +57,17 @@ module Bosh
 
         def persistent_disk_changed?
           if @existing_instance && obsolete?
-            return !@existing_instance.persistent_disk.nil?
+            return @existing_instance.active_persistent_disks.any?
           end
 
-          job = @desired_instance.job
-          new_disk_size = job.persistent_disk_type ? job.persistent_disk_type.disk_size : 0
-          new_disk_cloud_properties = job.persistent_disk_type ? job.persistent_disk_type.cloud_properties : {}
-          changed = new_disk_size != disk_size
-          log_changes(__method__, "disk size: #{disk_size}", "disk size: #{new_disk_size}", @existing_instance) if changed
-          return true if changed
+          existing_disk_collection = instance_model.active_persistent_disks
+          desired_disks_collection = @desired_instance.instance_group.persistent_disk_collection
 
-          changed = new_disk_size != 0 && new_disk_cloud_properties != disk_cloud_properties
-          log_changes(__method__, disk_cloud_properties, new_disk_cloud_properties, @existing_instance) if changed
-          changed
+          changed_disk_pairs = desired_disks_collection.changed_disk_pairs(existing_disk_collection)
+          changed_disk_pairs.each do |disk_pair|
+            log_changes(__method__, disk_pair[:old], disk_pair[:new], instance)
+          end
+          !changed_disk_pairs.empty?
         end
 
         def instance_model
@@ -79,6 +85,9 @@ module Bosh
         def needs_recreate?
           if @recreate_deployment
             @logger.debug("#{__method__} job deployment is configured with \"recreate\" state")
+            true
+          elsif needs_to_fix?
+            @logger.debug("#{__method__} instance should be recreated because of unresponsive agent")
             true
           else
             @instance.virtual_state == 'recreate'
@@ -118,6 +127,8 @@ module Bosh
             return true
           end
 
+          return true if needs_to_fix?
+
           if instance.state == 'stopped' && instance.current_job_state == 'running' ||
             instance.state == 'started' && instance.current_job_state != 'running'
             @logger.debug("Instance state is '#{instance.state}' and agent reports '#{instance.current_job_state}'")
@@ -128,13 +139,21 @@ module Bosh
         end
 
         def dns_changed?
-          return false unless @dns_manager.dns_enabled?
-
-          network_settings.dns_record_info.any? do |name, ip|
-            not_found = @dns_manager.find_dns_record(name, ip).nil?
-            @logger.debug("#{__method__} The requested dns record with name '#{name}' and ip '#{ip}' was not found in the db.") if not_found
-            not_found
+          if @dns_manager.dns_enabled?
+            return network_settings.dns_record_info.any? do |name, ip|
+              not_found = @dns_manager.find_dns_record(name, ip).nil?
+              @logger.debug("#{__method__} The requested dns record with name '#{name}' and ip '#{ip}' was not found in the db.") if not_found
+              not_found
+            end
           end
+
+          if Config.local_dns_enabled?
+            not_found = @dns_manager.find_local_dns_record(instance_model).empty?
+            # @logger.debug("#{__method__} The requested dns record with name '#{name}' and ip '#{ip}' was not found in the db.") if not_found
+            return not_found
+          end
+
+          false
         end
 
         def configuration_changed?
@@ -175,7 +194,7 @@ module Bosh
           DeploymentPlan::NetworkSettings.new(
             @instance.job_name,
             @instance.model.deployment.name,
-            @desired_instance.job.default_network,
+            @desired_instance.instance_group.default_network,
             desired_reservations,
             @instance.current_networks,
             @instance.availability_zone,
@@ -225,11 +244,11 @@ module Bosh
         end
 
         def templates
-          @desired_instance.job.templates
+          @desired_instance.instance_group.jobs
         end
 
         def job_changed?
-          job = @desired_instance.job
+          job = @desired_instance.instance_group
           return true if @instance.current_job_spec.nil?
 
           # The agent job spec could be in legacy form.  job_spec cannot be,
@@ -242,7 +261,7 @@ module Bosh
         end
 
         def packages_changed?
-          job = @desired_instance.job
+          job = @desired_instance.instance_group
 
           changed = job.package_spec != @instance.current_packages
           log_changes(__method__, @instance.current_packages, job.package_spec, @instance) if changed
@@ -256,9 +275,9 @@ module Bosh
         end
 
         def needs_disk?
-          job = @desired_instance.job
+          job = @desired_instance.instance_group
 
-          job && job.persistent_disk_type && job.persistent_disk_type.disk_size > 0
+          job.persistent_disk_collection.needs_disk?
         end
 
         def persist_current_spec
@@ -269,11 +288,22 @@ module Bosh
 
         def network_settings_changed?(old_network_settings, new_network_settings)
           return false if old_network_settings == {}
-          old_network_settings != new_network_settings
+          remove_dns_record_name_from_network_settings(old_network_settings) != new_network_settings
+        end
+
+        def remove_dns_record_name_from_network_settings(network_settings)
+          return network_settings if network_settings.nil?
+
+          modified_network_settings = Bosh::Common::DeepCopy.copy(network_settings)
+
+          modified_network_settings.each do |name, network_setting|
+            network_setting.delete_if{|key, value| key == "dns_record_name"}
+          end
+          modified_network_settings
         end
 
         def env_changed?
-          job = @desired_instance.job
+          job = @desired_instance.instance_group
 
           if @existing_instance && @existing_instance.vm_env && job.env.spec != @existing_instance.vm_env
             log_changes(__method__, @existing_instance.vm_env, job.env.spec, @existing_instance)
@@ -299,30 +329,6 @@ module Bosh
         def log_changes(method_sym, old_state, new_state, instance)
           @logger.debug("#{method_sym} changed FROM: #{old_state} TO: #{new_state} on instance #{instance}")
         end
-
-        def disk_size
-          if @instance.model.nil?
-            raise DirectorError, "Instance '#{@instance}' model is not bound"
-          end
-
-          if @instance.model.persistent_disk
-            @instance.model.persistent_disk.size
-          else
-            0
-          end
-        end
-
-        def disk_cloud_properties
-          if @instance.model.nil?
-            raise DirectorError, "Instance '#{@instance}' model is not bound"
-          end
-
-          if @instance.model.persistent_disk
-            @instance.model.persistent_disk.cloud_properties
-          else
-            {}
-          end
-        end
       end
 
       class ResurrectionInstancePlan < InstancePlan
@@ -335,12 +341,12 @@ module Bosh
         end
 
         def needs_disk?
-          @existing_instance.persistent_disk_cid
+          @existing_instance.managed_persistent_disk_cid
         end
 
         def templates
           @existing_instance.templates.map do |template_model|
-            template = Template.new(nil, template_model.name)
+            template = Job.new(nil, template_model.name)
             template.bind_existing_model(template_model)
             template
           end

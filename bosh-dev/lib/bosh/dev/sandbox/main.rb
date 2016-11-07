@@ -13,6 +13,7 @@ require 'bosh/dev/sandbox/services/director_service'
 require 'bosh/dev/sandbox/services/nginx_service'
 require 'bosh/dev/sandbox/services/connection_proxy_service'
 require 'bosh/dev/sandbox/services/uaa_service'
+require 'bosh/dev/sandbox/services/config_server_service'
 require 'cloud/dummy'
 require 'logging'
 
@@ -33,6 +34,7 @@ module Bosh::Dev::Sandbox
     attr_reader :scheduler_process
 
     attr_reader :director_service
+    attr_reader :director_name
     attr_reader :port_provider
 
     attr_reader :database_proxy
@@ -83,7 +85,7 @@ module Bosh::Dev::Sandbox
       setup_nats
 
       @uaa_service = UaaService.new(@port_provider, base_log_path, @logger)
-
+      @config_server_service = ConfigServerService.new(@port_provider, base_log_path, @logger)
       @nginx_service = NginxService.new(sandbox_root, director_port, director_ruby_port, @uaa_service.port, @logger)
 
       setup_database(db_opts)
@@ -146,8 +148,12 @@ module Bosh::Dev::Sandbox
       @database_created = true
 
       @uaa_service.start if @user_authentication == 'uaa'
+      @config_server_service.start(@with_config_server_trusted_certs) if @config_server_enabled
 
-      @director_service.start(director_config)
+      dir_config = director_config
+      @director_name = dir_config.director_name
+
+      @director_service.start(dir_config)
     end
 
     def director_config
@@ -156,9 +162,12 @@ module Bosh::Dev::Sandbox
         database: @database,
         blobstore_storage_dir: blobstore_storage_dir,
         director_fix_stateful_nodes: @director_fix_stateful_nodes,
+        dns_enabled: @dns_enabled,
+        local_dns: @local_dns,
         external_cpi_enabled: @external_cpi_enabled,
         external_cpi_config: external_cpi_config,
         cloud_storage_dir: cloud_storage_dir,
+        config_server_enabled: @config_server_enabled,
         user_authentication: @user_authentication,
         trusted_certs: @trusted_certs,
         users_in_manifest: @users_in_manifest,
@@ -206,6 +215,8 @@ module Bosh::Dev::Sandbox
 
       @health_monitor_process.stop
       @uaa_service.stop
+
+      @config_server_service.stop
 
       @database.drop_db
       @database_proxy && @database_proxy.stop
@@ -259,8 +270,12 @@ module Bosh::Dev::Sandbox
 
     def reconfigure(options)
       @user_authentication = options.fetch(:user_authentication, 'local')
+      @config_server_enabled = options.fetch(:config_server_enabled, false)
+      @with_config_server_trusted_certs = options.fetch(:with_config_server_trusted_certs, true)
       @external_cpi_enabled = options.fetch(:external_cpi_enabled, false)
       @director_fix_stateful_nodes = options.fetch(:director_fix_stateful_nodes, false)
+      @dns_enabled = options.fetch(:dns_enabled, true)
+      @local_dns = options.fetch(:local_dns, {enabled: false, include_index: false})
       @nginx_service.reconfigure(options[:ssl_mode])
       @uaa_service.reconfigure(options[:uaa_encryption])
       @users_in_manifest = options.fetch(:users_in_manifest, true)
@@ -304,6 +319,7 @@ module Bosh::Dev::Sandbox
       FileUtils.mkdir_p(blobstore_storage_dir)
 
       @uaa_service.start if @user_authentication == 'uaa'
+      @config_server_service.restart(@with_config_server_trusted_certs) if @config_server_enabled
       @director_service.start(director_config)
 
       @nginx_service.restart_if_needed
@@ -337,7 +353,6 @@ module Bosh::Dev::Sandbox
       template = ERB.new(template_contents)
       template.result(binding)
     end
-
 
     def setup_database(db_opts)
       if db_opts[:type] == 'mysql'

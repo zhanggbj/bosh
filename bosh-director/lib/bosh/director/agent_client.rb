@@ -3,9 +3,12 @@ require 'bosh/director/agent_message_converter'
 module Bosh::Director
   class AgentClient
 
-    PROTOCOL_VERSION = 2
+    PROTOCOL_VERSION = 3
 
     DEFAULT_POLL_INTERVAL = 1.0
+
+    STOP_MESSAGE_TIMEOUT = 300 # 5 minutes
+    SYNC_DNS_MESSAGE_TIMEOUT = 10
 
     # in case of timeout errors
     GET_TASK_MAX_RETRIES = 2
@@ -64,6 +67,10 @@ module Bosh::Director
       send_message(:list_disk, *args)
     end
 
+    def associate_disks(*args)
+      send_message(:associate_disks, *args)
+    end
+
     def start(*args)
       send_message(:start, *args)
     end
@@ -104,9 +111,13 @@ module Bosh::Director
       fire_and_forget(:delete_arp_entries, *args)
     end
 
-    def update_settings(certs)
+    def sync_dns(*args, &blk)
+      send_nats_request(:sync_dns, args, &blk)
+    end
+
+    def update_settings(certs, disk_associations)
       begin
-        send_message(:update_settings, {"trusted_certs" => certs})
+        send_message(:update_settings, {'trusted_certs' => certs, 'disk_associations' => disk_associations })
       rescue RpcRemoteException => e
         if e.message =~ /unknown message/
           @logger.warn("Ignoring update_settings 'unknown message' error from the agent: #{e.inspect}")
@@ -129,21 +140,33 @@ module Bosh::Director
     end
 
     def stop(*args)
-      send_message(:stop, *args)
+      timeout = Timeout.new(STOP_MESSAGE_TIMEOUT)
+      begin
+        send_message_with_timeout(:stop, timeout, *args)
+      rescue Exception => e
+        if e.message.include? 'Timed out waiting for service'
+          @logger.warn("Ignoring stop timeout error from the agent: #{e.inspect}")
+        else
+          raise
+        end
+      end
     end
 
     def run_errand(*args)
       start_task(:run_errand, *args)
     end
 
-    def wait_for_task(agent_task_id, &blk)
+    def wait_for_task(agent_task_id, timeout = nil, &blk)
       task = get_task_status(agent_task_id)
+      timed_out = false
 
-      while task['state'] == 'running'
+      until task['state'] != 'running' || (timeout && timed_out = timeout.timed_out?)
         blk.call if block_given?
         sleep(DEFAULT_POLL_INTERVAL)
         task = get_task_status(agent_task_id)
       end
+
+      @logger.debug("Task #{agent_task_id} timed out") if timed_out
 
       task['value']
     end
@@ -157,7 +180,7 @@ module Bosh::Director
         Config.job_cancelled?
         ping
       rescue TaskCancelled => e
-        @logger.debug("Task was cancelled. Stop waiting response from vm")
+        @logger.debug('Task was cancelled. Stop waiting response from vm')
         raise e
       rescue RpcTimeout
         retry if @deadline - Time.now.to_i > 0
@@ -175,8 +198,8 @@ module Bosh::Director
 
       if @encryption_handler
         @logger.info("Request: #{request}")
-        request = { "encrypted_data" => @encryption_handler.encrypt(request) }
-        request["session_id"] = @encryption_handler.session_id
+        request = {'encrypted_data' => @encryption_handler.encrypt(request) }
+        request['session_id'] = @encryption_handler.session_id
       end
 
       recipient = "#{@service_name}.#{@client_id}"
@@ -193,9 +216,9 @@ module Bosh::Director
       request_id = send_nats_request(method_name, args) do |response|
         if @encryption_handler
           begin
-            response = @encryption_handler.decrypt(response["encrypted_data"])
+            response = @encryption_handler.decrypt(response['encrypted_data'])
           rescue Bosh::Core::EncryptionHandler::CryptError => e
-            response["exception"] = "CryptError: #{e.inspect} #{e.backtrace}"
+            response['exception'] = "CryptError: #{e.inspect} #{e.backtrace}"
           end
           @logger.info("Response: #{response}")
         end
@@ -210,7 +233,7 @@ module Bosh::Director
       result.synchronize do
         while result.empty?
           timeout = timeout_time - Time.now.to_f
-          unless timeout > 0
+          if timeout <= 0
             @nats_rpc.cancel_request(request_id)
             raise RpcTimeout,
               "Timed out sending '#{method_name}' to #{@client_id} " +
@@ -220,11 +243,11 @@ module Bosh::Director
         end
       end
 
-      if result.has_key?("exception")
-        raise RpcRemoteException, format_exception(result["exception"])
+      if result.has_key?('exception')
+        raise RpcRemoteException, format_exception(result['exception'])
       end
 
-      result["value"]
+      result['value']
     end
 
     # Returns formatted exception information
@@ -233,15 +256,15 @@ module Bosh::Director
     def format_exception(exception)
       return exception.to_s unless exception.is_a?(Hash)
 
-      msg = exception["message"].to_s
+      msg = exception['message'].to_s
 
-      if exception["backtrace"]
+      if exception['backtrace']
         msg += "\n"
-        msg += Array(exception["backtrace"]).join("\n")
+        msg += Array(exception['backtrace']).join("\n")
       end
 
-      if exception["blobstore_id"]
-        blob = download_and_delete_blob(exception["blobstore_id"])
+      if exception['blobstore_id']
+        blob = download_and_delete_blob(exception['blobstore_id'])
         msg += "\n"
         msg += blob.to_s
       end
@@ -255,11 +278,11 @@ module Bosh::Director
     # but if there is a crash before it is injected into the response
     # and then logged, there is a chance that we lose it
     def inject_compile_log(response)
-      if response["value"] && response["value"].is_a?(Hash) &&
-        response["value"]["result"].is_a?(Hash) &&
-        blob_id = response["value"]["result"]["compile_log_id"]
+      if response['value'] && response['value'].is_a?(Hash) &&
+        response['value']['result'].is_a?(Hash) &&
+        blob_id = response['value']['result']['compile_log_id']
         compile_log = download_and_delete_blob(blob_id)
-        response["value"]["result"]["compile_log"] = compile_log
+        response['value']['result']['compile_log'] = compile_log
       end
     end
 
@@ -296,6 +319,16 @@ module Bosh::Director
       task = start_task(method_name, *args)
       if task['agent_task_id']
         wait_for_task(task['agent_task_id'], &blk)
+      else
+        task['value']
+      end
+    end
+
+    def send_message_with_timeout(method_name, timeout, *args, &blk)
+      task = start_task(method_name, *args)
+
+      if task['agent_task_id']
+        wait_for_task(task['agent_task_id'], timeout, &blk)
       else
         task['value']
       end

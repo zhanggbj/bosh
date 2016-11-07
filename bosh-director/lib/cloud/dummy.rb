@@ -77,7 +77,7 @@ module Bosh
         cmd = commands.next_create_vm_cmd
 
         if cmd.failed?
-          raise Bosh::Clouds::CloudError.new("Creating vm failed")
+          raise Bosh::Clouds::CloudError.new('Creating vm failed')
         end
 
         networks.each do |network_name, network|
@@ -193,13 +193,14 @@ module Bosh
         disk_id = SecureRandom.hex
         file = disk_file(disk_id)
         FileUtils.mkdir_p(File.dirname(file))
-        File.write(file, size.to_s)
+        disk_info = JSON.generate({size: size, cloud_properties: cloud_properties, vm_locality: vm_locality})
+        File.write(file, disk_info)
         disk_id
       end
 
-      DELTE_DISK_SCHEMA = Membrane::SchemaParser.parse { {disk_id: String} }
+      DELETE_DISK_SCHEMA = Membrane::SchemaParser.parse { {disk_id: String} }
       def delete_disk(disk_id)
-        validate_and_record_inputs(DELTE_DISK_SCHEMA, __method__, disk_id)
+        validate_and_record_inputs(DELETE_DISK_SCHEMA, __method__, disk_id)
         FileUtils.rm(disk_file(disk_id))
       end
 
@@ -319,7 +320,22 @@ module Bosh
         JSON.parse(File.read(spec_file))
       end
 
-      private
+      def attached_disk_infos(vm_cid)
+        agent_id = agent_id_for_vm_id(vm_cid)
+        settings = read_agent_settings(agent_id)
+        return [] unless settings.has_key?('disks') && settings['disks'].has_key?('persistent')
+
+        settings['disks']['persistent'].inject([]) do |memo, disk_attachment|
+          disk_cid = disk_attachment[0]
+          device_path = disk_attachment[1]
+
+          disk_info_hash = JSON.parse(File.read(disk_file(disk_cid)))
+          disk_info_hash['disk_cid'] = disk_cid
+          disk_info_hash['device_path'] = device_path
+
+          memo << disk_info_hash
+        end
+      end
 
       def spawn_agent_process(agent_id)
         root_dir = File.join(agent_base_dir(agent_id), 'root_dir')
@@ -342,6 +358,8 @@ module Bosh
 
         agent_pid
       end
+
+      private
 
       def allocate_ips(ips)
         ips.each do |ip|
@@ -482,20 +500,20 @@ module Bosh
         end
 
         def pause_delete_vms
-          @logger.info("Pausing delete_vms")
+          @logger.info('Pausing delete_vms')
           path = File.join(@cpi_commands, 'pause_delete_vms')
           FileUtils.mkdir_p(File.dirname(path))
           File.write(path, 'marker')
         end
 
         def unpause_delete_vms
-          @logger.info("Unpausing delete_vms")
+          @logger.info('Unpausing delete_vms')
           FileUtils.rm_rf File.join(@cpi_commands, 'pause_delete_vms')
           FileUtils.rm_rf File.join(@cpi_commands, 'wait_for_unpause_delete_vms')
         end
 
         def wait_for_delete_vms
-          @logger.info("Wait for delete_vms")
+          @logger.info('Wait for delete_vms')
           path = File.join(@cpi_commands, 'wait_for_unpause_delete_vms')
           sleep(0.1) until File.exists?(path)
         end
@@ -507,7 +525,7 @@ module Bosh
 
           path = File.join(@cpi_commands, 'pause_delete_vms')
           if File.exists?(path)
-            @logger.info("Wait for unpausing delete_vms")
+            @logger.info('Wait for unpausing delete_vms')
           end
           sleep(0.1) while File.exists?(path)
         end
@@ -525,13 +543,13 @@ module Bosh
         end
 
         def make_create_vm_always_fail
-          @logger.info("Making create_vm method always fail")
+          @logger.info('Making create_vm method always fail')
           FileUtils.mkdir_p(File.dirname(failed_path))
-          File.write(failed_path, "")
+          File.write(failed_path, '')
         end
 
         def allow_create_vm_to_succeed
-          @logger.info("Allowing create_vm method to succeed (removing any mandatory failures)")
+          @logger.info('Allowing create_vm method to succeed (removing any mandatory failures)')
           FileUtils.rm(failed_path)
         end
 

@@ -122,7 +122,7 @@ module Bosh::Director
   JobTemplateBindingFailed = err(80006)
   JobTemplateUnpackFailed = err(80007)
   JobInvalidPropertySpec = err(80008)
-  JobInvalidPropertyMapping = err(80009)
+  InstanceGroupInvalidPropertyMapping = err(80009)
   JobIncompatibleSpecs = err(80010)
   JobPackageCollision = err(80011)
   JobInvalidPackageSpec = err(80012)
@@ -160,31 +160,31 @@ module Bosh::Director
   NetworkReservationIpReserved = err(130013)
 
   # Manifest parsing: job section
-  JobMissingRelease = err(140001)
-  JobUnknownRelease = err(140002)
-  JobUnknownResourcePool = err(140003)
-  JobUnknownVmType = err(140004)
-  JobUnknownStemcell = err(140005)
+  InstanceGroupMissingRelease = err(140001)
+  InstanceGroupUnknownRelease = err(140002)
+  InstanceGroupUnknownResourcePool = err(140003)
+  InstanceGroupUnknownVmType = err(140004)
+  InstanceGroupUnknownStemcell = err(140005)
   JobInvalidInstanceIndex = err(140006)
-  JobInvalidInstanceState = err(140007)
-  JobInvalidJobState = err(140008)
+  InstanceGroupInvalidInstanceState = err(140007)
+  InstanceGroupInvalidState = err(140008)
   JobMissingNetwork = err(140009)
-  JobInvalidTemplates = err(140010)
+  InstanceGroupInvalidTemplates = err(140010)
   JobInvalidLifecycle = err(140011)
-  JobUnknownDiskType = err(140012)
-  JobInvalidPersistentDisk = err(140013)
+  InstanceGroupUnknownDiskType = err(140012)
+  InstanceGroupInvalidPersistentDisk = err(140013)
   JobMissingLink = err(140014)
   UnusedProvidedLink = err(140015)
   JobInvalidAvailabilityZone = err(140016)
   JobMissingAvailabilityZones = err(140017)
   JobUnknownAvailabilityZone = err(140018)
-  JobAmbiguousEnv = err(140019)
+  InstanceGroupAmbiguousEnv = err(140019)
   JobBothInstanceGroupAndJob = err(140020)
   JobInstanceIgnored = err(140021)
 
   # Manifest parsing: job networks section
   JobUnknownNetwork = err(150001)
-  JobNetworkInstanceIpMismatch = err(150002)
+  InstanceGroupNetworkInstanceIpMismatch = err(150002)
   JobNetworkInvalidDefault = err(150003)
   JobNetworkMultipleDefaults = err(150004)
   JobNetworkMissingDefault = err(150005)
@@ -193,6 +193,7 @@ module Bosh::Director
   JobStaticIPNotSupportedOnDynamicNetwork= err(150008)
   JobInvalidStaticIPs = err(150009)
 
+  #Network
   NetworkOverlappingSubnets = err(160001)
   NetworkInvalidRange = err(160002)
   NetworkInvalidGateway = err(160003)
@@ -204,11 +205,14 @@ module Bosh::Director
   NetworkSubnetInvalidAvailabilityZone = err(160009)
   NetworkInvalidIpRangeFormat = err(160010)
 
+  # ResourcePool
   ResourcePoolUnknownNetwork = err(170001)
   ResourcePoolNotEnoughCapacity = err(170002)
 
+  # UpdateConfig
   UpdateConfigInvalidWatchTime = err(180001)
 
+  # Deployment
   DeploymentAmbiguousReleaseSpec = err(190001)
   DeploymentDuplicateReleaseName = err(190002)
   DeploymentDuplicateResourcePoolName = err(190003)
@@ -231,6 +235,7 @@ module Bosh::Director
   DeploymentIgnoredInstancesModification = err(190020)
   DeploymentIgnoredInstancesDeletion = err(190021)
 
+  # DiskType
   DiskTypeInvalidDiskSize = err(200001)
 
   CloudDiskNotAttached = err(390001)
@@ -255,13 +260,16 @@ module Bosh::Director
   CloudcheckResolutionNotProvided = err(410002)
   CloudcheckInvalidResolutionFormat = err(410003)
 
+  # DNS
   DnsInvalidCanonicalName = err(420001)
 
+  # PackageCompilation
   PackageCompilationNotEnoughWorkersForReuse = err(430002)
   PackageCompilationNotFound = err(430003)
 
   BadManifest = err(440001)
 
+  # RPC
   RpcRemoteException = err(450001)
   RpcTimeout = err(450002)
 
@@ -282,6 +290,16 @@ module Bosh::Director
   RuntimeInvalidReleaseVersion = err(530001)
   RuntimeReleaseNotListedInReleases = err(530002)
   RuntimeInvalidDeploymentRelease = err(530003)
+  RuntimeIncompleteIncludeJobSection = err(530004)
+  RuntimeIncompleteIncludeStemcellSection = err(530005)
+
+  # Config server errors
+  ConfigServerMissingNames = err(540000)
+  ConfigServerSSLError = err(540001)
+  ConfigServerPasswordGenerationError = err(540002)
+  ConfigServerUnknownError = err(540003)
+  ConfigServerCertificateGenerationError = err(540004)
+  ConfigServerIncorrectNameSyntax = err(540005)
 
   # Authorization errors
   UnauthorizedToAccessDeployment = err(600000, UNAUTHORIZED)

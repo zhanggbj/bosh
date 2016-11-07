@@ -16,7 +16,7 @@ describe 'Ubuntu 14.04 OS image', os_image: true do
   end
 
   context 'installed by system_kernel' do
-    describe package('linux-generic-lts-vivid') do
+    describe package('linux-generic-lts-xenial') do
       it { should be_installed }
     end
   end
@@ -310,6 +310,10 @@ EOF
       it 'must prohibit new passwords shorter than 14 characters (stig: V-38475)' do
         should contain /password.*pam_unix\.so.*minlen=14/
       end
+
+      it 'must use the cracklib library to set correct password requirements (CIS-9.2.1)' do
+        should contain /password.*pam_cracklib\.so.*retry=3.*minlen=14.*dcredit=-1.*ucredit=-1.*ocredit=-1.*lcredit=-1/
+      end
     end
 
     describe file('/etc/pam.d/common-account') do
@@ -364,12 +368,6 @@ EOF
         it ('should be owned by root group') { should be_grouped_into('root')}
         it ("should have mode #{tuple[0]}") { should be_mode(tuple[0])}
       end
-    end
-  end
-
-  context 'Auditd service should be running (stig: V-38628) (stig: V-38631) (stig: V-38632)' do
-    describe service('auditd') do
-      it { should be_enabled }
     end
   end
 
@@ -434,6 +432,24 @@ EOF
     end
     describe package('whoopsie') do
       it { should_not be_installed }
+    end
+  end
+
+  context 'restrict access to the su command CIS-9.5' do
+    describe command('grep "^\s*auth\s*required\s*pam_wheel.so\s*use_uid" /etc/pam.d/su') do
+      it { should return_exit_status(0)}
+    end
+    describe user('vcap') do
+      it { should exist }
+      it { should belong_to_group 'sudo' }
+    end
+  end
+
+  describe 'logging and audit startup script' do
+    describe file('/var/vcap/bosh/bin/bosh-start-logging-and-auditing') do
+      it { should be_file }
+      it { should be_executable }
+      it { should contain('service auditd start') }
     end
   end
 end

@@ -42,7 +42,7 @@ module Bosh
         end
 
         @index = spec['index']
-        @spec = openstruct(spec)
+        @spec = openstruct(spec, BackCompatOpenStruct)
         @raw_properties = spec['properties'] || {}
         @properties = openstruct(@raw_properties)
 
@@ -137,18 +137,32 @@ module Bosh
         end
       end
 
+      private
+
       # @return [Object] Object representation where all hashes are unrolled
       #   into OpenStruct objects. This exists mostly for backward
       #   compatibility, as it doesn't provide good error reporting.
-      def openstruct(object)
+      def openstruct(object, open_struct_klass=OpenStruct)
         case object
           when Hash
-            mapped = object.inject({}) { |h, (k, v)| h[k] = openstruct(v); h }
-            OpenStruct.new(mapped)
+            mapped = object.inject({}) do |h, (k, v)|
+              h[k] = openstruct(v, open_struct_klass); h
+            end
+            open_struct_klass.new(mapped)
           when Array
-            object.map { |item| openstruct(item) }
+            object.map { |item| openstruct(item, open_struct_klass) }
           else
             object
+        end
+      end
+
+      class BackCompatOpenStruct < OpenStruct
+        def methods(regular=true)
+          if regular
+            super(regular)
+          else
+            marshal_dump.keys.map(&:to_sym)
+          end
         end
       end
 

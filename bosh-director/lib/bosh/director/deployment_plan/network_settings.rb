@@ -49,14 +49,18 @@ module Bosh::Director::DeploymentPlan
     def network_address(preferred_network_name = nil)
       network_name = preferred_network_name || @default_network['gateway']
       network_hash = to_hash
-
-      if network_hash[network_name]['type'] == 'dynamic'
+      if network_hash[network_name]['type'] == 'dynamic' || Bosh::Director::Config.local_dns_enabled?
         address = @dns_manager.dns_record_name(@instance_id, @job_name, network_name, @deployment_name)
       else
         address = network_hash[network_name]['ip']
       end
 
       address
+    end
+
+    def network_ip_address(preferred_network_name = nil)
+      network_name = preferred_network_name || @default_network['addressable'] || @default_network['gateway']
+      to_hash[network_name]['ip']
     end
 
     def network_addresses

@@ -15,13 +15,21 @@ module Bosh::Director::Models
       validates_includes %w(started stopped detached), :state
     end
 
-    def persistent_disk
-      # Currently we support only 1 persistent disk.
-      self.persistent_disks.find { |disk| disk.active }
+    def managed_persistent_disk
+      PersistentDisk.first(active: true, name: '', instance: self)
     end
 
-    def persistent_disk_cid
-      disk = persistent_disk
+    def active_persistent_disks
+      disk_collection = Bosh::Director::DeploymentPlan::PersistentDiskCollection.new(Bosh::Director::Config.logger)
+      self.persistent_disks.select { |disk| disk.active }.each do |disk|
+        disk_collection.add_by_model(disk)
+      end
+      disk_collection
+    end
+
+    # @todo[multi-disks] drop this method+calls since it's assuming a single persistent disk
+    def managed_persistent_disk_cid
+      disk = managed_persistent_disk
       return disk.disk_cid if disk
       nil
     end
@@ -67,7 +75,7 @@ module Bosh::Director::Models
     end
 
     def to_s
-      "#{self.job}/#{self.index} (#{self.uuid})"
+      "#{self.job}/#{self.uuid} (#{self.index})"
     end
 
     def spec
@@ -78,6 +86,7 @@ module Bosh::Director::Models
       rescue JSON::ParserError
         return 'error'
       end
+
       if result['resource_pool'].nil?
         result
       else
@@ -100,10 +109,14 @@ module Bosh::Director::Models
     end
 
     def spec=(spec)
-      begin
-        self.spec_json = spec.nil? ? nil : JSON.generate(spec)
-      rescue JSON::GeneratorError
-        self.spec_json = 'error'
+      if spec.nil?
+        self.spec_json = nil
+      else
+        begin
+          self.spec_json = JSON.generate(spec)
+        rescue JSON::GeneratorError
+          self.spec_json = 'error'
+        end
       end
     end
 
@@ -129,7 +142,22 @@ module Bosh::Director::Models
       self.credentials_json = json_encode(spec)
     end
 
+    def lifecycle
+      return spec['lifecycle'] if spec && spec.has_key?('lifecycle')
+
+      get_lifecycle_from_deployment_plan
+    end
+
+    def expects_vm?
+      lifecycle == 'service' && ['started', 'stopped'].include?(self.state)
+    end
+
     private
+
+    def create_deployment_plan_from_manifest(deployment)
+      planner_factory = Bosh::Director::DeploymentPlan::PlannerFactory.create(Bosh::Director::Config.logger)
+      planner_factory.create_from_model(deployment)
+    end
 
     def object_or_nil(value)
       if value == 'null' || value.nil?
@@ -141,6 +169,20 @@ module Bosh::Director::Models
 
     def json_encode(value)
       value.nil? ? 'null' : JSON.generate(value)
+    end
+
+    private
+
+    def get_lifecycle_from_deployment_plan
+      return nil if self.deployment.manifest == nil
+
+      deployment_plan = create_deployment_plan_from_manifest(deployment)
+      instance_group = deployment_plan.instance_group(self.job)
+      if instance_group
+        instance_group.lifecycle
+      else
+        nil
+      end
     end
   end
 

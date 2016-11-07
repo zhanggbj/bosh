@@ -17,6 +17,8 @@ templates:
   nginx_ctl: bin/nginx_ctl
   mime.types: config/mime.types
   scheduler_ctl.erb: bin/scheduler_ctl
+  config_server_ca.cert.erb: config/config_server_ca.cert
+  uaa_server_ca.cert.erb: config/uaa_server_ca.cert
 packages:
 - director
 - nginx
@@ -26,6 +28,7 @@ packages:
 - mysql
 - ruby
 - s3cli
+- davcli
 
 properties:
   env.http_proxy:
@@ -105,12 +108,6 @@ properties:
   director.enable_post_deploy:
     description: When true, all templates will run their post_deploy script once deployment is complete
     default: false
-  director.parse_config_values:
-    description: When true, replace substitution values in manifest with values from config server
-    default: false
-  director.config_server_url:
-    description: URL for the config server
-    default: http://127.0.0.1:8080
   director.generate_vm_passwords:
     description: When true, a random unique password will be used for each vm if user has not specified a password
     default: false
@@ -126,6 +123,9 @@ properties:
   director.enable_virtual_delete_vms:
     description: When true, bosh will not delete vm from cloud when instance update, just destroy vm record in db
     default: false
+  director.local_dns:
+    description: Enables local DNS, i.e., sending sync_dns messages with all names/IPs to all agents managed by this director
+    default: {}
 
   #Orphaned disk and orphaned snapshot automated cleanup
   director.disks.max_orphaned_age_in_days:
@@ -134,6 +134,23 @@ properties:
   director.disks.cleanup_schedule:
     description: RufusScheduler cron formatted schedule for cleanup of orphaned disks and orphaned snapshots
     default: '0 0,30 * * * * UTC' #every 30min
+
+  # Config Server
+  director.config_server.enabled:
+    description: 'When true, replace substitution values in manifest with values from Config Server'
+    default: false
+  director.config_server.url:
+    description: 'URL for the Config Server'
+  director.config_server.ca_cert:
+    description: 'CA cert to trust when communicating with Config Server'
+  director.config_server.uaa.url:
+    description: 'URL for the UAA server used for authenticating access to Config Server'
+  director.config_server.uaa.client_id:
+    description: 'UAA client id to access Config Server'
+  director.config_server.uaa.client_secret:
+    description: 'UAA client secret to access Config Server'
+  director.config_server.uaa.ca_cert:
+    description: 'CA cert to trust when communicating with UAA'
 
   # Director User Management
   director.user_management.provider:
@@ -225,7 +242,7 @@ properties:
 
   # Events
   director.events.record_events:
-    description: Enable recording of events to the database
+    description: Enable recording of events to the database and syslog
     default: false
   director.events.max_events:
     description: Max number of events to keep

@@ -5,8 +5,7 @@ describe Bosh::Director::ProblemHandlers::MissingDisk do
   before { allow(handler).to receive(:cloud).and_return(cloud) }
   before { allow(handler).to receive(:agent_client).with(instance.credentials, instance.agent_id).and_return(agent_client) }
 
-  let(:cloud) { instance_double('Bosh::Cloud', detach_disk: nil) }
-  before { allow(Bosh::Director::Config).to receive(:cloud).and_return(cloud) }
+  let(:cloud) { Bosh::Director::Config.cloud }
 
   let(:agent_client) { instance_double('Bosh::Director::AgentClient', unmount_disk: nil) }
 
@@ -88,7 +87,7 @@ describe Bosh::Director::ProblemHandlers::MissingDisk do
 
               expect(Bosh::Director::Models::PersistentDisk[disk.id]).to be_nil
               expect(Bosh::Director::Models::Snapshot.all).to be_empty
-              expect(instance.persistent_disk_cid).to be_nil
+              expect(instance.managed_persistent_disk_cid).to be_nil
             end
 
             context 'when unmount_disk fails with RpcTimeout error' do

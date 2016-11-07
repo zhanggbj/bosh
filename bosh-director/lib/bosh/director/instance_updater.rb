@@ -7,13 +7,13 @@ module Bosh::Director
     def self.new_instance_updater(ip_provider)
       logger = Config.logger
       cloud = Config.cloud
-      vm_deleter = VmDeleter.new(cloud, logger, false, Config.enable_virtual_delete_vms)
       disk_manager = DiskManager.new(cloud, logger)
       job_renderer = JobRenderer.create
-      arp_flusher = ArpFlusher.new
-      vm_creator = VmCreator.new(cloud, logger, vm_deleter, disk_manager, job_renderer, arp_flusher)
-      vm_recreator = VmRecreator.new(vm_creator, vm_deleter)
+      agent_broadcaster = AgentBroadcaster.new
       dns_manager = DnsManagerProvider.create
+      vm_deleter = VmDeleter.new(cloud, logger, false, Config.enable_virtual_delete_vms)
+      vm_creator = VmCreator.new(cloud, logger, vm_deleter, disk_manager, job_renderer, agent_broadcaster)
+      vm_recreator = VmRecreator.new(vm_creator, vm_deleter)
       new(
         cloud,
         logger,
@@ -57,8 +57,10 @@ module Bosh::Director
         unless instance_plan.already_detached?
           Preparer.new(instance_plan, agent(instance), @logger).prepare
 
-          stop(instance_plan)
-          take_snapshot(instance)
+          unless instance.model.state == 'stopped'
+            stop(instance_plan)
+            take_snapshot(instance)
+          end
 
           if instance.state == 'stopped'
             instance.update_state
@@ -81,8 +83,9 @@ module Bosh::Director
         recreated = false
         if needs_recreate?(instance_plan)
           @logger.debug('Failed to update in place. Recreating VM')
-          @disk_manager.unmount_disk_for(instance_plan)
-          @vm_recreator.recreate_vm(instance_plan, nil)
+          @disk_manager.unmount_disk_for(instance_plan) unless instance_plan.needs_to_fix?
+          tags = instance_plan.tags
+          @vm_recreator.recreate_vm(instance_plan, nil, tags)
           recreated = true
         end
 
@@ -92,10 +95,7 @@ module Bosh::Director
         @disk_manager.update_persistent_disk(instance_plan)
 
         unless recreated
-          if instance.trusted_certs_changed?
-            @logger.debug('Updating trusted certs')
-            instance.update_trusted_certs
-          end
+          instance.update_instance_settings
         end
 
         cleaner = RenderedJobTemplatesCleaner.new(instance.model, @blobstore, @logger)
@@ -106,7 +106,7 @@ module Bosh::Director
           @logger,
           canary: options[:canary]
         )
-        state_applier.apply(instance_plan.desired_instance.job.update)
+        state_applier.apply(instance_plan.desired_instance.instance_group.update)
       end
       InstanceUpdater::InstanceState.with_instance_update_and_event_creation(instance.model, parent_id, instance.deployment_model.name, action, &update_procedure)
     end
@@ -179,6 +179,7 @@ module Bosh::Director
     def update_dns(instance_plan)
       instance = instance_plan.instance
 
+      @dns_manager.publish_dns_records
       return unless instance_plan.dns_changed?
 
       @dns_manager.update_dns_record_for_instance(instance.model, instance_plan.network_settings.dns_record_info)

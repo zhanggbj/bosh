@@ -25,6 +25,7 @@ describe 'health_monitor.yml.erb' do
             'analyze_agents' => 64,
             'agent_timeout' => 65,
             'rogue_agent_alert' => 66,
+            'analyze_instances' => 64,
           },
           'loglevel' => 'INFO',
           'em_threadpool_size' => 20,
@@ -35,6 +36,7 @@ describe 'health_monitor.yml.erb' do
           'resurrector_enabled' => false,
           'pagerduty_enabled' => false,
           'datadog_enabled' => false,
+          'riemann_enabled' => false,
           'graphite_enabled' => false,
           'syslog_event_forwarder_enabled' => false,
           'consul_event_forwarder_enabled' => false,
@@ -80,6 +82,7 @@ describe 'health_monitor.yml.erb' do
       expect(parsed_yaml['intervals']['analyze_agents']).to eq(64)
       expect(parsed_yaml['intervals']['agent_timeout']).to eq(65)
       expect(parsed_yaml['intervals']['rogue_agent_alert']).to eq(66)
+      expect(parsed_yaml['intervals']['analyze_instances']).to eq(64)
       expect(parsed_yaml['logfile']).to be_a(String)
       expect(parsed_yaml['loglevel']).to eq('INFO')
       expect(parsed_yaml['em_threadpool_size']).to eq(20)
@@ -262,6 +265,28 @@ describe 'health_monitor.yml.erb' do
           expect(plugin['options']['api_key']).to eq('abcdef')
           expect(plugin['options']['application_key']).to eq('dog-key')
           expect(plugin['options']['pagerduty_service_name']).to eq('pager-name')
+        end
+      end
+
+      context 'riemann' do
+        before do
+          deployment_manifest_fragment['properties']['hm'].merge!({
+              'riemann_enabled' => true,
+              'riemann' => {
+                'host' => '127.0.0.1',
+                'port' => '5555',
+              },
+            })
+        end
+
+        it 'should render' do
+          expect(parsed_yaml['plugins'].length).to eq(2)
+
+          plugin = parsed_yaml['plugins'][1]
+          expect(plugin['name']).to eq('riemann')
+          expect(plugin['events']).to be_a(Array)
+          expect(plugin['options']['host']).to eq('127.0.0.1')
+          expect(plugin['options']['port']).to eq('5555')
         end
       end
 

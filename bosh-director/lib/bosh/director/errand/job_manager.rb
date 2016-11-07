@@ -8,22 +8,22 @@ module Bosh::Director
       @deployment = deployment
       @job = job
       @logger = logger
-      vm_deleter = Bosh::Director::VmDeleter.new(cloud, logger, false, Config.enable_virtual_delete_vms)
       @disk_manager = DiskManager.new(cloud, logger)
       @job_renderer = JobRenderer.create
-      arp_flusher = ArpFlusher.new
-      @vm_creator = Bosh::Director::VmCreator.new(cloud, logger, vm_deleter, @disk_manager, @job_renderer, arp_flusher)
+      agent_broadcaster = AgentBroadcaster.new
+      @dns_manager = DnsManagerProvider.create
+      vm_deleter = Bosh::Director::VmDeleter.new(cloud, logger, false, Config.enable_virtual_delete_vms)
+      @vm_creator = Bosh::Director::VmCreator.new(cloud, logger, vm_deleter, @disk_manager, @job_renderer, agent_broadcaster)
     end
 
     def create_missing_vms
-      @vm_creator.create_for_instance_plans(@job.instance_plans_with_missing_vms, @deployment.ip_provider)
+      @vm_creator.create_for_instance_plans(@job.instance_plans_with_missing_vms, @deployment.ip_provider, @deployment.tags)
     end
 
     # Creates/updates all errand job instances
     # @return [void]
     def update_instances
-      links_resolver = DeploymentPlan::LinksResolver.new(@deployment, @logger)
-      job_updater = JobUpdater.new(@deployment, @job, links_resolver, @disk_manager)
+      job_updater = JobUpdater.new(@deployment, @job, @disk_manager)
       job_updater.update
     end
 
@@ -38,8 +38,7 @@ module Bosh::Director
 
       @logger.info('Deleting errand instances')
       event_log_stage = Config.event_log.begin_stage('Deleting errand instances', instance_plans.size, [@job.name])
-      dns_manager = DnsManagerProvider.create
-      instance_deleter = InstanceDeleter.new(@deployment.ip_provider, dns_manager, @disk_manager)
+      instance_deleter = InstanceDeleter.new(@deployment.ip_provider, @dns_manager, @disk_manager)
       instance_deleter.delete_instance_plans(instance_plans, event_log_stage)
     end
 

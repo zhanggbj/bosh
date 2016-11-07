@@ -14,21 +14,20 @@ module Bosh::Director
       # recreate and restart are two virtual states
       # (both set  target instance state to "started" and set
       # appropriate instance spec modifiers)
-      VALID_JOB_STATES = %w(started stopped detached recreate restart)
+      VALID_STATES = %w(started stopped detached recreate restart)
 
-      # @return [String] Job name
+      # @return [String] Instance group name
       attr_accessor :name
 
       # @return [String] Lifecycle profile
       attr_accessor :lifecycle
 
-      # @return [String] Job canonical name (mostly for DNS)
+      # @return [String] Instance group canonical name (mostly for DNS)
       attr_accessor :canonical_name
 
-      # @return [DiskType] Persistent disk type (or nil)
-      attr_accessor :persistent_disk_type
+      attr_accessor :persistent_disk_collection
 
-      # @return [DeploymentPlan::ReleaseVersion] Release this job belongs to
+      # @return [DeploymentPlan::ReleaseVersion] Release this instance group belongs to
       attr_accessor :release
 
       # @return [DeploymentPlan::Stemcell]
@@ -45,35 +44,35 @@ module Bosh::Director
 
       attr_accessor :default_network
 
-      # @return [Array<DeploymentPlan::Template] Templates included into the job
-      attr_accessor :templates
+      # @return [Array<DeploymentPlan::Job] Jobs included on the instance group
+      attr_accessor :jobs
 
-      # @return [Hash] Job properties
+      # @return [Hash] Instance group properties
       attr_accessor :properties
 
-      # @return [Hash<String, DeploymentPlan::Package] Packages included into
-      #   this job
+      # @return [Hash<String, DeploymentPlan::Package] Packages included on the instance group
       attr_accessor :packages
 
-      # @return [DeploymentPlan::UpdateConfig] Job update settings
+      # @return [DeploymentPlan::UpdateConfig] Instance group update settings
       attr_accessor :update
 
-      # @return [Array<DeploymentPlan::Instance>] All job instances
+      # @return [Array<DeploymentPlan::Instance>] All instances
       attr_accessor :instances
 
       # @return [Array<Models::Instance>] List of excess instance models that
       #   are not needed for current deployment
       attr_accessor :unneeded_instances
 
-      # @return [String] Expected job state
+      # @return [String] Expected instance group state
       attr_accessor :state
 
       # @return [Hash<Integer, String>] Individual instance expected states
       attr_accessor :instance_states
 
-      attr_accessor :availability_zones
+      # @return [String] deployment name the instance group belongs to
+      attr_accessor :deployment_name
 
-      attr_accessor :all_properties
+      attr_accessor :availability_zones
 
       attr_accessor :networks
 
@@ -81,22 +80,23 @@ module Bosh::Director
 
       attr_accessor :desired_instances
 
-      attr_reader :link_paths
-
       attr_accessor :did_change
 
-      def self.parse(plan, job_spec, event_log, logger, parse_options = {})
+      attr_reader :link_paths
+
+      attr_reader :resolved_links
+
+      def self.parse(plan, instance_group_spec, event_log, logger, parse_options = {})
         parser = InstanceGroupSpecParser.new(plan, event_log, logger)
-        parser.parse(job_spec, parse_options)
+        parser.parse(instance_group_spec, parse_options)
       end
 
       def initialize(logger)
         @logger = logger
 
         @release = nil
-        @templates = []
-        @all_properties = nil # All properties available to job
-        @properties = nil # Actual job properties
+        @jobs = []
+        @properties = nil # Actual instance group properties
 
         @instances = []
         @desired_instances = []
@@ -113,10 +113,14 @@ module Bosh::Director
         @instance_plans = []
 
         @did_change = false
+        @persistent_disk_collection = nil
+
+        @deployment_name = nil
+        @dns_manager = DnsManagerProvider.create
       end
 
-      def self.is_legacy_spec?(job_spec)
-        !job_spec.has_key?("templates")
+      def self.is_legacy_spec?(instance_group_spec)
+        !instance_group_spec.has_key?("templates")
       end
 
       def add_instance_plans(instance_plans)
@@ -128,6 +132,15 @@ module Bosh::Director
                                    .sort(@instance_plans.reject(&:obsolete?))
       end
 
+      def add_job(job_to_add)
+        jobs.each do |job|
+          if job_to_add.name == job.name
+            raise "Colocated job '#{job_to_add.name}' is already added to the instance group '#{name}'."
+          end
+        end
+        jobs << job_to_add
+      end
+
       # Takes in a job spec and returns a job spec in the new format, if it
       # needs to be modified.  The new format has "templates" key, which is an
       # array with each template's data.  This is used for job collocation,
@@ -137,7 +150,7 @@ module Bosh::Director
       # multiple templates in legacy form.
       def self.convert_from_legacy_spec(job_spec)
         return job_spec if !self.is_legacy_spec?(job_spec)
-        template = {
+        job = {
           "name" => job_spec["template"],
           "version" => job_spec["version"],
           "sha1" => job_spec["sha1"],
@@ -148,7 +161,7 @@ module Bosh::Director
         # So we will support this feature if a user want to use legacy spec. If they
         # want to use properties per template, let them use the regular way of defining
         # templates, i.e. by using the 'templates' key
-        job_spec['templates'] = [template]
+        job_spec['templates'] = [job]
       end
 
 
@@ -168,39 +181,39 @@ module Bosh::Director
         obsolete_instance_plans.map(&:instance)
       end
 
-      # Returns job spec as a Hash. To be used by all instances of the job to
+      # Returns instance group spec as a Hash. To be used by all instances to
       # populate agent state.
       # @return [Hash] Hash representation
       def spec
-        if @templates.size >= 1
-          first_template = @templates[0]
+        if @jobs.size >= 1
+          first_job = @jobs[0]
           result = {
             "name" => @name,
             "templates" => [],
             # --- Legacy ---
-            "template" => first_template.name,
-            "version" => first_template.version,
-            "sha1" => first_template.sha1,
-            "blobstore_id" => first_template.blobstore_id
+            "template" => first_job.name,
+            "version" => first_job.version,
+            "sha1" => first_job.sha1,
+            "blobstore_id" => first_job.blobstore_id
           }
 
-          if first_template.logs
-            result["logs"] = first_template.logs
+          if first_job.logs
+            result["logs"] = first_job.logs
           end
           # --- /Legacy ---
 
-          @templates.each do |template|
-            template_entry = {
-              "name" => template.name,
-              "version" => template.version,
-              "sha1" => template.sha1,
-              "blobstore_id" => template.blobstore_id
+          @jobs.each do |job|
+            job_entry = {
+              "name" => job.name,
+              "version" => job.version,
+              "sha1" => job.sha1,
+              "blobstore_id" => job.blobstore_id
             }
 
-            if template.logs
-              template_entry["logs"] = template.logs
+            if job.logs
+              job_entry["logs"] = job.logs
             end
-            result["templates"] << template_entry
+            result["templates"] << job_entry
           end
           result
         end
@@ -210,8 +223,8 @@ module Bosh::Director
         update.to_hash
       end
 
-      # Returns package specs for all packages in the job indexed by package
-      # name. To be used by all instances of the job to populate agent state.
+      # Returns package specs for all packages in the instances indexed by package
+      # name. To be used by all instances to populate agent state.
       # @return [Hash<String, Hash>] All package specs indexed by package name
       def package_spec
         result = {}
@@ -226,14 +239,14 @@ module Bosh::Director
         @instances[index]
       end
 
-      # Returns the state state of job instance by its index
+      # Returns the state of an instance by its index
       # @param [Integer] index Instance index
       # @return [String, nil] Instance state (nil if not specified)
       def state_for_instance(instance_model)
         @instance_states[instance_model.uuid] || @instance_states[instance_model.index.to_s] || @state
       end
 
-      # Registers compiled package with this job.
+      # Registers compiled package with this instance.
       # @param [Models::CompiledPackage] compiled_package_model Compiled package
       # @return [void]
       def use_compiled_package(compiled_package_model)
@@ -241,16 +254,25 @@ module Bosh::Director
         @packages[compiled_package.name] = compiled_package
       end
 
-      # Extracts only the properties needed by this job. This is decoupled from
+      # Extracts only the properties needed by this instance group. This is decoupled from
       # parsing properties because templates need to be bound to their models
-      # before 'bind_properties' is being called (as we persist job template
+      # before 'bind_properties' is being called (as we persist instance group template
       # property definitions in DB).
       def bind_properties
-        @properties = filter_properties(@all_properties)
+        @properties = {}
+
+        options = {
+          :dns_record_names => get_dns_record_names
+        }
+
+        @jobs.each do |job|
+          job.bind_properties(@name, @deployment_name, options)
+          @properties[job.name] = job.properties[@name]
+        end
       end
 
       def validate_package_names_do_not_collide!
-        releases_by_package_names = templates
+        releases_by_package_names = jobs
                                       .reduce([]) { |memo, t| memo + t.model.package_names.product([t.release]) }
                                       .reduce({}) { |memo, package_name_and_release_version|
           package_name = package_name_and_release_version.first
@@ -263,13 +285,13 @@ module Bosh::Director
         releases_by_package_names.each do |package_name, releases|
           if releases.size > 1
             release1, release2 = releases.to_a[0..1]
-            offending_template1 = templates.find { |t| t.release == release1 }
-            offending_template2 = templates.find { |t| t.release == release2 }
+            offending_job1 = jobs.find { |job| job.release == release1 }
+            offending_job2 = jobs.find { |job| job.release == release2 }
 
             raise JobPackageCollision,
               "Package name collision detected in instance group '#{@name}': "\
-                  "job '#{release1.name}/#{offending_template1.name}' depends on package '#{release1.name}/#{package_name}', "\
-                  "job '#{release2.name}/#{offending_template2.name}' depends on '#{release2.name}/#{package_name}'. " +
+                  "job '#{release1.name}/#{offending_job1.name}' depends on package '#{release1.name}/#{package_name}', "\
+                  "job '#{release2.name}/#{offending_job2.name}' depends on '#{release2.name}/#{package_name}'. " +
                 'BOSH cannot currently collocate two packages with identical names from separate releases.'
           end
         end
@@ -280,7 +302,7 @@ module Bosh::Director
         bind_instance_networks(ip_provider)
       end
 
-      #TODO: Job should not be responsible for reserving IPs. Consider moving this somewhere else? Maybe in the consumer?
+      #TODO: Instance group should not be responsible for reserving IPs. Consider moving this somewhere else? Maybe in the consumer?
       def bind_instance_networks(ip_provider)
         needed_instance_plans
           .flat_map(&:network_plans)
@@ -306,86 +328,49 @@ module Bosh::Director
         @lifecycle == 'errand'
       end
 
-      # reverse compatibility: translate disk size into a disk pool
-      def persistent_disk=(disk_size)
-        @persistent_disk_type = DiskType.new(SecureRandom.uuid, disk_size, {})
-      end
-
       def instance_plans_with_missing_vms
         needed_instance_plans.reject do |instance_plan|
           instance_plan.instance.vm_created? || instance_plan.instance.state == 'detached'
         end
       end
 
-      def add_resolved_link(link_name, link_spec)
-        @resolved_links[link_name] = link_spec
+      def add_resolved_link(link_name, link_info)
+        @resolved_links[link_name] = link_info
       end
 
-      def link_spec
-        @resolved_links
+      def link_path(job_name, link_name)
+        @link_paths.fetch(job_name, {})[link_name]
       end
 
-      def link_path(template_name, link_name)
-        @link_paths.fetch(template_name, {})[link_name]
-      end
-
-      def add_link_path(template_name, link_name, link_path)
-        @link_paths[template_name] ||= {}
-        @link_paths[template_name][link_name] = link_path
+      def add_link_path(job_name, link_name, link_path)
+        @link_paths[job_name] ||= {}
+        @link_paths[job_name][link_name] = link_path
       end
 
       def compilation?
         false
       end
 
+      def has_job?(name, release)
+        @jobs.any? { |job| job.name == name && job.release.name == release }
+      end
+
+      def has_os?(os)
+        @stemcell.os == os
+      end
+
       private
 
-      # @param [Hash] collection All properties collection
-      # @return [Hash] Properties required by templates included in this job
-      def filter_properties(collection)
-        if @templates.none? { |template| template.properties}
-          result = {}
-          @templates.each do |template|
-            result[template.name] = collection
-          end
-          return result
-        end
-
-        if @templates.all? { |template| template.properties }
-          return extract_template_properties(collection)
-        end
-
-        raise JobIncompatibleSpecs,
-              "Instance group '#{name}' has specs with conflicting property definition styles between" +
-                  " its job spec templates.  This may occur if colocating jobs, one of which has a spec file including" +
-                  " 'properties' and one which doesn't."
-      end
-
-      def extract_template_properties(collection)
-        result = {}
-
-        @templates.each do |template|
-          # If a template has properties that were defined in the deployment manifest
-          # for that template only, then we need to bind only these properties, and not
-          # make them available to other templates in the same deployment job. That can
-          # be done by checking @template_scoped_properties variable of each
-          # template
-          result[template.name] ||= {}
-          if template.has_template_scoped_properties(@name)
-            template.bind_template_scoped_properties(@name)
-            result[template.name] = template.template_scoped_properties[@name]
-          else
-            template.properties.each_pair do |name, definition|
-              copy_property(result[template.name], collection, name, definition["default"])
-            end
-          end
-        end
-
-        result
-      end
-
       def run_time_dependencies
-        templates.flat_map { |template| template.package_models }.uniq.map(&:name)
+        jobs.flat_map { |job| job.package_models }.uniq.map(&:name)
+      end
+
+      def get_dns_record_names
+        result = []
+        networks.map(&:name).each do |network_name|
+          result << @dns_manager.dns_record_name('*', @name, network_name, @deployment_name)
+        end
+        result.sort
       end
     end
   end

@@ -58,7 +58,7 @@ module Bosh::Spec
     end
 
     def find_vm(vms, job_name, index_or_id)
-      vm = vms.detect { |vm| vm.job_name == job_name && (vm.index == index_or_id || vm.instance_uuid == index_or_id)}
+      vm = vms.detect { |vm| vm.job_name == job_name && (vm.index == index_or_id.to_s || vm.instance_uuid == index_or_id.to_s)}
       vm || raise("Failed to find vm #{job_name}/#{index_or_id}")
     end
 
@@ -67,7 +67,7 @@ module Bosh::Spec
     def wait_for_vm(job_name, index, timeout_seconds, options = {})
       start_time = Time.now
       loop do
-        vm = vms('', options).detect { |vm| vm.job_name == job_name && vm.index == index && vm.ips != '' }
+        vm = vms('', options).detect { |vm| vm.job_name == job_name && vm.index == index && vm.last_known_state != 'unresponsive agent' && vm.last_known_state != nil }
         return vm if vm
         break if Time.now - start_time >= timeout_seconds
         sleep(1)
@@ -217,12 +217,12 @@ module Bosh::Spec
       vms = parse_table(output)
 
       job_name_match_index = 1
-      index_match_index = 2
-      instance_id_match_index = 3
+      instance_id_match_index = 2
+      index_match_index = 3
       bootstrap_match_index = 4
 
       vms.each do |vm|
-        match_data = /(.*)\/(\d+)\s\(([0-9a-f]{8}-[0-9a-f-]{27})\)(\*?)/.match(vm[table_type])
+        match_data = /(.*)\/([0-9a-f]{8}-[0-9a-f-]{27})\s\((\d+)\)(\*?)/.match(vm[table_type])
         if row_is_ip_address_for_previous_row(match_data)
           vm[:is_ip_address_for_previous_row] = true
         else

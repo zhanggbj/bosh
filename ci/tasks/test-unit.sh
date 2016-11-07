@@ -2,9 +2,6 @@
 
 set -e
 
-export RUBY_VERSION=2.3.1
-
-
 source bosh-src/ci/tasks/utils.sh
 check_param RUBY_VERSION
 
@@ -40,7 +37,7 @@ case "$DB" in
     echo "Using sqlite"
     ;;
   *)
-    echo "Usage: DB={mysql|postgresql|sqlite} $0 {commands}"
+    echo "Usage: DB={mysql2|postgresql|sqlite} $0 {commands}"
     exit 1
 esac
 
@@ -53,4 +50,4 @@ print_git_state
 export PATH=/usr/local/ruby/bin:/usr/local/go/bin:$PATH
 export GOPATH=$(pwd)/go
 bundle install --local
-bundle exec rake --trace go spec:unit
+bundle exec rake --trace spec:unit

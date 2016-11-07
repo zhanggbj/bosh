@@ -23,7 +23,7 @@ module Bosh::Director
           job = Jobs::DeleteRelease.new('test_release', blobstore: blobstore)
           expect(job).to receive(:with_release_lock).with('test_release', timeout: 10).and_yield
 
-          expect { job.perform }.to raise_error ReleaseDeleteFailed
+          expect { job.perform }.to raise_error 'Oh noes!'
         end
       end
 
@@ -61,7 +61,7 @@ module Bosh::Director
         rv1 = Models::ReleaseVersion.make(release: release, version: '1')
         rv2 = Models::ReleaseVersion.make(release: release, version: '2')
 
-        manifest = Psych.dump('release' => {'name' => 'test_release', 'version' => '2'})
+        manifest = YAML.dump('release' => {'name' => 'test_release', 'version' => '2'})
 
         deployment = Models::Deployment.make(name: 'test_deployment', manifest: manifest)
         deployment.add_release_version(rv2)

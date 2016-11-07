@@ -45,7 +45,6 @@ module Bosh::Director
       validate_env(instance_model.vm_env)
 
       begin
-        vm_deleter = VmDeleter.new(cloud, @logger, false, Config.enable_virtual_delete_vms)
         vm_deleter.delete_for_instance(instance_model)
       rescue Bosh::Clouds::VMNotFound
         # One situation where this handler is actually useful is when
@@ -66,12 +65,12 @@ module Bosh::Director
       @logger.debug("Recreating Vm: #{instance_model})")
       delete_vm_from_cloud(instance_model)
 
-      existing_vm_env = instance_model.vm_env
-      instance_plan_to_create = create_instance_plan(instance_model, existing_vm_env)
-
+      instance_plan_to_create = create_instance_plan(instance_model)
+      tags = instance_model.deployment.tags
       vm_creator.create_for_instance_plan(
         instance_plan_to_create,
-        Array(instance_model.persistent_disk_cid)
+        Array(instance_model.managed_persistent_disk_cid),
+        tags
       )
 
       dns_manager = DnsManagerProvider.create
@@ -108,9 +107,9 @@ module Bosh::Director
 
     private
 
-    def create_instance_plan(instance_model, vm_env)
+    def create_instance_plan(instance_model)
       vm_type = DeploymentPlan::VmType.new(instance_model.spec['vm_type'])
-      env = DeploymentPlan::Env.new(vm_env)
+      env = DeploymentPlan::Env.new(instance_model.vm_env)
       stemcell = DeploymentPlan::Stemcell.parse(instance_model.spec['stemcell'])
       stemcell.add_stemcell_model
       availability_zone = DeploymentPlan::AvailabilityZone.new(instance_model.availability_zone, instance_model.cloud_properties_hash)
@@ -168,9 +167,9 @@ module Bosh::Director
 
     def vm_creator
       disk_manager = DiskManager.new(cloud, @logger)
-      arp_flusher = ArpFlusher.new
+      agent_broadcaster = AgentBroadcaster.new
       job_renderer = JobRenderer.create
-      @vm_creator ||= VmCreator.new(cloud, @logger, vm_deleter, disk_manager, job_renderer, arp_flusher)
+      @vm_creator ||= VmCreator.new(cloud, @logger, vm_deleter, disk_manager, job_renderer, agent_broadcaster)
     end
 
     def validate_spec(spec)

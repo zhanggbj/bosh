@@ -77,6 +77,13 @@ module Bosh::Director
       end
     end
 
+    def self.it_acts_as_message_with_timeout(message_name)
+      it 'waits for results with timeout' do
+        expect(client).to receive(:send_message_with_timeout).exactly(1).times
+        client.public_send(message_name, 'fake', 'args')
+      end
+    end
+
     context 'task is asynchronous' do
       describe 'it has agent_task_id' do
         subject(:client) { AgentClient.with_vm_credentials_and_agent_id(nil, 'fake-agent-id') }
@@ -105,35 +112,41 @@ module Bosh::Director
           it_acts_as_asynchronous_message :stop
           it_acts_as_asynchronous_message :cancel_task
           it_acts_as_asynchronous_message :list_disk
+          it_acts_as_asynchronous_message :associate_disks
           it_acts_as_asynchronous_message :start
         end
 
         describe 'update_settings' do
-          it 'packages the certificates into a map and sends to the agent' do
-            expect(client).to receive(:send_message).with(:update_settings, "trusted_certs" => "these are the certificates")
+          it 'packages the certificates and disk associations into a map and sends to the agent' do
+            expect(client).to receive(:send_message).with(
+              :update_settings,
+              {
+              "trusted_certs" => "these are the certificates",
+              'disk_associations' => [{'name' => 'zak', 'cid' => 'new-disk-cid'}]
+              })
             allow(client).to receive(:get_task)
-            client.update_settings("these are the certificates")
+            client.update_settings("these are the certificates", [{'name' => 'zak', 'cid' => 'new-disk-cid'}])
           end
 
           it 'periodically polls the update settings task while it is running' do
             allow(client).to receive(:handle_message_with_retry).and_return task
             allow(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL)
             expect(client).to receive(:get_task).with('fake-agent_task_id')
-            client.update_settings("these are the certificates")
+            client.update_settings("these are the certificates", [{'name' => 'zak', 'cid' => 'new-disk-cid'}])
           end
 
           it 'is only a warning when the remote agent does not implement update_settings' do
             allow(client).to receive(:handle_method).and_raise(RpcRemoteException, "unknown message update_settings")
 
             expect(Config.logger).to receive(:warn).with("Ignoring update_settings 'unknown message' error from the agent: #<Bosh::Director::RpcRemoteException: unknown message update_settings>")
-            expect { client.update_settings("no certs") }.to_not raise_error
+            expect { client.update_settings("no certs", "no disks") }.to_not raise_error
           end
 
           it 'still raises an exception for other RPC failures' do
             allow(client).to receive(:handle_method).and_raise(RpcRemoteException, "random failure!")
 
             expect(client).to_not receive(:warning)
-            expect { client.update_settings("no certs") }.to raise_error
+            expect { client.update_settings("no certs", "no disks") }.to raise_error
           end
         end
 
@@ -184,6 +197,9 @@ module Bosh::Director
           end
         end
 
+        context 'task can time out' do
+          it_acts_as_message_with_timeout :stop
+        end
       end
     end
 
@@ -218,6 +234,35 @@ module Bosh::Director
           expect { client.delete_arp_entries(ips: ['10.10.10.1', '10.10.10.2']) }.to_not raise_error
         end
       end
+    end
+
+    describe '#sync_dns' do
+      before do
+        allow(Config).to receive(:nats_rpc)
+        allow(Api::ResourceManager).to receive(:new)
+      end
+
+      subject(:client) { AgentClient.with_vm_credentials_and_agent_id(nil, 'fake-agent-id', timeout: 0.1) }
+        before do
+          allow(Config).to receive(:nats_rpc)
+          allow(Api::ResourceManager).to receive(:new)
+        end
+
+        it 'sends sync_dns to the agent' do
+          expect(client).to receive(:send_nats_request) do |message_name, args|
+            expect(message_name).to eq(:sync_dns)
+            expect(args).to eq([blobstore_id: 'fake-blob-id', sha1: 'fake-sha1'])
+          end
+          client.sync_dns(blobstore_id: 'fake-blob-id', sha1: 'fake-sha1')
+        end
+
+        it 'sends sync_dns to the agent with version parameter' do
+          expect(client).to receive(:send_nats_request) do |message_name, args|
+            expect(message_name).to eq(:sync_dns)
+            expect(args).to eq([blobstore_id: 'fake-blob-id', sha1: 'fake-sha1', version: 1])
+          end
+          client.sync_dns(blobstore_id: 'fake-blob-id', sha1: 'fake-sha1', version: 1)
+        end
     end
 
     context 'task is synchronous' do
@@ -656,6 +701,73 @@ module Bosh::Director
 
           client.wait_for_task('fake-task-id')
         end
+      end
+
+      context 'when timeout is passed' do
+        let(:fake_timeout_ticks) { 3 }
+
+        it 'uses the timeout if one is passed' do
+          client = AgentClient.new('fake-service-name', 'fake-client-id')
+          timeout = Timeout.new(fake_timeout_ticks)
+
+          nats_rpc_response = {
+            'value' => {
+              'state' => 'running',
+              'value' => 'fake-return-value',
+            }
+          }
+
+          allow(nats_rpc).to receive(:send_request).with(
+              'fake-service-name.fake-client-id', hash_including(method: :get_task, arguments: ['fake-task-id']))
+                               .and_yield(nats_rpc_response)
+
+          expect(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL).exactly(fake_timeout_ticks).times
+          expect(timeout).to receive(:timed_out?).exactly(fake_timeout_ticks).times.and_return(false)
+          expect(timeout).to receive(:timed_out?).and_return(true)
+          expect(client.wait_for_task('fake-task-id', timeout)).to eq('fake-return-value')
+        end
+      end
+    end
+
+    describe '#stop' do
+      let(:nats_rpc) { instance_double('Bosh::Director::NatsRpc') }
+      let(:fake_timeout_ticks) { 3 }
+
+      before { allow(Config).to receive(:nats_rpc).and_return(nats_rpc) }
+
+      it 'should timeout and continue on after 5 minutes' do
+        handle_method_response = {
+          'agent_task_id' => 'fake-task-id',
+          'value' => 'fake-return-value',
+          'state' => 'running',
+        }
+
+        timeout = Timeout.new(fake_timeout_ticks)
+
+        allow(Timeout).to receive(:new).and_return(timeout)
+        client = AgentClient.new('fake-service-name', 'fake-client-id')
+
+        expect(client).to receive(:handle_method).with(:stop, []).once.and_return(handle_method_response)
+        expect(client).to receive(:handle_method).with(:get_task, ['fake-task-id']).exactly(fake_timeout_ticks + 1).times.and_return(handle_method_response)
+
+        expect(client).to receive(:sleep).with(AgentClient::DEFAULT_POLL_INTERVAL).exactly(fake_timeout_ticks).times
+        expect(timeout).to receive(:timed_out?).exactly(fake_timeout_ticks).times.and_return(false)
+        expect(timeout).to receive(:timed_out?).and_return(true)
+
+        client.stop
+      end
+
+      it 'should suppress timeout errors received from the agent' do
+        allow(Timeout).to receive(:new).and_return(Timeout.new(fake_timeout_ticks))
+
+        client = AgentClient.new('fake-service-name', 'fake-client-id')
+
+        expect(Config.logger).to receive(:warn).with("Ignoring stop timeout error from the agent: #<Bosh::Director::RpcRemoteException: Timed out waiting for service 'foo'.>")
+
+        expect(client).to receive(:handle_method).with(:stop, []).once.and_return({ 'agent_task_id' => 'fake-task-id' })
+        expect(client).to receive(:handle_method).and_raise(RpcRemoteException, "Timed out waiting for service 'foo'.")
+
+        client.stop
       end
     end
   end

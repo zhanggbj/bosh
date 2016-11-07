@@ -1,6 +1,3 @@
-# Copyright (c) 2009-2012 VMware, Inc.
-#
-
 require 'bosh/director/models/cloud_config'
 require 'bosh/director/models/runtime_config'
 require 'bosh/director/models/compiled_package'
@@ -11,6 +8,7 @@ require 'bosh/director/models/director_attribute'
 require 'bosh/director/models/instance'
 require 'bosh/director/models/ip_address'
 require 'bosh/director/models/local_dns_blob'
+require 'bosh/director/models/local_dns_record'
 require 'bosh/director/models/log_bundle'
 require 'bosh/director/models/orphan_disk'
 require 'bosh/director/models/orphan_snapshot'

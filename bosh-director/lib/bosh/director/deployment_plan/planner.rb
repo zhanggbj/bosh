@@ -1,6 +1,5 @@
 require 'bosh/director/deployment_plan/deployment_spec_parser'
 require 'bosh/director/deployment_plan/cloud_manifest_parser'
-require 'bosh/director/deployment_plan/runtime_manifest_parser'
 require 'bosh/director/deployment_plan/disk_type'
 require 'forwardable'
 require 'common/deep_copy'
@@ -25,11 +24,6 @@ module Bosh::Director
 
       attr_accessor :properties
 
-      # Hash of resolved links spec provided by deployment
-      # in format job_name > template_name > link_name > link_type
-      # used by LinksResolver
-      attr_accessor :link_spec
-
       # @return [Bosh::Director::DeploymentPlan::UpdateConfig]
       #   Default job update configuration
       attr_accessor :update
@@ -41,8 +35,11 @@ module Bosh::Director
       # Stemcells in deployment by alias
       attr_reader :stemcells
 
+      # Tags in deployment by alias
+      attr_reader :tags
+
       # Job instances from the old manifest that are not in the new manifest
-      attr_reader :unneeded_instances
+      attr_reader :unneeded_instance_plans
 
       # @return [Boolean] Indicates whether VMs should be recreated
       attr_reader :recreate
@@ -52,14 +49,14 @@ module Bosh::Director
       # @return [Boolean] Indicates whether VMs should be drained
       attr_reader :skip_drain
 
-      attr_reader :manifest_text
+      attr_reader :uninterpolated_manifest_text
 
-      def initialize(attrs, manifest_text, cloud_config, runtime_config, deployment_model, options = {})
+      def initialize(attrs, uninterpolated_manifest_text, cloud_config, runtime_config, deployment_model, options = {})
         @name = attrs.fetch(:name)
         @properties = attrs.fetch(:properties)
         @releases = {}
 
-        @manifest_text = Bosh::Common::DeepCopy.copy(manifest_text)
+        @uninterpolated_manifest_text = Bosh::Common::DeepCopy.copy(uninterpolated_manifest_text)
         @cloud_config = cloud_config
         @runtime_config = runtime_config
         @model = deployment_model
@@ -68,13 +65,15 @@ module Bosh::Director
         @instance_groups = []
         @instance_groups_name_index = {}
         @instance_groups_canonical_name_index = Set.new
+        @tags = options.fetch('tags', {})
 
         @unneeded_vms = []
-        @unneeded_instances = []
+        @unneeded_instance_plans = []
 
         @recreate = !!options['recreate']
+        @fix = !!options['fix']
 
-        @link_spec = Hash.new{ |h,k| h[k] = Hash.new(&h.default_proc) }
+        @link_spec = {}
         @skip_drain = SkipDrain.new(options['skip_drain'])
 
         @logger = Config.logger
@@ -102,7 +101,7 @@ module Bosh::Director
         Canonicalizer.canonicalize(@name)
       end
 
-      def bind_models(skip_links_binding = false)
+      def bind_models(options = {})
         stemcell_manager = Api::StemcellManager.new
         dns_manager = DnsManagerProvider.create
         assembler = DeploymentPlan::Assembler.new(
@@ -113,19 +112,21 @@ module Bosh::Director
           @logger
         )
 
-        assembler.bind_models(skip_links_binding)
+        options[:fix] = @fix
+        options[:tags] = @tags
+        assembler.bind_models(options)
       end
 
       def compile_packages
         validate_packages
 
         cloud = Config.cloud
-        vm_deleter = VmDeleter.new(cloud, @logger, false, Config.enable_virtual_delete_vms)
         disk_manager = DiskManager.new(cloud, @logger)
         job_renderer = JobRenderer.create
-        arp_flusher = ArpFlusher.new
-        vm_creator = Bosh::Director::VmCreator.new(cloud, @logger, vm_deleter, disk_manager, job_renderer, arp_flusher)
+        agent_broadcaster = AgentBroadcaster.new
         dns_manager = DnsManagerProvider.create
+        vm_deleter = VmDeleter.new(cloud, @logger, false, Config.enable_virtual_delete_vms)
+        vm_creator = Bosh::Director::VmCreator.new(cloud, @logger, vm_deleter, disk_manager, job_renderer, agent_broadcaster)
         instance_deleter = Bosh::Director::InstanceDeleter.new(ip_provider, dns_manager, disk_manager)
         compilation_instance_pool = CompilationInstancePool.new(
           InstanceReuser.new,
@@ -204,11 +205,15 @@ module Bosh::Director
         end
       end
 
-      def mark_instance_for_deletion(instance)
-        @unneeded_instances << instance
+      def mark_instance_plans_for_deletion(instance_plans)
+        @unneeded_instance_plans = instance_plans
       end
 
-      # Adds a job by name
+      def unneeded_instances
+        @unneeded_instance_plans.map(&:existing_instance)
+      end
+
+      # Adds a instance_group by name
       # @param [Bosh::Director::DeploymentPlan::InstanceGroup] instance_group
       def add_instance_group(instance_group)
         if @instance_groups_canonical_name_index.include?(instance_group.canonical_name)
@@ -255,7 +260,7 @@ module Bosh::Director
           end
         end
 
-        model.manifest = Psych.dump(@manifest_text)
+        model.manifest = YAML.dump(@uninterpolated_manifest_text)
         model.cloud_config = @cloud_config
         model.runtime_config = @runtime_config
         model.link_spec = @link_spec
@@ -276,17 +281,25 @@ module Bosh::Director
         !@cloud_config.nil?
       end
 
+      # If we don't want to do what we are doing in this method, then link_spec should be an object
+      def add_deployment_link_spec(instance_group_name, job_name, provided_link_name, provided_link_type, link_spec)
+        @link_spec[instance_group_name] ||= {}
+        @link_spec[instance_group_name][job_name] ||= {}
+        @link_spec[instance_group_name][job_name][provided_link_name] ||= {}
+        @link_spec[instance_group_name][job_name][provided_link_name][provided_link_type] = link_spec
+      end
+
       private
 
       def validate_packages
         release_manager = Bosh::Director::Api::ReleaseManager.new
         validator = DeploymentPlan::PackageValidator.new(@logger)
-        instance_groups.each do |job|
-          job.templates.each do |template|
-            release_model = release_manager.find_by_name(template.release.name)
-            release_version_model = release_manager.find_version(release_model, template.release.version)
+        instance_groups.each do |instance_group|
+          instance_group.jobs.each do |job|
+            release_model = release_manager.find_by_name(job.release.name)
+            release_version_model = release_manager.find_version(release_model, job.release.version)
 
-            validator.validate(release_version_model, job.stemcell.model)
+            validator.validate(release_version_model, instance_group.stemcell.model)
           end
         end
         validator.handle_faults

@@ -26,19 +26,20 @@ module Bosh::Director
         spec: {'name' => 'job'},
         canonical_name: 'job',
         instances: ['instance0'],
-        default_network: {"gateway" => "default"},
+        default_network: {'gateway' => 'default'},
         vm_type: DeploymentPlan::VmType.new({'name' => 'fake-vm-type'}),
         vm_extensions: [],
         stemcell: make_stemcell({:name => 'fake-stemcell-name', :version => '1.0'}),
         env: DeploymentPlan::Env.new({'key' => 'value'}),
         package_spec: {},
-        persistent_disk_type: nil,
+        persistent_disk_collection: DeploymentPlan::PersistentDiskCollection.new(logger),
         is_errand?: false,
-        link_spec: 'fake-link',
+        resolved_links: {},
         compilation?: false,
-        templates: [],
+        jobs: [],
         update_spec: update_config.to_hash,
-        properties: {}
+        properties: {},
+        lifecycle: DeploymentPlan::InstanceGroup::DEFAULT_LIFECYCLE_PROFILE,
       )
     end
     let(:update_config) do
@@ -108,6 +109,20 @@ module Bosh::Director
       state_applier.apply(update_config)
     end
 
+    it 'should stop execution if task was canceled' do
+      task = Bosh::Director::Models::Task.make(:id => 42, :state => 'cancelling')
+      base_job = Jobs::BaseJob.new
+      allow(base_job).to receive(:task_id).and_return(task.id)
+      allow(Config).to receive(:current_job).and_return(base_job)
+      Config.instance_variable_set(:@current_job, base_job)
+      expect(logger).to receive(:info).with('Applying VM state').ordered
+      expect(logger).to receive(:info).with('Running pre-start for fake-job/0 (uuid-1)').ordered
+      expect(logger).to receive(:info).with('Starting instance fake-job/0 (uuid-1)').ordered
+      expect(logger).to receive(:debug).with('Task was cancelled. Stop waiting for the desired state').ordered
+
+      expect { state_applier.apply(update_config) }.to raise_error Bosh::Director::TaskCancelled, 'Task 42 cancelled'
+    end
+
     context 'when instance state is stopped' do
       let(:instance_state) { 'stopped' }
       let(:job_state) { 'stopped' }
@@ -138,7 +153,7 @@ module Bosh::Director
             expect { state_applier.apply(update_config) }.to raise_error
           end
         end
-        
+
         context 'when the interval length is longer than 150 seconds' do
           let(:update_watch_time) { '1000-301000' }
 

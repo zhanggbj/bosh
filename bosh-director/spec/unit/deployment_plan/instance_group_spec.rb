@@ -1,7 +1,7 @@
 require 'spec_helper'
 
 describe Bosh::Director::DeploymentPlan::InstanceGroup do
-  subject(:job)    { Bosh::Director::DeploymentPlan::InstanceGroup.parse(plan, spec, event_log, logger, parse_options) }
+  subject(:instance_group)    { Bosh::Director::DeploymentPlan::InstanceGroup.parse(plan, spec, event_log, logger, parse_options) }
   let(:parse_options) { {} }
   let(:event_log)  { instance_double('Bosh::Director::EventLog::Log', warn_deprecated: nil) }
 
@@ -10,7 +10,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
   let(:plan) do
     instance_double('Bosh::Director::DeploymentPlan::Planner',
       model: deployment,
-      name: 'fake-deployment',
+      name: deployment.name,
       ip_provider: fake_ip_provider,
       releases: {}
     )
@@ -33,18 +33,16 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
     {'dea_max_memory' => {'default' => 2048}}
   end
 
-  let(:foo_template) { instance_double(
-    'Bosh::Director::DeploymentPlan::Template',
+  let(:foo_job) { instance_double(
+    'Bosh::Director::DeploymentPlan::Job',
     name: 'foo',
     release: release,
-    properties: foo_properties,
   ) }
 
-  let(:bar_template) { instance_double(
-    'Bosh::Director::DeploymentPlan::Template',
+  let(:bar_job) { instance_double(
+    'Bosh::Director::DeploymentPlan::Job',
     name: 'bar',
     release: release,
-    properties: bar_properties,
   ) }
 
   let(:release) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion') }
@@ -57,17 +55,14 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
     allow(plan).to receive(:stemcell).with('dea').and_return stemcell
     allow(plan).to receive(:update)
 
-    allow(release).to receive(:get_or_create_template).with('foo').and_return(foo_template)
-    allow(release).to receive(:get_or_create_template).with('bar').and_return(bar_template)
+    allow(release).to receive(:get_or_create_template).with('foo').and_return(foo_job)
+    allow(release).to receive(:get_or_create_template).with('bar').and_return(bar_job)
 
-    allow(foo_template).to receive(:template_scoped_properties)
-    allow(bar_template).to receive(:template_scoped_properties)
+    allow(foo_job).to receive(:properties)
+    allow(bar_job).to receive(:properties)
 
-    allow(foo_template).to receive(:add_template_scoped_properties)
-    allow(bar_template).to receive(:add_template_scoped_properties)
-
-    allow(foo_template).to receive(:has_template_scoped_properties).and_return(false)
-    allow(bar_template).to receive(:has_template_scoped_properties).and_return(false)
+    allow(foo_job).to receive(:add_properties)
+    allow(bar_job).to receive(:add_properties)
   end
 
   describe '#parse' do
@@ -109,7 +104,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       it 'overrides canaries value with one from parse_options' do
         expect(Bosh::Director::DeploymentPlan::UpdateConfig).to receive(:new)
           .with( parse_options, nil)
-        job
+        instance_group
       end
     end
 
@@ -120,7 +115,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       it 'overrides max_in_flight value with one from parse_options' do
         expect(Bosh::Director::DeploymentPlan::UpdateConfig).to receive(:new)
           .with( parse_options, nil)
-        job
+        instance_group
       end
     end
   end
@@ -134,163 +129,89 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
         'stemcell' => 'dea',
         'env' => {'key' => 'value'},
         'instances' => 1,
-        'networks'  => [{'name' => 'fake-network-name'}],
-        'properties' => props,
+        'networks'  => [
+          {'name' => 'fake-network-name', 'default' => ['dns', 'gateway']},
+          {'name' => 'fake-network-name2'}
+        ],
         'template' => %w(foo bar),
       }
     end
 
-    let(:props) do
-      {
-        'cc_url' => 'www.cc.com',
-        'deep_property' => {
-          'unneeded' => 'abc',
-          'dont_override' => 'def'
-        },
-        'dea_max_memory' => 1024
-      }
-    end
-
-    before do
-      allow(plan).to receive(:properties).and_return(props)
-      allow(plan).to receive(:release).with('appcloud').and_return(release)
-    end
-
-    context 'when all the job specs (aka templates) specify properties' do
-      it 'should drop deployment manifest properties not specified in the job spec properties' do
-        job.bind_properties
-        expect(job.properties).to_not have_key('cc')
-        expect(job.properties['foo']['deep_property']).to_not have_key('unneeded')
-      end
-
-      it 'should include properties that are in the job spec properties but not in the deployment manifest' do
-        job.bind_properties
-        expect(job.properties['foo']['dea_min_memory']).to eq(512)
-        expect(job.properties['foo']['deep_property']['new_property']).to eq('jkl')
-      end
-
-      it 'should not override deployment manifest properties with job_template defaults' do
-        job.bind_properties
-        expect(job.properties['bar']['dea_max_memory']).to eq(1024)
-        expect(job.properties['foo']['deep_property']['dont_override']).to eq('def')
-      end
-    end
-
-    context 'when user specifies invalid property type for job' do
-      let(:props) { {'deep_property' => false} }
-
-      it 'raises an exception explaining which property is the wrong type' do
-        expect {
-          job.bind_properties
-        }.to raise_error Bosh::Template::InvalidPropertyType,
-          "Property 'deep_property.dont_override' expects a hash, but received 'FalseClass'"
-      end
-    end
-
-    context 'when none of the job specs (aka templates) specify properties' do
-      let(:foo_properties) { nil }
-      let(:bar_properties) { nil }
-
-      it 'should use the properties specified throughout the deployment manifest' do
-        job.bind_properties
-        expect(job.properties).to eq({'foo'=>props, 'bar'=>props})
-      end
-    end
-
-    context "when some job specs (aka templates) specify properties and some don't" do
-      let(:foo_properties) { nil }
-
-      it 'should raise an error' do
-        expect {
-          job.bind_properties
-        }.to raise_error(
-          Bosh::Director::JobIncompatibleSpecs,
-          "Instance group 'foobar' has specs with conflicting property definition styles" +
-          ' between its job spec templates.  This may occur if colocating jobs, one of which has a spec file' +
-          " including 'properties' and one which doesn't."
-        )
-      end
-    end
-
-    context 'when the deployment manifest specifies properties for templates' do
-      before do
-        allow(foo_template).to receive(:has_template_scoped_properties).and_return(true)
-        allow(foo_template).to receive(:template_scoped_properties).and_return(props)
-      end
-
-      it 'only bond the local properties ' do
-        expect(foo_template).to receive(:bind_template_scoped_properties)
-
-        job.bind_properties
-        expect(job.properties['bar']).to eq({"dea_max_memory"=>1024})
-      end
-    end
-  end
-
-  describe 'property mappings' do
     let(:foo_properties) do
       {
-        'db.user' => {'default' => 'root'},
-        'db.password' => {},
-        'db.host' => {'default' => 'localhost'},
-        'mem' => {'default' => 256},
-      }
-    end
-
-    let(:props) do
-      {
-        'ccdb' => {
-          'user' => 'admin',
-          'password' => '12321',
-          'unused' => 'yada yada'
-        },
-        'dea' => {
-          'max_memory' => 2048
+        'foobar' => {
+          'cc_url' => 'www.cc.com',
+          'deep_property' => {
+            'unneeded' => 'abc',
+            'dont_override' => 'def'
+          }
         }
       }
     end
 
-    let(:spec) do
+    let(:bar_properties) do
       {
-        'name' => 'foobar',
-        'release' => 'appcloud',
-        'vm_type' => 'dea',
-        'stemcell' => 'dea',
-        'env' => {'key' => 'value'},
-        'instances' => 1,
-        'networks' => [{'name' => 'fake-network-name'}],
-        'properties' => props,
-        'property_mappings' => {'db' => 'ccdb', 'mem' => 'dea.max_memory'},
-        'template' => 'foo',
+        'foobar' => {
+          'vroom' => 'smurf',
+          'dea_max_memory' => 1024
+        }
       }
     end
 
-    it 'supports property mappings' do
-      allow(plan).to receive(:properties).and_return(props)
-      expect(plan).to receive(:release).with('appcloud').and_return(release)
+    let(:options) do
+      {
+        :dns_record_names => [
+          "*.foobar.fake-network-name.#{deployment.name}.bosh",
+          "*.foobar.fake-network-name2.#{deployment.name}.bosh"
+        ]
+      }
+    end
 
-      job.bind_properties
+    let(:network2) { instance_double('Bosh::Director::DeploymentPlan::Network', name: 'fake-network-name2', validate_reference_from_job!: true, has_azs?: true) }
 
-      expect(job.properties).to eq('foo' => {
-                                    'db' => {
-                                      'user' => 'admin',
-                                      'password' => '12321',
-                                      'host' => 'localhost'
-                                    },
-                                    'mem' => 2048
-                                   }
-                                )
+    before do
+      allow(plan).to receive(:networks).and_return([network, network2])
+
+      allow(plan).to receive(:properties).and_return({})
+      allow(plan).to receive(:release).with('appcloud').and_return(release)
+      allow(foo_job).to receive(:properties).and_return(foo_properties)
+      allow(bar_job).to receive(:properties).and_return(bar_properties)
+    end
+
+    it 'binds all job properties with correct parameters' do
+      expect(foo_job).to receive(:bind_properties).with('foobar', deployment.name, options)
+      expect(bar_job).to receive(:bind_properties).with('foobar', deployment.name, options)
+
+      instance_group.bind_properties
+
+      expect(instance_group.properties).to eq(
+                                             {
+                                               'foo' => {
+                                                 'cc_url' => 'www.cc.com',
+                                                 'deep_property' => {
+                                                   'unneeded' => 'abc',
+                                                   'dont_override' => 'def'
+                                                 }
+                                               },
+                                               'bar' => {
+                                                 'vroom' => 'smurf',
+                                                 'dea_max_memory' =>1024
+                                               }
+                                             }
+                                           )
     end
   end
 
   describe '#validate_package_names_do_not_collide!' do
     let(:release) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'release1', version: '1') }
-    before { allow(plan).to receive(:properties).and_return({}) }
+    before do
+      allow(plan).to receive(:properties).and_return({})
+    end
 
-    before { allow(foo_template).to receive(:model).and_return(foo_template_model) }
+    before { allow(foo_job).to receive(:model).and_return(foo_template_model) }
     let(:foo_template_model) { instance_double('Bosh::Director::Models::Template') }
 
-    before { allow(bar_template).to receive(:model).and_return(bar_template_model) }
+    before { allow(bar_job).to receive(:model).and_return(bar_template_model) }
     let(:bar_template_model) { instance_double('Bosh::Director::Models::Template') }
 
     before { allow(plan).to receive(:release).with('release1').and_return(release) }
@@ -327,7 +248,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
         before { allow(plan).to receive(:releases).with(no_args).and_return([release]) }
 
         it 'does not raise an error' do
-          expect { job.validate_package_names_do_not_collide! }.to_not raise_error
+          expect { instance_group.validate_package_names_do_not_collide! }.to_not raise_error
         end
       end
     end
@@ -365,9 +286,9 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       before { allow(plan).to receive(:release).with('bar_release').and_return(bar_release) }
       let(:bar_release) { instance_double('Bosh::Director::DeploymentPlan::ReleaseVersion', name: 'bar_release', version: '1') }
 
-      before { allow(bar_release).to receive(:get_or_create_template).with('bar').and_return(bar_template) }
-      let(:bar_template) do
-        instance_double('Bosh::Director::DeploymentPlan::Template', {
+      before { allow(bar_release).to receive(:get_or_create_template).with('bar').and_return(bar_job) }
+      let(:bar_job) do
+        instance_double('Bosh::Director::DeploymentPlan::Job', {
           name: 'bar',
           release: bar_release,
         })
@@ -378,7 +299,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
         before { allow(bar_template_model).to receive(:package_names).and_return(['another-name']) }
 
         it 'does not raise an exception' do
-          expect { job.validate_package_names_do_not_collide! }.to_not raise_error
+          expect { instance_group.validate_package_names_do_not_collide! }.to_not raise_error
         end
       end
 
@@ -388,7 +309,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
 
         it 'raises an exception because agent currently cannot collocate similarly named packages from multiple releases' do
           expect {
-            job.validate_package_names_do_not_collide!
+            instance_group.validate_package_names_do_not_collide!
           }.to raise_error(
             Bosh::Director::JobPackageCollision,
             "Package name collision detected in instance group 'foobar': job 'release1/foo' depends on package 'release1/same-name',"\
@@ -417,10 +338,10 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
     before do
       allow(release).to receive(:name).and_return('cf')
 
-      allow(foo_template).to receive(:version).and_return('200')
-      allow(foo_template).to receive(:sha1).and_return('fake_sha1')
-      allow(foo_template).to receive(:blobstore_id).and_return('blobstore_id_for_foo_template')
-      allow(foo_template).to receive(:template_scoped_properties).and_return({})
+      allow(foo_job).to receive(:version).and_return('200')
+      allow(foo_job).to receive(:sha1).and_return('fake_sha1')
+      allow(foo_job).to receive(:blobstore_id).and_return('blobstore_id_for_foo_job')
+      allow(foo_job).to receive(:properties).and_return({})
 
       allow(plan).to receive(:releases).with(no_args).and_return([release])
       allow(plan).to receive(:release).with('release1').and_return(release)
@@ -429,7 +350,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
 
     context "when a template has 'logs'" do
       before do
-        allow(foo_template).to receive(:logs).and_return(
+        allow(foo_job).to receive(:logs).and_return(
           {
             'filter_name1' => 'foo/*',
           }
@@ -437,7 +358,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       end
 
       it 'contains name, release for the job, and logs spec for each template' do
-        expect(job.spec).to eq(
+        expect(instance_group.spec).to eq(
           {
             'name' => 'job1',
             'templates' => [
@@ -445,7 +366,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
                 'name' => 'foo',
                 'version' => '200',
                 'sha1' => 'fake_sha1',
-                'blobstore_id' => 'blobstore_id_for_foo_template',
+                'blobstore_id' => 'blobstore_id_for_foo_job',
                 'logs' => {
                   'filter_name1' => 'foo/*',
                 },
@@ -454,7 +375,7 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
             'template' => 'foo',
             'version' => '200',
             'sha1' => 'fake_sha1',
-            'blobstore_id' => 'blobstore_id_for_foo_template',
+            'blobstore_id' => 'blobstore_id_for_foo_job',
             'logs' => {
               'filter_name1' => 'foo/*',
             }
@@ -465,11 +386,11 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
 
     context "when a template does not have 'logs'" do
       before do
-        allow(foo_template).to receive(:logs)
+        allow(foo_job).to receive(:logs)
       end
 
       it 'contains name, release and information for each template' do
-        expect(job.spec).to eq(
+        expect(instance_group.spec).to eq(
           {
             'name' => 'job1',
             'templates' =>[
@@ -477,13 +398,13 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
                 'name' => 'foo',
                 'version' => '200',
                 'sha1' => 'fake_sha1',
-                'blobstore_id' => 'blobstore_id_for_foo_template',
+                'blobstore_id' => 'blobstore_id_for_foo_job',
               },
             ],
             'template' => 'foo',
             'version' => '200',
             'sha1' => 'fake_sha1',
-            'blobstore_id' => 'blobstore_id_for_foo_template',
+            'blobstore_id' => 'blobstore_id_for_foo_job',
           },
         )
       end
@@ -491,29 +412,29 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
   end
 
   describe '#bind_unallocated_vms' do
-    subject(:job) { described_class.new(logger) }
+    subject(:instance_group) { described_class.new(logger) }
 
     it 'allocates a VM to all non obsolete instances if they are not already bound to a VM' do
       az = BD::DeploymentPlan::AvailabilityZone.new('az', {})
-      instance0 = BD::DeploymentPlan::Instance.create_from_job(job, 6, 'started', nil, {}, az, logger)
+      instance0 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 6, 'started', nil, {}, az, logger)
       instance0.bind_existing_instance_model(BD::Models::Instance.make(bootstrap: true))
-      instance1 = BD::DeploymentPlan::Instance.create_from_job(job, 6, 'started', nil, {}, az, logger)
+      instance1 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 6, 'started', nil, {}, az, logger)
       instance_plan0 = BD::DeploymentPlan::InstancePlan.new({desired_instance: instance_double(Bosh::Director::DeploymentPlan::DesiredInstance), existing_instance: nil, instance: instance0})
       instance_plan1 = BD::DeploymentPlan::InstancePlan.new({desired_instance: instance_double(Bosh::Director::DeploymentPlan::DesiredInstance), existing_instance: nil, instance: instance1})
       obsolete_plan = BD::DeploymentPlan::InstancePlan.new({desired_instance: nil, existing_instance: nil, instance: instance1})
 
-      job.add_instance_plans([instance_plan0, instance_plan1, obsolete_plan])
+      instance_group.add_instance_plans([instance_plan0, instance_plan1, obsolete_plan])
     end
   end
 
   describe '#bind_instances' do
-    subject(:job) { described_class.new(logger) }
+    subject(:instance_group) { described_class.new(logger) }
 
     it 'makes sure theres a model and binds instance networks' do
       az = BD::DeploymentPlan::AvailabilityZone.new('az', {})
-      instance0 = BD::DeploymentPlan::Instance.create_from_job(job, 6, 'started', nil, {}, az, logger)
+      instance0 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 6, 'started', nil, {}, az, logger)
       instance0.bind_existing_instance_model(BD::Models::Instance.make(bootstrap: true))
-      instance1 = BD::DeploymentPlan::Instance.create_from_job(job, 6, 'started', nil, {}, az, logger)
+      instance1 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 6, 'started', nil, {}, az, logger)
       instance0_reservation = BD::DesiredNetworkReservation.new_dynamic(instance0.model, network)
       instance0_obsolete_reservation = BD::DesiredNetworkReservation.new_dynamic(instance0.model, network)
       instance1_reservation = BD::DesiredNetworkReservation.new_dynamic(instance1.model, network)
@@ -539,13 +460,13 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
 
       obsolete_plan = Bosh::Director::DeploymentPlan::InstancePlan.new({desired_instance: nil, existing_instance: nil, instance: instance1})
 
-      job.add_instance_plans([instance_plan0, instance_plan1, obsolete_plan])
+      instance_group.add_instance_plans([instance_plan0, instance_plan1, obsolete_plan])
 
       [instance0, instance1].each do |instance|
         expect(instance).to receive(:ensure_model_bound).with(no_args).ordered
       end
 
-      job.bind_instances(fake_ip_provider)
+      instance_group.bind_instances(fake_ip_provider)
 
       expect(fake_ip_provider).to have_received(:reserve).with(instance0_reservation)
       expect(fake_ip_provider).to have_received(:reserve).with(instance1_reservation)
@@ -601,12 +522,12 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       allow(plan).to receive(:release).with('appcloud').and_return(release)
       expect(SecureRandom).to receive(:uuid).and_return('y-uuid-1', 'b-uuid-2', 'c-uuid-3')
 
-      instance1 = BD::DeploymentPlan::Instance.create_from_job(job, 1, 'started', deployment, {}, nil, logger)
+      instance1 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 1, 'started', deployment, {}, nil, logger)
       instance1.bind_new_instance_model
       instance1.mark_as_bootstrap
-      instance2 = BD::DeploymentPlan::Instance.create_from_job(job, 2, 'started', deployment, {}, nil, logger)
+      instance2 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 2, 'started', deployment, {}, nil, logger)
       instance2.bind_new_instance_model
-      instance3 = BD::DeploymentPlan::Instance.create_from_job(job, 3, 'started', deployment, {}, nil, logger)
+      instance3 = BD::DeploymentPlan::Instance.create_from_job(instance_group, 3, 'started', deployment, {}, nil, logger)
       instance3.bind_new_instance_model
 
       desired_instance = BD::DeploymentPlan::DesiredInstance.new
@@ -615,13 +536,38 @@ describe Bosh::Director::DeploymentPlan::InstanceGroup do
       instance_plan3 = BD::DeploymentPlan::InstancePlan.new(instance: instance3, existing_instance: nil, desired_instance: nil)
 
       unsorted_plans = [instance_plan3, instance_plan1, instance_plan2]
-      job.add_instance_plans(unsorted_plans)
+      instance_group.add_instance_plans(unsorted_plans)
 
       needed_instance_plans = [instance_plan1, instance_plan2]
 
-      expect(job.needed_instance_plans).to eq(needed_instance_plans)
-      expect(job.obsolete_instance_plans).to eq([instance_plan3])
+      expect(instance_group.needed_instance_plans).to eq(needed_instance_plans)
+      expect(instance_group.obsolete_instance_plans).to eq([instance_plan3])
     end
   end
 
+  describe '#add_job' do
+    subject { described_class.new(logger) }
+
+    let(:job_to_add) do
+      release = Bosh::Director::Models::Release.make(name: 'release1')
+      Bosh::Director::Models::Template.make(name: 'foo', release: release)
+    end
+
+    context 'when job does not exist in instance group' do
+      it 'adds job' do
+        subject.add_job(job_to_add)
+        expect(subject.jobs.count).to eq(1)
+
+        expect(subject.jobs.first.name).to eq('foo')
+        expect(subject.jobs.first.release.name).to eq('release1')
+      end
+    end
+
+    context 'when job does exists in instance group' do
+      it 'throws an exception' do
+        subject.add_job(job_to_add)
+        expect { subject.add_job(job_to_add) }.to raise_error "Colocated job '#{job_to_add.name}' is already added to the instance group '#{subject.name}'."
+      end
+    end
+  end
 end

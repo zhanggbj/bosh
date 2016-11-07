@@ -43,7 +43,7 @@ module Bosh::Director
       let(:agent) { instance_double('Bosh::Director::AgentClient') }
 
       it 'parses agent info into vm_state WITHOUT vitals' do
-        instance  #trigger the let
+        Models::IpAddress.make(instance_id: instance.id, address: NetAddr::CIDR.create('1.1.1.1').to_i, task_id: '12345')
         expect(agent).to receive(:get_state).with('full').and_return(
           'vm_cid' => 'fake-vm-cid',
           'networks' => { 'test' => { 'ip' => '1.1.1.1' } },
@@ -67,8 +67,48 @@ module Bosh::Director
         job.perform
       end
 
+      context 'when there are two networks' do
+        before {
+          Models::IpAddress.make(instance_id: instance.id, address: NetAddr::CIDR.create('1.1.1.1').to_i, task_id: '12345')
+          Models::IpAddress.make(instance_id: instance.id, address: NetAddr::CIDR.create('2.2.2.2').to_i, task_id: '12345')
+        }
+
+        it "returns the ip addresses from 'Models::Instance.ip_addresses'" do
+          allow(agent).to receive(:get_state).with('full').and_raise(Bosh::Director::RpcTimeout)
+
+          expect(@result_file).to receive(:write) do |agent_status|
+            status = JSON.parse(agent_status)
+            expect(status['ips']).to eq(['1.1.1.1', '2.2.2.2'])
+          end
+
+          job = Jobs::VmState.new(@deployment.id, 'full')
+          job.perform
+        end
+      end
+
+      context "when 'ip_addresses' is empty for instance" do
+
+        it "returns the ip addresses from 'Models::Instance.apply_spec'" do
+          Models::Instance.make(
+              deployment: @deployment,
+              agent_id: 'fake-agent-id',
+              vm_cid: 'fake-vm-cid',
+              spec: {'networks' => {'a' => {'ip' => '1.1.1.1'}, 'b' => {'ip' => '2.2.2.2'}}})
+
+          allow(agent).to receive(:get_state).with('full').and_raise(Bosh::Director::RpcTimeout)
+
+          expect(@result_file).to receive(:write) do |vm_state|
+            status = JSON.parse(vm_state)
+            expect(status['ips']).to eq(['1.1.1.1', '2.2.2.2'])
+          end
+
+          job = Jobs::VmState.new(@deployment.id, 'full')
+          job.perform
+        end
+      end
+
       it 'parses agent info into vm_state WITH vitals' do
-        instance  #trigger the let
+        Models::IpAddress.make(instance_id: instance.id, address: NetAddr::CIDR.create('1.1.1.1').to_i, task_id: '12345')
         stub_agent_get_state_to_return_state_with_vitals
 
         expect(@result_file).to receive(:write) do |agent_status|
@@ -175,7 +215,7 @@ module Bosh::Director
         job.perform
       end
 
-      it 'should return disk cid info when active disks found' do
+      it 'should return disk cid(s) info when active disks found' do
         Models::PersistentDisk.create(
           instance: instance,
           active: true,
@@ -188,12 +228,38 @@ module Bosh::Director
           status = JSON.parse(agent_status)
           expect(status['vm_cid']).to eq('fake-vm-cid')
           expect(status['disk_cid']).to eq('fake-disk-cid')
+          expect(status['disk_cids']).to contain_exactly('fake-disk-cid')
         end
 
         job.perform
       end
 
-      it 'should return disk cid info when NO active disks found' do
+      it 'should return disk cid(s) info when many active disks found' do
+        Models::PersistentDisk.create(
+          instance: instance,
+          active: true,
+          disk_cid: 'fake-disk-cid',
+        )
+        Models::PersistentDisk.create(
+          instance: instance,
+          active: true,
+          disk_cid: 'fake-disk-cid2',
+        )
+
+        stub_agent_get_state_to_return_state_with_vitals
+        job = Jobs::VmState.new(@deployment.id, 'full')
+
+        expect(@result_file).to receive(:write) do |agent_status|
+          status = JSON.parse(agent_status)
+          expect(status['vm_cid']).to eq('fake-vm-cid')
+          expect(status['disk_cid']).to eq('fake-disk-cid')
+          expect(status['disk_cids']).to contain_exactly('fake-disk-cid', 'fake-disk-cid2')
+        end
+
+        job.perform
+      end
+
+      it 'should return disk cid(s) info when NO active disks found' do
         Models::PersistentDisk.create(
           instance: instance,
           active: false,
@@ -207,6 +273,7 @@ module Bosh::Director
           status = JSON.parse(agent_status)
           expect(status['vm_cid']).to eq('fake-vm-cid')
           expect(status['disk_cid']).to be_nil
+          expect(status['disk_cids']).to be_empty
         end
 
         job.perform
@@ -228,7 +295,7 @@ module Bosh::Director
       end
 
       it 'should return vm_type' do
-        instance.update(spec: {'vm_type' => {'name' => 'fake-vm-type', 'cloud_properties' => {}}})
+        instance.update(spec: {'vm_type' => {'name' => 'fake-vm-type', 'cloud_properties' => {}}, 'networks' => []})
 
         stub_agent_get_state_to_return_state_with_vitals
 
@@ -303,6 +370,7 @@ module Bosh::Director
       end
 
       it 'should return processes info' do
+        Models::IpAddress.make(instance_id: instance.id, address: NetAddr::CIDR.create('1.1.1.1').to_i, task_id: '12345')
         instance.update(spec: {'vm_type' => {'name' => 'fake-vm-type', 'cloud_properties' => {}}})
 
         expect(agent).to receive(:get_state).with('full').and_return(

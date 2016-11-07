@@ -116,10 +116,9 @@ module Bosh::Director
         end
 
         vm_extensions = @deployment_plan.compilation.vm_extensions
-
         env = Env.new(@deployment_plan.compilation.env)
 
-        compile_job = CompilationJob.new(vm_type, vm_extensions, stemcell, env, @deployment_plan.compilation.network_name)
+        compile_job = CompilationJob.new(vm_type, vm_extensions, stemcell, env, @deployment_plan.compilation.network_name, @logger)
         availability_zone = @deployment_plan.compilation.availability_zone
         instance = Instance.create_from_job(compile_job, 0, 'started', @deployment_plan.model, {}, availability_zone, @logger)
         instance.bind_new_instance_model
@@ -142,7 +141,7 @@ module Bosh::Director
         instance_model = instance_plan.instance.model
         parent_id = add_event(instance_model.deployment.name, instance_model.name)
         @deployment_plan.ip_provider.reserve(instance_plan.network_plans.first.reservation)
-        @vm_creator.create_for_instance_plan(instance_plan, [])
+        @vm_creator.create_for_instance_plan(instance_plan, [], {})
         instance_plan.instance
       rescue Exception => e
         raise e
@@ -204,7 +203,7 @@ module Bosh::Director
       attr_reader :vm_type, :vm_extensions, :stemcell, :env, :name
       attr_reader :instance_plans
 
-      def initialize(vm_type, vm_extensions, stemcell, env, compilation_network_name)
+      def initialize(vm_type, vm_extensions, stemcell, env, compilation_network_name, logger)
         @vm_type = vm_type
         @vm_extensions = vm_extensions
         @stemcell = stemcell
@@ -212,6 +211,7 @@ module Bosh::Director
         @network = compilation_network_name
         @name = "compilation-#{SecureRandom.uuid}"
         @instance_plans = []
+        @logger = logger
       end
 
       def default_network
@@ -243,7 +243,7 @@ module Bosh::Director
         {}
       end
 
-      def link_spec
+      def resolved_links
         {}
       end
 
@@ -251,8 +251,12 @@ module Bosh::Director
         nil
       end
 
-      def persistent_disk_type
+      def lifecycle
         nil
+      end
+
+      def persistent_disk_collection
+        PersistentDiskCollection.new(@logger)
       end
 
       def compilation?

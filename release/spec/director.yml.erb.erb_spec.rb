@@ -41,6 +41,10 @@ describe 'director.yml.erb.erb' do
           'remove_dev_tools' => false,
           'log_access_events_to_syslog' => false,
           'flush_arp' => false,
+          'local_dns' => {
+            'enabled' => false,
+            'include_index' => false,
+          },
           'ignore_missing_gateway' => false,
           'disks' => {
             'max_orphaned_age_in_days' => 3,
@@ -59,6 +63,9 @@ describe 'director.yml.erb.erb' do
             'port' => 3306,
             'database' => 'bosh',
             'connection_options' => {},
+          },
+          'config_server' => {
+            'enabled' => false
           },
           'auto_fix_stateful_nodes' => true,
           'max_vm_create_tries' => 5,
@@ -100,6 +107,18 @@ describe 'director.yml.erb.erb' do
       }
     end
 
+    context 'when using web dav blobstore' do
+      before do
+        expect(deployment_manifest_fragment['properties']['blobstore']['provider']).to eq('dav')
+      end
+
+      it 'should configure the paths' do
+          expect(parsed_yaml['blobstore']['provider']).to eq('davcli')
+          expect(parsed_yaml['blobstore']['options']['davcli_config_path']).to eq('/var/vcap/data/tmp/director')
+          expect(parsed_yaml['blobstore']['options']['davcli_path']).to eq('/var/vcap/packages/davcli/bin/davcli')
+      end
+    end
+
     it 'should contain the trusted_certs field' do
       expect(parsed_yaml['trusted_certs']).to eq("test_trusted_certs\nvalue")
     end
@@ -120,7 +139,7 @@ describe 'director.yml.erb.erb' do
       end
     end
 
-    context 'and when configured with a blobstore_path' do
+    context 'and when configured with a compiled_package_cache blobstore_path' do
       before do
         deployment_manifest_fragment['properties']['compiled_package_cache']['options'] = {
           'blobstore_path' => '/some/path'
@@ -175,6 +194,108 @@ describe 'director.yml.erb.erb' do
 
         it 'is a scheduled task' do
           expect(parsed_yaml['scheduled_jobs'].map{ |v| v['command'] }).to_not include('ScheduledEventsCleanup')
+        end
+      end
+    end
+
+    context 'config server' do
+      context 'when turned on' do
+        before do
+          deployment_manifest_fragment['properties']['director']['config_server'] = {
+              'enabled' => true,
+              'url' => 'https://config-server-host',
+              'uaa' => {
+                  'url' => 'fake-uaa-url',
+                  'client_id' => 'fake-client-id',
+                  'client_secret' => 'fake-client-secret',
+                  'ca_cert' => 'fake-ca-cert'
+              },
+          }
+        end
+
+        it 'configures the cpi correctly' do
+          expect(parsed_yaml['config_server']['enabled']).to eq(true)
+
+          expect(parsed_yaml['config_server']['url']).to eq('https://config-server-host')
+          expect(parsed_yaml['config_server']['ca_cert_path']).to eq('/var/vcap/jobs/director/config/config_server_ca.cert')
+
+          expect(parsed_yaml['config_server']['uaa']['url']).to eq('fake-uaa-url')
+          expect(parsed_yaml['config_server']['uaa']['client_id']).to eq('fake-client-id')
+          expect(parsed_yaml['config_server']['uaa']['client_secret']).to eq('fake-client-secret')
+          expect(parsed_yaml['config_server']['uaa']['ca_cert_path']).to eq('/var/vcap/jobs/director/config/uaa_server_ca.cert')
+        end
+
+        describe 'UAA properties' do
+          it 'throws an error when uaa properties are not defined' do
+            deployment_manifest_fragment['properties']['director']['config_server'] = {
+                'enabled' => true,
+                'url' => 'https://config-server-host',
+            }
+            expect { parsed_yaml['config_server'] }.to raise_error
+          end
+
+          it 'throws an error when uaa url is not defined' do
+            deployment_manifest_fragment['properties']['director']['config_server'] = {
+                'enabled' => true,
+                'url' => 'https://config-server-host',
+                'uaa' => {}
+            }
+
+            expect { parsed_yaml['config_server'] }.to raise_error(Bosh::Template::UnknownProperty, "Can't find property '[\"director.config_server.uaa.url\"]'")
+          end
+
+          it 'throws an error when uaa client id is not defined' do
+            deployment_manifest_fragment['properties']['director']['config_server'] = {
+                'enabled' => true,
+                'url' => 'https://config-server-host',
+                'uaa' => {
+                    'url' => 'http://something.com',
+                    'client_secret' => 'secret',
+                    'ca_cert_path' => '/var/vcap/blah/to/go'
+                }
+            }
+
+            expect { parsed_yaml['config_server'] }.to raise_error(Bosh::Template::UnknownProperty, "Can't find property '[\"director.config_server.uaa.client_id\"]'")
+          end
+
+          it 'throws an error when uaa client secret is not defined' do
+            deployment_manifest_fragment['properties']['director']['config_server'] = {
+                'enabled' => true,
+                'url' => 'https://config-server-host',
+                'uaa' => {
+                    'url' => 'https://something.com',
+                    'client_id' => 'id',
+                    'ca_cert_path' => '/var/vcap/blah/to/go'
+                }
+            }
+
+            expect { parsed_yaml['config_server'] }.to raise_error(Bosh::Template::UnknownProperty, "Can't find property '[\"director.config_server.uaa.client_secret\"]'")
+          end
+
+          it 'does not throw any error when all the uaa properties are defined' do
+            deployment_manifest_fragment['properties']['director']['config_server'] = {
+                'enabled' => true,
+                'url' => 'https://config-server-host',
+                'uaa' => {
+                    'url' => 'https://something.com',
+                    'client_id' => 'id',
+                    'client_secret' => 'secret',
+                    'ca_cert_path' => '/var/some/path'
+                }
+            }
+
+            expect { parsed_yaml['config_server'] }.to_not raise_error
+          end
+        end
+      end
+
+      context 'when turned off' do
+        before do
+          deployment_manifest_fragment['properties']['director']['config_server']['enabled'] = false
+        end
+
+        it 'configures the cpi correctly' do
+          expect(parsed_yaml['config_server']).to eq({"enabled"=>false})
         end
       end
     end

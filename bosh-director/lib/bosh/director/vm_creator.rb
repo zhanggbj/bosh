@@ -7,16 +7,18 @@ module Bosh::Director
     include EncryptionHelper
     include PasswordHelper
 
-    def initialize(cloud, logger, vm_deleter, disk_manager, job_renderer, arp_flusher)
+    def initialize(cloud, logger, vm_deleter, disk_manager, job_renderer, agent_broadcaster)
       @cloud = cloud
       @logger = logger
       @vm_deleter = vm_deleter
       @disk_manager = disk_manager
       @job_renderer = job_renderer
-      @arp_flusher = arp_flusher
+      @agent_broadcaster = agent_broadcaster
+
+      @config_server_client_factory = Bosh::Director::ConfigServer::ClientFactory.create(@logger)
     end
 
-    def create_for_instance_plans(instance_plans, ip_provider)
+    def create_for_instance_plans(instance_plans, ip_provider, tags={})
       return @logger.info('No missing vms to create') if instance_plans.empty?
 
       total = instance_plans.size
@@ -24,17 +26,15 @@ module Bosh::Director
       ThreadPool.new(max_threads: Config.max_threads, logger: @logger).wrap do |pool|
         instance_plans.each do |instance_plan|
           instance = instance_plan.instance
-
           pool.process do
             with_thread_name("create_missing_vm(#{instance.model}/#{total})") do
               event_log_stage.advance_and_track(instance.model.to_s) do
                 @logger.info('Creating missing VM')
-                disks = [instance.model.persistent_disk_cid].compact
-                create_for_instance_plan(instance_plan, disks)
-
+                disks = [instance.model.managed_persistent_disk_cid].compact
+                create_for_instance_plan(instance_plan, disks, tags)
                 instance_plan.network_plans
-                  .select(&:obsolete?)
-                  .each do |network_plan|
+                    .select(&:obsolete?)
+                    .each do |network_plan|
                   reservation = network_plan.reservation
                   ip_provider.release(reservation)
                 end
@@ -46,7 +46,7 @@ module Bosh::Director
       end
     end
 
-    def create_for_instance_plan(instance_plan, disks)
+    def create_for_instance_plan(instance_plan, disks, tags)
       instance = instance_plan.instance
       instance_model = instance.model
       @logger.info('Creating VM')
@@ -61,19 +61,21 @@ module Bosh::Director
       )
 
       begin
-        VmMetadataUpdater.build.update(instance_model, {})
+        VmMetadataUpdater.build.update(instance_model, tags)
         agent_client = AgentClient.with_vm_credentials_and_agent_id(instance_model.credentials, instance_model.agent_id)
         agent_client.wait_until_ready
 
         if Config.flush_arp
-          ip_addresses = instance_plan.network_settings_hash.map do |index,network|
+          ip_addresses = instance_plan.network_settings_hash.map do |index, network|
             network['ip']
           end.compact
 
-          @arp_flusher.delete_arp_entries(instance_model.vm_cid, ip_addresses)
+          @agent_broadcaster.delete_arp_entries(instance_model.vm_cid, ip_addresses)
         end
 
-        instance.update_trusted_certs
+        @disk_manager.attach_disks_if_needed(instance_plan)
+
+        instance.update_instance_settings
         instance.update_cloud_properties!
       rescue Exception => e
         @logger.error("Failed to create/contact VM #{instance_model.vm_cid}: #{e.inspect}")
@@ -84,8 +86,6 @@ module Bosh::Director
         end
         raise e
       end
-
-      @disk_manager.attach_disks_if_needed(instance_plan)
 
       apply_initial_vm_state(instance_plan)
 
@@ -115,15 +115,19 @@ module Bosh::Director
 
       unless instance_plan.instance.compilation?
         # re-render job templates with updated dynamic network settings
-        @logger.debug("Re-rendering templates with spec: #{instance_plan.spec.as_template_spec}")
+        @logger.debug("Re-rendering templates with updated dynamic networks: #{instance_plan.spec.as_template_spec['networks']}")
         @job_renderer.render_job_instance(instance_plan)
       end
     end
 
     def create(instance_model, stemcell, cloud_properties, network_settings, disks, env)
-      parent_id = add_event(instance_model.deployment.name, instance_model.name, 'create')
+      deployment_name = instance_model.deployment.name
+      parent_id = add_event(deployment_name, instance_model.name, 'create')
       agent_id = self.class.generate_agent_id
-      env = Bosh::Common::DeepCopy.copy(env)
+
+      config_server_client = @config_server_client_factory.create_client(deployment_name)
+      env = config_server_client.interpolate(Bosh::Common::DeepCopy.copy(env))
+
       options = {:agent_id => agent_id}
 
       if Config.encryption?
@@ -139,6 +143,20 @@ module Bosh::Director
         env['bosh']['password'] = sha512_hashed_password
       end
 
+      if instance_model.job
+        env['bosh'] ||= {}
+        env['bosh']['group'] = Canonicalizer.canonicalize("#{Bosh::Director::Config.name}-#{deployment_name}-#{instance_model.job}")
+        env['bosh']['groups'] = [
+          Bosh::Director::Config.name,
+          deployment_name,
+          instance_model.job,
+          "#{Bosh::Director::Config.name}-#{deployment_name}",
+          "#{deployment_name}-#{instance_model.job}",
+          "#{Bosh::Director::Config.name}-#{deployment_name}-#{instance_model.job}"
+        ]
+        env['bosh']['groups'].map! { |name| Canonicalizer.canonicalize(name) }
+      end
+
       count = 0
       begin
         vm_cid = @cloud.create_vm(agent_id, stemcell.cid, cloud_properties, network_settings, disks, env)
@@ -150,18 +168,17 @@ module Bosh::Director
       end
 
       options[:vm_cid] = vm_cid
-
       instance_model.update(options)
     rescue => e
       @logger.error("error creating vm: #{e.message}")
       if vm_cid
-        parent_id = add_event(instance_model.deployment.name, instance_model.name, 'delete', vm_cid)
+        parent_id = add_event(deployment_name, instance_model.name, 'delete', vm_cid)
         @vm_deleter.delete_vm(vm_cid)
-        add_event(instance_model.deployment.name, instance_model.name, 'delete', vm_cid, parent_id)
+        add_event(deployment_name, instance_model.name, 'delete', vm_cid, parent_id)
       end
       raise e
     ensure
-      add_event(instance_model.deployment.name, instance_model.name, 'create', vm_cid, parent_id, e)
+      add_event(deployment_name, instance_model.name, 'create', vm_cid, parent_id, e)
     end
 
     def self.generate_agent_id

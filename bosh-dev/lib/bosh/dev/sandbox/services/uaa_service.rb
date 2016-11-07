@@ -7,11 +7,16 @@ module Bosh::Dev::Sandbox
     TOMCAT_VERSIONED_FILENAME = 'apache-tomcat-8.0.21'
     UAA_FILENAME = 'uaa.war'
 
-    UAA_VERSION = 'cloudfoundry-identity-uaa-2.0.3'
+    UAA_VERSION = 'cloudfoundry-identity-uaa-3.5.0'
 
     REPO_ROOT = File.expand_path('../../../../../../', File.dirname(__FILE__))
     INSTALL_DIR = File.join('tmp', 'integration-uaa', UAA_VERSION)
     TOMCAT_DIR = File.join(INSTALL_DIR, TOMCAT_VERSIONED_FILENAME)
+
+    # Keys and Certs
+    ASSETS_DIR = File.expand_path('bosh-dev/assets/sandbox/ca', REPO_ROOT)
+    CERTS_DIR = File.expand_path('certs', ASSETS_DIR)
+    ROOT_CERT = File.join(CERTS_DIR, 'rootCA.pem')
 
     def initialize(port_provider, base_log_path, logger)
       @port = port_provider.get_port(:uaa_http)
@@ -71,7 +76,7 @@ module Bosh::Dev::Sandbox
     end
 
     def uaa_process
-      return @uaa_process if @uaa_process
+      @service.stop if @service
 
       opts = {
           'uaa.http_port' => @port,

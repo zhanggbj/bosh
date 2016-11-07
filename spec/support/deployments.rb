@@ -1,5 +1,7 @@
 module Bosh::Spec
   class Deployments
+    DEFAULT_DEPLOYMENT_NAME = 'simple'
+
     def self.minimal_cloud_config
       {
         'networks' => [{
@@ -24,40 +26,111 @@ module Bosh::Spec
         })
     end
 
+    def self.simple_os_specific_cloud_config
+      resource_pools = [
+        {
+          'name' => 'a',
+          'size' => 1,
+          'cloud_properties' => {},
+          'network' => 'a',
+          'stemcell' => {
+            'os' => 'toronto-os',
+            'version' => 'latest',
+          }
+        },
+        {
+          'name' => 'b',
+          'size' => 1,
+          'cloud_properties' => {},
+          'network' => 'a',
+          'stemcell' => {
+            'os' => 'toronto-centos',
+            'version' => 'latest'
+          }
+        }
+      ]
+      minimal_cloud_config.merge({
+        'networks' => [network],
+        'resource_pools' => resource_pools,
+      })
+    end
+
     def self.simple_runtime_config
       {
-        'releases' => [{"name" => 'test_release_2', "version" => "2"}]
+        'releases' => [{'name' => 'test_release_2', 'version' => '2'}]
       }
     end
 
     def self.runtime_config_latest_release
       {
-        'releases' => [{"name" => 'test_release_2', "version" => "latest"}]
+        'releases' => [{'name' => 'test_release_2', 'version' => 'latest'}]
       }
     end
 
     def self.runtime_config_release_missing
       {
-        'releases' => [{"name" => 'test_release_2', "version" => "2"}],
-        'addons' => [{"name" => 'addon1', "jobs" => [{"name" => "job_using_pkg_2", "release" => "release2"}]}]
+        'releases' => [{'name' => 'test_release_2', 'version' => '2'}],
+        'addons' => [{'name' => 'addon1', 'jobs' => [{'name' => 'job_using_pkg_2', 'release' => 'release2'}]}]
       }
     end
 
     def self.runtime_config_with_addon
       {
-        'releases' => [{"name" => 'dummy2', "version" => "0.2-dev"}],
+        'releases' => [{'name' => 'dummy2', 'version' => '0.2-dev'}],
         'addons' => [
         {
-          "name" => 'addon1',
-          "jobs" => [{"name" => "dummy_with_properties", "release" => "dummy2"}],
-          'properties' => {'dummy_with_properties' => {'echo_value' => 'prop_value'}}
+          'name' => 'addon1',
+          'jobs' => [{'name' => 'dummy_with_properties', 'release' => 'dummy2'}, {'name' => 'dummy_with_package', 'release' => 'dummy2'}],
+          'properties' => {'dummy_with_properties' => {'echo_value' => 'addon_prop_value'}}
         }]
       }
     end
 
+    def self.runtime_config_with_addon_includes
+      runtime_config_with_addon.merge({
+        'addons' => [
+          {
+            'name' => 'addon1',
+            'jobs' => [{'name' => 'dummy_with_properties', 'release' => 'dummy2'}],
+            'properties' => {'dummy_with_properties' => {'echo_value' => 'prop_value'}},
+            'include' => {
+              'deployments' => ['dep1'],
+              'jobs' => [
+                {'name'=> 'foobar', 'release' => 'bosh-release'}
+              ]
+            }
+          }]
+      })
+    end
+
+    def self.runtime_config_with_addon_includes_stemcell_os
+      runtime_config_with_addon.merge({
+        'addons' => [
+          'name' => 'addon1',
+          'jobs' => [{'name' => 'dummy', 'release' => 'dummy2'}],
+          'include' => {
+            'stemcell' => [
+              {'os' => 'toronto-os'}
+            ]
+          }
+        ]
+      })
+    end
+
+    def self.runtime_config_with_addon_placeholders
+      runtime_config_with_addon.merge({
+        'addons' => [
+          {
+            'name' => 'addon1',
+            'jobs' => [{'name' => 'dummy_with_properties', 'release' => '((/release_name))'}],
+            'properties' => {'dummy_with_properties' => {'echo_value' => '((/addon_prop))'}}
+          }]
+      })
+    end
+
     def self.runtime_config_with_links
       {
-        'releases' => [{"name" => 'bosh-release', "version" => "0+dev.1"}],
+        'releases' => [{'name' => 'bosh-release', 'version' => '0+dev.1'}],
         'addons' => [
             {
                 'name' => 'addon_job',
@@ -158,6 +231,15 @@ module Bosh::Spec
             'url' => stemcell_path,
           },
         }],
+      })
+    end
+
+    def self.stemcell_os_specific_addon_manifest
+      test_release_manifest.merge({
+        'jobs' => [
+          simple_job(resource_pool: 'a', name: "has-addon-vm", instances: 1),
+          simple_job(resource_pool: 'b', name: "no-addon-vm", instances: 1)
+        ]
       })
     end
 
@@ -411,7 +493,7 @@ module Bosh::Spec
 
     def self.test_release_manifest
       minimal_manifest.merge(
-        'name' => 'simple',
+        'name' => DEFAULT_DEPLOYMENT_NAME,
 
         'releases' => [{
           'name'    => 'bosh-release',
@@ -427,16 +509,7 @@ module Bosh::Spec
     end
 
     def self.remote_release_manifest(remote_release_url, sha1, version='latest')
-      minimal_manifest.merge({
-          'jobs' => [
-            {
-              'name' => 'job',
-              'templates' => [{ 'name' => 'job_using_pkg_1' }],
-              'instances' => 1,
-              'resource_pool' => 'a',
-              'networks' => [{'name' => 'a'}]
-            }
-          ],
+      minimal_manifest.merge(test_release_job).merge({
           'releases' => [{
               'name'    => 'test_release',
               'version' => version,
@@ -447,16 +520,7 @@ module Bosh::Spec
     end
 
     def self.local_release_manifest(local_release_path, version = 'latest')
-      minimal_manifest.merge({
-          'jobs' => [
-            {
-              'name' => 'job',
-              'templates' => [{ 'name' => 'job_using_pkg_1' }],
-              'instances' => 1,
-              'resource_pool' => 'a',
-              'networks' => [{'name' => 'a'}]
-            }
-          ],
+      minimal_manifest.merge(test_release_job).merge({
           'releases' => [{
               'name'    => 'test_release',
               'version' => version,
@@ -465,11 +529,23 @@ module Bosh::Spec
         })
     end
 
+    def self.test_release_job
+      {
+          'jobs' => [{
+                         'name' => 'job',
+                         'templates' => [{ 'name' => 'job_using_pkg_1' }],
+                         'instances' => 1,
+                         'resource_pool' => 'a',
+                         'networks' => [{ 'name' => 'a' }]
+                     }]
+      }
+    end
+
     def self.simple_job(opts = {})
       job_hash = {
         'name' => opts.fetch(:name, 'foobar'),
-        'templates' => opts.fetch(:templates, ['name' => 'foobar']),
-        'resource_pool' => 'a',
+        'templates' => opts[:templates] || opts[:jobs] || ['name' => 'foobar'],
+        'resource_pool' => opts.fetch(:resource_pool, 'a'),
         'instances' => opts.fetch(:instances, 3),
         'networks' => [{ 'name' => 'a' }],
         'properties' => {},
@@ -493,6 +569,8 @@ module Bosh::Spec
 
       job_hash
     end
+    # Aliasing class method simple_job to simple_instance_group
+    singleton_class.send(:alias_method, :simple_instance_group, :simple_job)
 
     def self.job_with_many_templates(options={})
       {
@@ -534,6 +612,12 @@ module Bosh::Spec
           },
         },
       }
+    end
+
+    def self.manifest_errand_with_placeholders
+      manifest = manifest_with_errand
+      manifest['jobs'][1]['properties']['errand1']['stdout'] = "((placeholder))"
+      manifest
     end
   end
 end

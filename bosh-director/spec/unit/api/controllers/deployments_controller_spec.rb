@@ -26,7 +26,7 @@ module Bosh::Director
           'instances' => 1,
           'networks' => [{'name' => 'a'}]
         }
-        Psych.dump(manifest_hash)
+        YAML.dump(manifest_hash)
       end
 
       let(:cloud_config) { Models::CloudConfig.make }
@@ -45,37 +45,102 @@ module Bosh::Director
 
       describe 'API calls' do
         describe 'creating a deployment' do
-          it 'expects compressed deployment file' do
-            post '/', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
-            expect_redirect_to_queued_task(last_response)
-          end
+          context 'authenticated access' do
+            it 'expects compressed deployment file' do
+              post '/', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+              expect_redirect_to_queued_task(last_response)
+            end
 
-          it 'only consumes text/yaml' do
-            post '/', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/plain' }
-            expect(last_response.status).to eq(404)
-          end
+            it 'only consumes text/yaml' do
+              post '/', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/plain'}
+              expect(last_response.status).to eq(404)
+            end
 
-          it 'gives a nice error when request body is not a valid yml' do
-            post '/', "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml'}
+            it 'gives a nice error when request body is not a valid yml' do
+              post '/', "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml'}
 
-            expect(last_response.status).to eq(400)
-            expect(JSON.parse(last_response.body)['code']).to eq(440001)
-            expect(JSON.parse(last_response.body)['description']).to include('Incorrect YAML structure of the uploaded manifest: ')
-          end
+              expect(last_response.status).to eq(400)
+              expect(JSON.parse(last_response.body)['code']).to eq(440001)
+              expect(JSON.parse(last_response.body)['description']).to include('Incorrect YAML structure of the uploaded manifest: ')
+            end
 
-          it 'gives a nice error when request body is empty' do
-            post '/', '', {'CONTENT_TYPE' => 'text/yaml'}
+            it 'gives a nice error when request body is empty' do
+              post '/', '', {'CONTENT_TYPE' => 'text/yaml'}
 
-            expect(last_response.status).to eq(400)
-            expect(JSON.parse(last_response.body)).to eq(
+              expect(last_response.status).to eq(400)
+              expect(JSON.parse(last_response.body)).to eq(
                 'code' => 440001,
                 'description' => 'Manifest should not be empty',
-            )
+              )
+            end
+
+            it 'gives a nice error when deployment manifest does not have a name' do
+              post '/', YAML.dump({}), {'CONTENT_TYPE' => 'text/yaml'}
+
+              expect(last_response.status).to eq(400)
+              expect(JSON.parse(last_response.body)).to eq(
+                'code' => 40001,
+                'description' => "Deployment manifest must have a 'name' key",
+              )
+              end
+
+            it 'gives a nice error when deployment manifest is not a Hash' do
+              post '/', YAML.dump(true), {'CONTENT_TYPE' => 'text/yaml'}
+
+              expect(last_response.status).to eq(400)
+              expect(JSON.parse(last_response.body)).to eq(
+                'code' => 40000,
+                'description' => 'Deployment manifest must be a hash',
+              )
+            end
+
+            context 'when provided a cloud config and runtime config context to work within' do
+              it 'should use the provided context instead of using the latest runtime and cloud config' do
+                cloud_config = Models::CloudConfig.make
+                runtime_config = Models::RuntimeConfig.make
+
+                Models::CloudConfig.make
+                Models::RuntimeConfig.make
+
+                deployment_context = [['context', JSON.dump({'cloud_config_id' => 1, 'runtime_config_id' => 1})]]
+
+                allow_any_instance_of(DeploymentManager)
+                  .to receive(:create_deployment)
+                  .with(anything, anything, cloud_config, runtime_config, anything, anything)
+                  .and_return(Models::Task.make)
+
+                post "/?#{URI.encode_www_form(deployment_context)}", spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+
+                expect_redirect_to_queued_task(last_response)
+              end
+            end
+
+            context 'when doing a deploy with dry-run' do
+              it 'should queue a dry run task' do
+                expect(Models::Task.all).to be_empty
+
+                post '/?dry_run=true', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+
+                expect_redirect_to_queued_task(last_response)
+
+                expect(Models::Task.count).to eq(1)
+                expect(Models::Task.first.description).to eq('create deployment (dry run)')
+              end
+            end
+          end
+
+          context 'accessing with invalid credentials' do
+            before { authorize 'invalid-user', 'invalid-password' }
+
+            it 'returns 401' do
+              post '/', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
+              expect(last_response.status).to eq(401)
+            end
           end
         end
 
         describe 'updating a deployment' do
-          let!(:deployment) { Models::Deployment.create(:name => 'my-test-deployment', :manifest => Psych.dump({'foo' => 'bar'})) }
+          let!(:deployment) { Models::Deployment.create(:name => 'my-test-deployment', :manifest => YAML.dump({'foo' => 'bar'})) }
 
           context 'without the "skip_drain" param' do
             it 'does not skip draining' do
@@ -101,11 +166,22 @@ module Bosh::Director
 
           context 'with the "skip_drain" param as "job_one,job_two"' do
             it 'skips draining' do
-              allow_any_instance_of(DeploymentManager)
+              expect_any_instance_of(DeploymentManager)
                 .to receive(:create_deployment)
                 .with(anything(), anything(), anything(), anything(), anything(), hash_including('skip_drain' => 'job_one,job_two'))
                 .and_return(OpenStruct.new(:id => 1))
               post '/?skip_drain=job_one,job_two', spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
+              expect(last_response).to be_redirect
+            end
+          end
+
+          context 'with the "fix" param' do
+            it 'passes the parameter' do
+              allow_any_instance_of(DeploymentManager)
+                .to receive(:create_deployment)
+                .with(anything(), anything(), anything(), anything(), anything(), hash_including('fix' => true))
+                .and_return(OpenStruct.new(:id => 1))
+              post '/?fix=true', spec_asset('test_conf.yaml'), {'CONTENT_TYPE' => 'text/yaml'}
               expect(last_response).to be_redirect
             end
           end
@@ -144,7 +220,7 @@ module Bosh::Director
 
         describe 'deleting deployment' do
           it 'deletes the deployment' do
-            deployment = Models::Deployment.create(:name => 'test_deployment', :manifest => Psych.dump({'foo' => 'bar'}))
+            deployment = Models::Deployment.create(:name => 'test_deployment', :manifest => YAML.dump({'foo' => 'bar'}))
 
             delete '/test_deployment'
             expect_redirect_to_queued_task(last_response)
@@ -154,7 +230,7 @@ module Bosh::Director
         describe 'job management' do
           shared_examples 'change state' do
             it 'allows to change state' do
-              deployment = Models::Deployment.create(name: 'foo', manifest: Psych.dump({'foo' => 'bar'}))
+              deployment = Models::Deployment.create(name: 'foo', manifest: YAML.dump({'foo' => 'bar'}))
               instance = Models::Instance.create(deployment: deployment, job: 'dea', index: '2', uuid: '0B949287-CDED-4761-9002-FC4035E11B21', state: 'started')
               Models::PersistentDisk.create(instance: instance, disk_cid: 'disk_cid')
               put "#{path}", spec_asset('test_conf.yaml'), { 'CONTENT_TYPE' => 'text/yaml' }
@@ -166,11 +242,10 @@ module Bosh::Director
                 match { |actual| actual != unexpected }
               end
               manifest = spec_asset('test_conf.yaml')
-              manifest_path = asset('test_conf.yaml')
               allow_any_instance_of(DeploymentManager).to receive(:create_deployment).
-                  with(anything(), not_to_have_body(manifest_path), anything(), anything(), anything(), anything()).
+                  with(anything(), not_to_have_body(manifest), anything(), anything(), anything(), anything()).
                   and_return(OpenStruct.new(:id => 'no_content_length'))
-              deployment = Models::Deployment.create(name: 'foo', manifest: Psych.dump({'foo' => 'bar'}))
+              deployment = Models::Deployment.create(name: 'foo', manifest: YAML.dump({'foo' => 'bar'}))
               instance = Models::Instance.create(deployment: deployment, job: 'dea', index: '2', uuid: '0B949287-CDED-4761-9002-FC4035E11B21', state: 'started')
               Models::PersistentDisk.create(instance: instance, disk_cid: 'disk_cid')
               put "#{path}", manifest, {'CONTENT_TYPE' => 'text/yaml', 'CONTENT_LENGTH' => 0}
@@ -202,7 +277,7 @@ module Bosh::Director
           end
 
           let(:deployment) do
-            Models::Deployment.create(name: 'foo', manifest: Psych.dump({'foo' => 'bar'}))
+            Models::Deployment.create(name: 'foo', manifest: YAML.dump({'foo' => 'bar'}))
           end
 
           it 'allows putting the job instance into different resurrection_paused values' do
@@ -233,7 +308,7 @@ module Bosh::Director
                 create(:deployment => deployment, :job => 'dea',
                        :index => '0', :state => 'started')
 
-            put "/foo/jobs/dea", "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml'}
+            put '/foo/jobs/dea', "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml'}
 
             expect(last_response.status).to eq(400)
             expect(JSON.parse(last_response.body)['code']).to eq(440001)
@@ -245,7 +320,7 @@ module Bosh::Director
                 create(:deployment => deployment, :job => 'dea',
                        :index => '0', :state => 'started')
 
-            put "/foo/jobs/dea/0?state=started", "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml', 'CONTENT_LENGTH' => 0}
+            put '/foo/jobs/dea/0?state=started', "}}}i'm not really yaml, hah!", {'CONTENT_TYPE' => 'text/yaml', 'CONTENT_LENGTH' => 0}
 
             expect(last_response.status).to eq(302)
           end
@@ -306,8 +381,21 @@ module Bosh::Director
             end
           end
 
+          context 'with a "fix" param' do
+            it 'passes the parameter' do
+              deployment
+              expect_any_instance_of(DeploymentManager)
+                .to receive(:create_deployment)
+                .with(anything(), anything(), anything(), anything(), anything(), hash_including('fix' => true))
+                .and_return(OpenStruct.new(:id => 1))
+
+              put '/foo/jobs/dea?fix=true', JSON.generate('value' => 'baz'), {'CONTENT_TYPE' => 'text/yaml'}
+              expect(last_response).to be_redirect
+            end
+          end
+
           describe 'draining' do
-            let(:deployment) { Models::Deployment.create(:name => 'test_deployment', :manifest => Psych.dump({'foo' => 'bar'})) }
+            let(:deployment) { Models::Deployment.create(:name => 'test_deployment', :manifest => YAML.dump({'foo' => 'bar'})) }
             let(:instance) { Models::Instance.create(deployment: deployment, job: 'job_name', index: '0', uuid: '0B949287-CDED-4761-9002-FC4035E11B21', state: 'started') }
             before do
               Models::PersistentDisk.create(instance: instance, disk_cid: 'disk_cid')
@@ -341,23 +429,23 @@ module Bosh::Director
             end
 
             context 'when there is a job instance' do
-              let(:path) { "/test_deployment/jobs/job_name/0" }
-              let(:drain_option) { "?skip_drain=true" }
-              let(:drain_target) { "job_name" }
+              let(:path) { '/test_deployment/jobs/job_name/0' }
+              let(:drain_option) { '?skip_drain=true' }
+              let(:drain_target) { 'job_name' }
               it_behaves_like 'skip_drain'
             end
 
             context 'when there is a  job' do
-              let(:path) { "/test_deployment/jobs/job_name?state=stop" }
-              let(:drain_option) { "&skip_drain=true" }
-              let(:drain_target) { "job_name" }
+              let(:path) { '/test_deployment/jobs/job_name?state=stop' }
+              let(:drain_option) { '&skip_drain=true' }
+              let(:drain_target) { 'job_name' }
               it_behaves_like 'skip_drain'
             end
 
             context 'when  deployment' do
-              let(:path) { "/test_deployment/jobs/*?state=stop" }
-              let(:drain_option) { "&skip_drain=true" }
-              let(:drain_target) { "*" }
+              let(:path) { '/test_deployment/jobs/*?state=stop' }
+              let(:drain_option) { '&skip_drain=true' }
+              let(:drain_target) { '*' }
               it_behaves_like 'skip_drain'
             end
           end
@@ -365,7 +453,7 @@ module Bosh::Director
 
         describe 'log management' do
           it 'allows fetching logs from a particular instance' do
-            deployment = Models::Deployment.create(:name => 'foo', :manifest => Psych.dump({'foo' => 'bar'}))
+            deployment = Models::Deployment.create(:name => 'foo', :manifest => YAML.dump({'foo' => 'bar'}))
             Models::Instance.create(
               :deployment => deployment,
               :job => 'nats',
@@ -383,7 +471,7 @@ module Bosh::Director
 
           it '404 if no deployment' do
             deployment = Models::Deployment.
-              create(:name => 'bar', :manifest => Psych.dump({'foo' => 'bar'}))
+              create(:name => 'bar', :manifest => YAML.dump({'foo' => 'bar'}))
             get '/bar/jobs/nats/0/logs', {}
             expect(last_response.status).to eq(404)
           end
@@ -475,12 +563,12 @@ module Bosh::Director
           it 'returns manifest' do
             deployment = Models::Deployment.
                 create(:name => 'test_deployment',
-                       :manifest => Psych.dump({'foo' => 'bar'}))
+                       :manifest => YAML.dump({'foo' => 'bar'}))
             get '/test_deployment'
 
             expect(last_response.status).to eq(200)
             body = JSON.parse(last_response.body)
-            expect(Psych.load(body['manifest'])).to eq('foo' => 'bar')
+            expect(YAML.load(body['manifest'])).to eq('foo' => 'bar')
           end
         end
 
@@ -490,7 +578,7 @@ module Bosh::Director
           it 'returns a list of instances with vms (vm_cid != nil)' do
             deployment = Models::Deployment.
                 create(:name => 'test_deployment',
-                       :manifest => Psych.dump({'foo' => 'bar'}))
+                       :manifest => YAML.dump({'foo' => 'bar'}))
 
             15.times do |i|
               instance_params = {
@@ -525,41 +613,144 @@ module Bosh::Director
         end
 
         describe 'getting deployment instances' do
-          before { basic_authorize 'reader', 'reader' }
+          before do
+            basic_authorize 'reader', 'reader'
+            release = Models::Release.create(:name => 'test_release')
+            version = Models::ReleaseVersion.create(:release => release, :version => 1)
+            version.add_template(Models::Template.make(name: 'job_using_pkg_1', release: release))
+          end
+          let(:deployment) { Models::Deployment.create(:name => 'test_deployment', :manifest => manifest) }
+          let(:default_manifest) { Bosh::Spec::Deployments.remote_stemcell_manifest('stemcell_url', 'stemcell_sha1') }
 
-          it 'returns a list of all instances' do
-            deployment = Models::Deployment.
-                create(:name => 'test_deployment',
-                       :manifest => Psych.dump({'foo' => 'bar'}))
+          context 'multiple instances' do
+            let(:manifest) {
+              jobs = []
+              15.times do |i|
+                jobs << {
+                    'name' => "job-#{i}",
+                    'templates' => [{ 'name' => 'job_using_pkg_1' }],
+                    'instances' => 1,
+                    'resource_pool' => 'a',
+                    'networks' => [{ 'name' => 'a' }]
+                }
+              end
+              YAML.dump(default_manifest.merge({'jobs' => jobs}))
+            }
 
+            it 'returns all' do
+              15.times do |i|
+                instance_params = {
+                    'deployment_id' => deployment.id,
+                    'job' => "job-#{i}",
+                    'index' => i,
+                    'state' => 'started',
+                    'uuid' => "instance-#{i}",
+                    'agent_id' => "agent-#{i}",
+                }
 
-            15.times do |i|
-              instance_params = {
-                'deployment_id' => deployment.id,
-                'job' => "job-#{i}",
-                'index' => i,
-                'state' => 'started',
-                'uuid' => "instance-#{i}",
-                'agent_id' => "agent-#{i}",
-              }
+                Models::Instance.create(instance_params)
+              end
 
-              Models::Instance.create(instance_params)
+              get '/test_deployment/instances'
+
+              expect(last_response.status).to eq(200)
+              body = JSON.parse(last_response.body)
+              expect(body.size).to eq(15)
+
+              body.each_with_index do |instance, i|
+                expect(instance).to eq(
+                                        'agent_id' => "agent-#{i}",
+                                        'cid' => nil,
+                                        'job' => "job-#{i}",
+                                        'index' => i,
+                                        'id' => "instance-#{i}",
+                                        'expects_vm' => true
+                                    )
+              end
+            end
+          end
+
+          context 'instance lifecycle' do
+            let(:job_state) { 'started' }
+            before do
+              Models::Instance.create({
+                                          'deployment_id' => deployment.id,
+                                          'job' => 'job',
+                                          'index' => 1,
+                                          'state' => job_state,
+                                          'uuid' => 'instance-1',
+                                          'agent_id' => 'agent-1',
+                                      })
             end
 
-            get '/test_deployment/instances'
+            context 'is "service"' do
+              let(:manifest) { YAML.dump(default_manifest.merge(Bosh::Spec::Deployments.test_release_job)) }
+              context 'and state is either "started" or "stopped"' do
 
-            expect(last_response.status).to eq(200)
-            body = JSON.parse(last_response.body)
-            expect(body.size).to eq(15)
+                it 'sets "expects_vm" to "true"' do
 
-            body.each_with_index do |instance, i|
-              expect(instance).to eq(
-                  'agent_id' => "agent-#{i}",
-                  'job' => "job-#{i}",
-                  'index' => i,
-                  'cid' => nil,
-                  'id' => "instance-#{i}"
-              )
+                  get '/test_deployment/instances'
+
+                  expect(last_response.status).to eq(200)
+                  body = JSON.parse(last_response.body)
+                  expect(body.size).to eq(1)
+
+                  expect(body[0]).to eq(
+                                         'agent_id' => 'agent-1',
+                                         'cid' => nil,
+                                         'job' => 'job',
+                                         'index' => 1,
+                                         'id' => 'instance-1',
+                                         'expects_vm' => true
+                                     )
+                end
+              end
+
+              context 'and state is "detached"' do
+                let(:job_state) { 'detached'}
+                it 'sets "expects_vm" to "false"' do
+
+                  get '/test_deployment/instances'
+
+                  expect(last_response.status).to eq(200)
+                  body = JSON.parse(last_response.body)
+                  expect(body.size).to eq(1)
+
+                  expect(body[0]).to eq(
+                                         'agent_id' => 'agent-1',
+                                         'cid' => nil,
+                                         'job' => 'job',
+                                         'index' => 1,
+                                         'id' => 'instance-1',
+                                         'expects_vm' => false
+                                     )
+                end
+              end
+            end
+
+            context 'is "errand"' do
+              let(:manifest) {
+                manifest = default_manifest.merge(Bosh::Spec::Deployments.test_release_job)
+                manifest['jobs'][0]['lifecycle'] = 'errand'
+                YAML.dump(manifest)
+              }
+
+              it 'sets "expects_vm" to "false"' do
+                get '/test_deployment/instances'
+
+                expect(last_response.status).to eq(200)
+                body = JSON.parse(last_response.body)
+                expect(body.size).to eq(1)
+
+                expect(body[0]).to eq(
+                                       'agent_id' => 'agent-1',
+                                       'cid' => nil,
+                                       'job' => 'job',
+                                       'index' => 1,
+                                       'id' => 'instance-1',
+                                       'expects_vm' => false
+                                   )
+              end
             end
           end
         end
@@ -892,7 +1083,7 @@ module Bosh::Director
           before do
             Models::Deployment.create(
               :name => 'fake-dep-name',
-              :manifest => Psych.dump({'jobs' => [], 'releases' => [{'name' => 'simple', 'version' => 5}]}),
+              :manifest => YAML.dump({'jobs' => [], 'releases' => [{'name' => 'simple', 'version' => 5}]}),
               cloud_config: cloud_config,
               runtime_config: runtime_config
             )
@@ -919,14 +1110,14 @@ module Bosh::Director
 
               expect(last_response.status).to eq(400)
               expect(JSON.parse(last_response.body)).to eq(
-                  'code' => 440001,
-                  'description' => 'Manifest should not be empty',
+                'code' => 440001,
+                'description' => 'Manifest should not be empty',
               )
             end
 
             it 'returns 200 with an empty diff and an error message if the diffing fails' do
-              allow(Bosh::Director::Manifest).to receive_message_chain(:load_from_text, :resolve_aliases)
-              allow(Bosh::Director::Manifest).to receive_message_chain(:load_from_text, :diff).and_raise("Oooooh crap")
+              allow(Bosh::Director::Manifest).to receive_message_chain(:load_from_model, :resolve_aliases)
+              allow(Bosh::Director::Manifest).to receive_message_chain(:load_from_model, :diff).and_raise('Oooooh crap')
 
               post '/fake-dep-name/diff', {}.to_yaml, {'CONTENT_TYPE' => 'text/yaml'}
 
@@ -941,7 +1132,7 @@ module Bosh::Director
               it 'ignores cloud config if network section exists' do
                 Models::Deployment.create(
                   :name => 'fake-dep-name-no-cloud-conf',
-                  :manifest => Psych.dump(manifest_hash),
+                  :manifest => YAML.dump(manifest_hash),
                   cloud_config: nil,
                   runtime_config: runtime_config
                 )
@@ -949,7 +1140,7 @@ module Bosh::Director
                 Models::CloudConfig.make(manifest: {'networks'=>[{'name'=>'very-cloudy-network'}]})
 
                 manifest_hash['networks'] = [{'name'=> 'network2'}]
-                diff = post '/fake-dep-name-no-cloud-conf/diff', Psych.dump(manifest_hash), {'CONTENT_TYPE' => 'text/yaml'}
+                diff = post '/fake-dep-name-no-cloud-conf/diff', YAML.dump(manifest_hash), {'CONTENT_TYPE' => 'text/yaml'}
 
                 expect(diff).not_to match /very-cloudy-network/
                 expect(diff).to match /non-cloudy-network/

@@ -5,12 +5,11 @@ module Bosh::Director
     before { allow(App).to receive_message_chain(:instance, :blobstores, :blobstore).and_return(blobstore) }
     let(:blobstore) { instance_double('Bosh::Blobstore::Client') }
     let(:domain) { Models::Dns::Domain.make(name: 'bosh') }
-    let(:cloud) { instance_double('Bosh::Cloud') }
+    let(:cloud) { Config.cloud }
     let(:delete_job) {Jobs::DeleteDeployment.new('test_deployment', {})}
     let(:task) {Bosh::Director::Models::Task.make(:id => 42, :username => 'user')}
 
     before do
-      allow(Config).to receive(:cloud).and_return(cloud)
       allow(delete_job).to receive(:task_id).and_return(task.id)
       allow(Config).to receive(:current_job).and_return(delete_job)
       allow(Bosh::Director::Config).to receive(:record_events).and_return(true)
@@ -117,7 +116,7 @@ module Bosh::Director
           expect(stopper).to receive(:stop)
           expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
           expect(ip_provider).to receive(:release).with(reservation)
-          expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+          expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
 
           expect {
             deleter.delete_instance_plans([instance_plan], event_log_stage)
@@ -175,7 +174,7 @@ module Bosh::Director
           expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
           expect(ip_provider).to receive(:release).with(reservation)
 
-          expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+          expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
 
           job_templates_cleaner = instance_double('Bosh::Director::RenderedJobTemplatesCleaner')
           allow(RenderedJobTemplatesCleaner).to receive(:new).with(existing_instance, blobstore, logger).and_return(job_templates_cleaner)
@@ -203,7 +202,7 @@ module Bosh::Director
               expect(cloud).to receive(:delete_vm).with(existing_instance.vm_cid)
               expect(ip_provider).to receive(:release).with(reservation)
 
-              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
 
               expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
 
@@ -228,7 +227,7 @@ module Bosh::Director
               expect(dns_manager).to receive(:publish_dns_records)
               expect(ip_provider).to receive(:release).with(reservation)
 
-              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
 
               expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
 
@@ -251,7 +250,7 @@ module Bosh::Director
               expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
               expect(ip_provider).to receive(:release).with(reservation)
 
-              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
 
               expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
 
@@ -272,7 +271,7 @@ module Bosh::Director
               expect(disk_manager).to receive(:delete_persistent_disks).with(existing_instance)
               expect(ip_provider).to receive(:release).with(reservation)
 
-              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+              expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
               expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
 
               expect {
@@ -296,7 +295,7 @@ module Bosh::Director
             expect(dns_manager).to receive(:publish_dns_records)
             expect(ip_provider).to receive(:release).with(reservation)
 
-            expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/5 (my-uuid-1)')
+            expect(event_log_stage).to receive(:advance_and_track).with('fake-job-name/my-uuid-1 (5)')
             expect(job_templates_cleaner).to receive(:clean_all).with(no_args)
 
             expect {

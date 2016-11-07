@@ -11,7 +11,6 @@ module Bosh::Director
       allow(Bosh::Director::Config).to receive(:dns_enabled?) { false }
       Bosh::Director::Config.current_job.task_id = 'fake-task-id'
       allow(job).to receive(:task_cancelled?) { false }
-      allow(Config).to receive(:cloud)
       blobstore = double(:blobstore)
       blobstores = instance_double(Bosh::Director::Blobstores, blobstore: blobstore)
       app = instance_double(App, blobstores: blobstores)
@@ -214,7 +213,7 @@ module Bosh::Director
               }
 
               it 'skips links binding' do
-                expect(planner).to receive(:bind_models).with(true)
+                expect(planner).to receive(:bind_models).with({:should_bind_links => false, :should_bind_properties=>false})
                 job.perform
               end
             end

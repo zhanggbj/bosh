@@ -39,7 +39,9 @@ module Bosh
           credentials_source: @options.fetch(:credentials_source, 'none'),
           access_key_id: @options[:access_key_id],
           secret_access_key: @options[:secret_access_key],
-          signature_version: @options[:signature_version]
+          signature_version: @options[:signature_version],
+          server_side_encryption: @options[:server_side_encryption],
+          sse_kms_key_id: @options[:sse_kms_key_id]
         }
 
         @s3cli_options.reject! {|k,v| v.nil?}
@@ -51,6 +53,8 @@ module Bosh
 
         @config_file = write_config_file(@options.fetch(:s3cli_config_path, nil))
       end
+
+      protected
 
       # @param [File] file file to store in S3
       def create_file(object_id, file)
@@ -99,8 +103,6 @@ module Bosh
         raise BlobstoreError, "Failed to check existence of S3 object, code #{status.exitstatus}, output: '#{out}', error: '#{err}'" unless status.success?
       end
 
-      protected
-
       # @param [String] path path to file which will be stored in S3
       # @param [String] oid object id
       # @return [void]
@@ -124,7 +126,7 @@ module Bosh
         config_file = File.join(config_file_dir, random_name)
         config_data = JSON.dump(@s3cli_options)
 
-        File.write(config_file, config_data)
+        File.open(config_file, 'w', 0600) { |file| file.write(config_data) }
         config_file
       end
 

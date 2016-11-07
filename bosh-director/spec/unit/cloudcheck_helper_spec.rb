@@ -31,29 +31,25 @@ module Bosh::Director
     let(:spec) { {'apply' => 'spec', 'env' => {'vm_env' => 'json'}} }
     let(:deployment_model) { Models::Deployment.make(manifest: YAML.dump(Bosh::Spec::Deployments.legacy_manifest), :name => 'name-1') }
     let(:test_problem_handler) { ProblemHandlers::Base.create_by_type(:test_problem_handler, instance.uuid, {}) }
-    let(:fake_cloud) { instance_double('Bosh::Cloud') }
-    let(:vm_deleter) { Bosh::Director::VmDeleter.new(fake_cloud, logger, false, false) }
-    let(:vm_creator) { Bosh::Director::VmCreator.new(fake_cloud, logger, vm_deleter, nil, job_renderer, arp_flusher) }
-    let(:arp_flusher) { instance_double(ArpFlusher) }
+    let(:vm_deleter) { Bosh::Director::VmDeleter.new(Config.cloud, logger, false, false) }
+    let(:vm_creator) { Bosh::Director::VmCreator.new(Config.cloud, logger, vm_deleter, nil, job_renderer, agent_broadcaster) }
+    let(:agent_broadcaster) { instance_double(AgentBroadcaster) }
     let(:job_renderer) { instance_double(JobRenderer) }
     let(:agent_client) { instance_double(AgentClient) }
     let(:event_manager) { Api::EventManager.new(true) }
     let(:update_job) { instance_double(Bosh::Director::Jobs::UpdateDeployment, username: 'user', task_id: 42, event_manager: event_manager) }
-
+    let(:dns_manager) { instance_double(DnsManager) }
 
     before do
       allow(AgentClient).to receive(:with_vm_credentials_and_agent_id).with(instance.credentials, instance.agent_id, anything).and_return(agent_client)
       allow(VmDeleter).to receive(:new).and_return(vm_deleter)
       allow(VmCreator).to receive(:new).and_return(vm_creator)
-      allow(fake_cloud).to receive(:create_vm)
-      allow(fake_cloud).to receive(:delete_vm)
       allow(Config).to receive(:current_job).and_return(update_job)
       fake_app
     end
 
     def fake_job_context
       test_problem_handler.job = instance_double('Bosh::Director::Jobs::BaseJob')
-      allow(Config).to receive(:cloud).and_return(fake_cloud)
     end
 
     describe '#delete_vm' do
@@ -89,7 +85,7 @@ module Bosh::Director
         end
 
         it 'whines on invalid spec format' do
-          instance.update(spec: :foo)
+          instance.update(spec: 'error')
 
           expect {
             test_problem_handler.apply_resolution(:recreate_vm)
@@ -125,7 +121,6 @@ module Bosh::Director
           }
         end
         let(:fake_new_agent) { double('Bosh::Director::AgentClient') }
-        let(:dns_manager) { instance_double(DnsManager) }
         before do
           BD::Models::Stemcell.make(name: 'stemcell-name', version: '3.0.2', cid: 'sc-302')
           instance.update(spec: spec)

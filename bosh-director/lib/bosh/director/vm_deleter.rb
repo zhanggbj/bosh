@@ -7,18 +7,18 @@ module Bosh::Director
       @enable_virtual_delete_vm = enable_virtual_delete_vm
     end
 
-    def delete_for_instance(instance, store_event=true)
-      if instance.vm_cid
+    def delete_for_instance(instance_model, store_event=true)
+      if instance_model.vm_cid
         begin
-          vm_cid = instance.vm_cid
-          instance_name = "#{instance.job}/#{instance.uuid}"
-          parent_id = add_event(instance.deployment.name, instance_name, vm_cid) if store_event
-          delete_vm(instance.vm_cid)
-          instance.update(vm_cid: nil, agent_id: nil, trusted_certs_sha1: nil, credentials: nil)
+          vm_cid = instance_model.vm_cid
+          instance_name = "#{instance_model.job}/#{instance_model.uuid}"
+          parent_id = add_event(instance_model.deployment.name, instance_name, vm_cid) if store_event
+          delete_vm(instance_model.vm_cid)
+          instance_model.update(vm_cid: nil, agent_id: nil, trusted_certs_sha1: nil, credentials: nil)
         rescue Exception => e
           raise e
         ensure
-          add_event(instance.deployment.name, instance_name, vm_cid, parent_id, e) if store_event
+          add_event(instance_model.deployment.name, instance_name, vm_cid, parent_id, e) if store_event
         end
       end
     end

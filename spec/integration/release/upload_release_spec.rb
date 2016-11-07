@@ -118,7 +118,7 @@ describe 'upload release', type: :integration do
       expect(out).to match /Release repacked/
       expect(out).to match /Started creating new packages > bar.*Done/
       expect(out).to match /Started processing 17 existing packages > Processing 17 existing packages.*Done/
-      expect(out).to match /Started processing 21 existing jobs > Processing 21 existing jobs.*Done/
+      expect(out).to match /Started processing 22 existing jobs > Processing 22 existing jobs.*Done/
       expect(out).to match /Release uploaded/
 
       out = bosh_runner.run('releases')
@@ -162,7 +162,7 @@ describe 'upload release', type: :integration do
     end
 
     expect_table('releases', %(
-      Acting as user 'test' on 'Test Director'
+      Acting as user 'test' on '#{current_sandbox.director_name}'
 
       +--------------+----------+-------------+
       | Name         | Versions | Commit Hash |
@@ -271,7 +271,7 @@ describe 'upload release', type: :integration do
 
       bosh_releases_out = bosh_runner.run("releases")
       expect(bosh_releases_out).to match_output %(
-        Acting as user 'test' on 'Test Director'
+        Acting as user 'test' on '#{current_sandbox.director_name}'
 
         +--------------+----------+-------------+
         | Name         | Versions | Commit Hash |

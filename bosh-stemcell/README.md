@@ -14,7 +14,7 @@ First make sure you have a local copy of this repository. If you already have a 
 
 The Docker-based environment files are located in `ci/docker/os-image-stemcell-builder`...
 
-    host$ cd ci/docker
+    host$ cd ci/docker/os-image-stemcell-builder
 
 If you do not already have Docker running, use `vagrant` to start a new VM which has Docker, and then change back into the `./docker` directory...
 
@@ -262,3 +262,37 @@ Then run the following:
     cd bosh-stemcell/
     bundle exec rspec -fd --tag ~exclude_on_aws spec/os_image/centos_7_spec.rb
     
+#### How to run tests for Stemcell
+When you run the `stemcell:build_with_local_os_image` or `stemcell:build` rake task, it will create a stemcell that it runs the stemcell specific tests against. You will need to run the rake task the first time you create your docker container, but everytime after, as long as you do not destroy the container, you should be able to just run the specific tests. 
+
+##### Docker
+
+To run the stemcell tests when building against local OS image you will need to: 
+
+* `bundle exec rake stemcell:build_with_local_os_image[aws,xen,ubuntu,trusty,go,$PWD/tmp/ubuntu_base_image.tgz]`
+* -make test changes-
+
+Then run the following:
+```sh
+    $ cd /opt/bosh/bosh-stemcell; \ 
+    STEMCELL_IMAGE=/mnt/stemcells/aws/xen/ubuntu/work/work/aws-xen-ubuntu.raw \ 
+    STEMCELL_WORKDIR=/mnt/stemcells/aws/xen/ubuntu/work/work/chroot \ 
+    OS_NAME=ubuntu \ 
+    bundle exec rspec -fd --tag ~exclude_on_aws \ 
+    spec/os_image/ubuntu_trusty_spec.rb \ 
+    spec/stemcells/ubuntu_trusty_spec.rb \ 
+    spec/stemcells/go_agent_spec.rb \ 
+    spec/stemcells/aws_spec.rb \ 
+    spec/stemcells/stig_spec.rb \ 
+    spec/stemcells/cis_spec.rb
+```
+    
+#### Pro Tips
+
+* If the OS image has been built and so long as you only make test case modifications you can just rerun the tests (without rebuilding OS image). Details in section `How to run tests for OS Images`
+
+* If the Stemcell has been built and so long as you only make test case modifications you can rerun the tests (without rebuilding Stemcell. Details in section `How to run tests for Stemcell`
+
+* It's possible to verify OS/Stemcell changes without making adeployment using the stemcell. For an AWS specific ubuntu stemcell, the filesytem is available at `/mnt/stemcells/aws/xen/ubuntu/work/work/chroot`
+
+* DO NOT forget to: ` $ export BOSH_MICRO_ENABLED=no` before building stemcell against an OS image. Cuts down the build time a LOT

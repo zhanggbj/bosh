@@ -37,6 +37,7 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
       it('should be of mode 600 (stig: V-38583)') { should be_mode('600') }
       it('should be owned by root (stig: V-38579)') { should be_owned_by('root') }
       it('should be grouped into root (stig: V-38581)') { should be_grouped_into('root') }
+      it('audits processes that start prior to auditd (CIS-8.1.3)') { should contain ' audit=1' }
     end
   end
 
@@ -54,6 +55,13 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
     end
   end
 
+  context 'installed by system-network on all IaaSes', { exclude_on_warden: true } do
+    describe file('/etc/hostname') do
+      it { should be_file }
+      its (:content) { should eq('bosh-stemcell') }
+    end
+  end
+
   context 'installed by the system_network stage', {
     exclude_on_warden: true,
     exclude_on_azure: true,
@@ -62,7 +70,7 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
       it { should be_file }
       it { should contain 'NETWORKING=yes' }
       it { should contain 'NETWORKING_IPV6=no' }
-      it { should contain 'HOSTNAME=localhost.localdomain' }
+      it { should contain 'HOSTNAME=bosh-stemcell' }
       it { should contain 'NOZEROCONF=yes' }
     end
 
@@ -85,7 +93,7 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
       it { should be_file }
       it { should contain 'NETWORKING=yes' }
       it { should contain 'NETWORKING_IPV6=no' }
-      it { should contain 'HOSTNAME=localhost.localdomain' }
+      it { should contain 'HOSTNAME=bosh-stemcell' }
       it { should contain 'NOZEROCONF=yes' }
     end
 
@@ -122,7 +130,7 @@ shared_examples_for 'a CentOS 7 or RHEL 7 stemcell' do
   } do
     describe file('/var/vcap/bosh/agent.json') do
       it { should be_valid_json_file }
-      it { should contain('"Type": "HTTP"') }
+      it { should contain('"Type": "InstanceMetadata"') }
     end
   end
 

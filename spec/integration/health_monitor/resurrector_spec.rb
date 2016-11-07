@@ -15,9 +15,6 @@ describe 'resurrector', type: :integration, hm: true do
 
   let(:cloud_config_hash) do
     cloud_config_hash = Bosh::Spec::Deployments.simple_cloud_config
-    # remove size from resource pools due to bug #94220432
-    # where resource pools with specified size reserve extra IPs
-    cloud_config_hash['resource_pools'].first.delete('size')
 
     cloud_config_hash['networks'].first['subnets'].first['static'] =  ['192.168.1.10', '192.168.1.11']
     cloud_config_hash
@@ -33,7 +30,6 @@ describe 'resurrector', type: :integration, hm: true do
     let(:legacy_manifest) do
       legacy_manifest = Bosh::Spec::Deployments.legacy_manifest
       legacy_manifest['jobs'].first['instances'] = 1
-      legacy_manifest['resource_pools'].first.delete('size')
       legacy_manifest
     end
 

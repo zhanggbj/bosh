@@ -7,11 +7,17 @@ module Bosh
         end
 
         def manifest=(runtime_config_hash)
-          self.properties = Psych.dump(runtime_config_hash)
+          self.properties = YAML.dump(runtime_config_hash)
         end
 
         def manifest
-          Psych.load properties
+          manifest_hash = YAML.load(properties)
+          config_server_client = Bosh::Director::ConfigServer::ClientFactory.create(Config.logger).create_client
+          config_server_client.interpolate_runtime_manifest(manifest_hash)
+        end
+
+        def raw_manifest
+          YAML.load(properties)
         end
       end
     end

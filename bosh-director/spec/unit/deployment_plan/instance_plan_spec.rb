@@ -2,30 +2,36 @@ require 'spec_helper'
 
 module Bosh::Director::DeploymentPlan
   describe InstancePlan do
-    let(:job) { InstanceGroup.parse(deployment_plan, job_spec, BD::Config.event_log, logger) }
+    subject(:instance_plan) { InstancePlan.new(existing_instance: existing_instance, desired_instance: desired_instance, instance: instance, network_plans: network_plans, logger: logger, tags: tags) }
+
+    let(:instance_group) { InstanceGroup.parse(deployment_plan, instance_group_spec, BD::Config.event_log, logger) }
     let(:instance_model) do
       instance_model = BD::Models::Instance.make(
+        uuid: 'fake-uuid-1',
         bootstrap: true,
         deployment: deployment_model,
-        uuid: 'uuid-1',
         spec: spec
       )
       instance_model
     end
     let(:spec) do
-      { 'vm_type' => {
-        'name' => 'original_vm_type_name',
-        'cloud_properties' => {'old' => 'value'}
-      },
+      { 'vm_type' =>
+          { 'name' => 'original_vm_type_name',
+            'cloud_properties' => {'old' => 'value'}
+          },
         'networks' => network_settings,
         'stemcell' => {'name' => 'ubuntu-stemcell', 'version' => '1'}
       }
     end
 
-    let(:desired_instance) { DesiredInstance.new(job, deployment_plan, availability_zone) }
-    let(:current_state) { {'current' => 'state', 'job' => job_spec } }
+    let(:tags) do
+      {'key1' => 'value1'}
+    end
+
+    let(:desired_instance) { DesiredInstance.new(instance_group, deployment_plan, availability_zone) }
+    let(:current_state) { {'current' => 'state', 'job' => instance_group_spec, 'job_state' => job_state } }
     let(:availability_zone) { AvailabilityZone.new('foo-az', {'a' => 'b'}) }
-    let(:instance) { Instance.create_from_job(job, 1, instance_state, deployment_plan, current_state, availability_zone, logger) }
+    let(:instance) { Instance.create_from_job(instance_group, 1, instance_state, deployment_plan, current_state, availability_zone, logger) }
     let(:instance_state) { 'started' }
     let(:network_resolver) { GlobalNetworkResolver.new(deployment_plan, [], logger) }
     let(:network) { ManualNetwork.parse(network_spec, [availability_zone], network_resolver, logger) }
@@ -35,10 +41,10 @@ module Bosh::Director::DeploymentPlan
       reservation
     }
     let(:network_plans) { [] }
-    let(:instance_plan) { InstancePlan.new(existing_instance: existing_instance, desired_instance: desired_instance, instance: instance, network_plans: network_plans, logger: logger) }
+    let(:job_state) { 'running' }
     let(:existing_instance) { instance_model }
 
-    let(:job_spec) { Bosh::Spec::Deployments.simple_manifest['jobs'].first }
+    let(:instance_group_spec) { Bosh::Spec::Deployments.simple_manifest['jobs'].first }
     let(:network_spec) { Bosh::Spec::Deployments.simple_cloud_config['networks'].first }
     let(:cloud_config_manifest) { Bosh::Spec::Deployments.simple_cloud_config }
     let(:deployment_manifest) { Bosh::Spec::Deployments.simple_manifest }
@@ -63,7 +69,26 @@ module Bosh::Director::DeploymentPlan
       fake_locks
       prepare_deploy(deployment_manifest, cloud_config_manifest)
       instance.bind_existing_instance_model(instance_model)
-      job.add_instance_plans([instance_plan])
+      instance_group.add_instance_plans([instance_plan])
+    end
+
+    describe '#initialize' do
+      context 'with defaults' do
+        it 'correctly sets instance variables' do
+          expect(instance_plan.recreate_deployment).to eq(false)
+          expect(instance_plan.skip_drain).to eq(false)
+        end
+      end
+
+      context 'with given values' do
+        it 'correctly sets instance variables' do
+          expect(instance_plan.desired_instance).to eq(desired_instance)
+          expect(instance_plan.existing_instance).to eq(existing_instance)
+          expect(instance_plan.instance).to eq(instance)
+          expect(instance_plan.network_plans).to eq(network_plans)
+          expect(instance_plan.tags).to eq({'key1' => 'value1'})
+        end
+      end
     end
 
     describe 'networks_changed?' do
@@ -117,6 +142,40 @@ module Bosh::Director::DeploymentPlan
             )
 
           instance_plan.networks_changed?
+        end
+
+        context 'when dns_record_name exists in network_settings' do
+          let(:network_plans) { [
+            NetworkPlanner::Plan.new(reservation: existing_reservation, existing: true),
+            NetworkPlanner::Plan.new(reservation: reservation, existing: true)
+          ] }
+          let(:network_settings) do
+            {
+              'existing-network' => {
+                'type' => 'dynamic',
+                'cloud_properties' => {},
+                'dns_record_name' => '0.job-1.my-network.deployment.bosh',
+                'dns' => '10.0.0.1',
+              },
+              'a' => {
+                'ip' => '192.168.1.3',
+                'netmask' => '255.255.255.0',
+                'cloud_properties' => {},
+                'default' => ['dns', 'gateway'],
+                'dns' => ['192.168.1.1', '192.168.1.2'],
+                'gateway' => '192.168.1.1'
+              }
+            }
+          end
+
+          it 'should ignore dns_record_name when comparing old and new network_settings' do
+            allow(logger).to receive(:debug)
+            expect(logger).to_not receive(:debug).with(
+              /networks_changed\? network settings changed FROM:/
+            )
+
+            expect(instance_plan.networks_changed?).to be(false)
+          end
         end
 
         context 'when there are obsolete plans' do
@@ -360,6 +419,40 @@ module Bosh::Director::DeploymentPlan
           expect(instance_plan.needs_recreate?).to be_falsey
         end
       end
+
+      context 'when instance has unresponsive agent' do
+        let(:job_state) { 'unresponsive' }
+
+        it 'should return true' do
+          expect(instance_plan.needs_recreate?).to be_truthy
+        end
+      end
+    end
+
+    describe '#needs_to_fix?' do
+      context 'when instance has unresponsive agent' do
+        let(:job_state) { 'unresponsive' }
+
+        it 'should return true' do
+          expect(instance_plan.needs_to_fix?).to be_truthy
+        end
+      end
+
+      context 'when instance is ok' do
+        let(:instance_plan) { InstancePlan.new(existing_instance: existing_instance, desired_instance: desired_instance, instance: instance, network_plans: network_plans, recreate_deployment: true) }
+
+        it 'should return false' do
+          expect(instance_plan.needs_to_fix?).to be_falsey
+        end
+      end
+
+      context 'when instance is nil' do
+        let(:instance_plan) { InstancePlan.new(existing_instance: existing_instance, desired_instance: desired_instance, instance: nil, network_plans: network_plans, recreate_deployment: true) }
+
+        it 'should return false' do
+          expect(instance_plan.needs_to_fix?).to be_falsey
+        end
+      end
     end
 
     describe '#persistent_disk_changed?' do
@@ -375,13 +468,13 @@ module Bosh::Director::DeploymentPlan
         cloud_config
       end
 
-      let(:job_spec) do
-        job = Bosh::Spec::Deployments.simple_manifest['jobs'].first
-        job['persistent_disk_pool'] = 'disk_a'
-        job
+      let(:instance_group_spec) do
+        instance_group_spec = Bosh::Spec::Deployments.simple_manifest['jobs'].first
+        instance_group_spec['persistent_disk_pool'] = 'disk_a'
+        instance_group_spec
       end
 
-      context 'when disk size changes' do
+      context 'when there is a change' do
         before do
           persistent_disk = BD::Models::PersistentDisk.make(size: 42, cloud_properties: {'new' => 'properties'})
           instance_plan.instance.model.add_persistent_disk(persistent_disk)
@@ -392,40 +485,11 @@ module Bosh::Director::DeploymentPlan
         end
 
         it 'should log' do
-          expect(logger).to receive(:debug).with('persistent_disk_changed? changed FROM: disk size: 42 TO: disk size: 24' +
-                ' on instance ' + "#{instance_plan.existing_instance}")
+          allow(logger).to receive(:debug)
+
+          expect(logger).to receive(:debug).with('persistent_disk_changed? changed FROM: {:name=>"", :size=>42, :cloud_properties=>{"new"=>"properties"}} TO: {:name=>"", :size=>24, :cloud_properties=>{"new"=>"properties"}} on instance foobar/1 (fake-uuid-1)')
+
           instance_plan.persistent_disk_changed?
-        end
-      end
-
-      context 'when disk pool size is greater than 0 and disk properties changed' do
-        it 'should log the disk properties change' do
-          persistent_disk = BD::Models::PersistentDisk.make(size: 24, cloud_properties: {'old' => 'properties'})
-          instance_plan.instance.model.add_persistent_disk(persistent_disk)
-
-          expect(logger).to receive(:debug).with('persistent_disk_changed? changed FROM: {"old"=>"properties"} TO: {"new"=>"properties"}' +
-                ' on instance ' + "#{instance_plan.existing_instance}")
-          instance_plan.persistent_disk_changed?
-        end
-      end
-
-      context 'when disk pool with size 0 is used' do
-        let(:cloud_config_manifest) do
-          cloud_config = Bosh::Spec::Deployments.simple_cloud_config
-          cloud_config['disk_types'] = [{
-              'name' => 'disk_a',
-              'disk_size' => 0,
-              'cloud_properties' => {
-                'new' => 'properties'
-              }
-            }]
-          cloud_config
-        end
-
-        context 'when disk_size is still 0' do
-          it 'returns false' do
-            expect(instance_plan.persistent_disk_changed?).to be(false)
-          end
         end
       end
 
@@ -433,14 +497,14 @@ module Bosh::Director::DeploymentPlan
         let(:obsolete_instance_plan) { InstancePlan.new(existing_instance: existing_instance, desired_instance: nil, instance: nil) }
 
         it 'should return true if instance had a persistent disk' do
-          persistent_disk = BD::Models::PersistentDisk.make
+          persistent_disk = BD::Models::PersistentDisk.make(active: true, size: 2)
           obsolete_instance_plan.existing_instance.add_persistent_disk(persistent_disk)
 
           expect(obsolete_instance_plan.persistent_disk_changed?).to be_truthy
         end
 
         it 'should return false if instance had no persistent disk' do
-          expect(obsolete_instance_plan.existing_instance.persistent_disk).to be_nil
+          expect(obsolete_instance_plan.existing_instance.active_persistent_disks.any?).to eq(false)
 
           expect(obsolete_instance_plan.persistent_disk_changed?).to be_falsey
         end
@@ -469,10 +533,10 @@ module Bosh::Director::DeploymentPlan
       let(:network) { instance_double('Bosh::Director::DeploymentPlan::Network', name: 'fake-network') }
 
       context 'when an instance exists (with the same job name & instance index)' do
-        let(:current_state) { { 'job' => job.spec } }
+        let(:current_state) { { 'job' => instance_group.spec } }
 
         context 'that fully matches the job spec' do
-          before { allow(instance).to receive(:current_job_spec).and_return(job.spec) }
+          before { allow(instance).to receive(:current_job_spec).and_return(instance_group.spec) }
 
           it 'returns false' do
             expect(instance_plan.job_changed?).to eq(false)
@@ -481,16 +545,16 @@ module Bosh::Director::DeploymentPlan
 
         context 'that does not match the job spec' do
           before do
-            job.templates = [template]
+            instance_group.jobs = [job]
             allow(instance).to receive(:current_job_spec).and_return({})
           end
-          let(:template) do
-            instance_double('Bosh::Director::DeploymentPlan::Template', {
+          let(:job) do
+            instance_double('Bosh::Director::DeploymentPlan::Job', {
                 name: state['job']['name'],
                 version: state['job']['version'],
                 sha1: state['job']['sha1'],
                 blobstore_id: state['job']['blobstore_id'],
-                template_scoped_properties: {},
+                properties: {},
                 logs: nil,
               })
           end
@@ -506,7 +570,7 @@ module Bosh::Director::DeploymentPlan
             }
           end
 
-          let(:current_state) { {'job' => job.spec.merge('version' => 'old-version')} }
+          let(:current_state) { {'job' => instance_group.spec.merge('version' => 'old-version')} }
 
           it 'returns true' do
             expect(instance_plan.job_changed?).to eq(true)
@@ -562,6 +626,7 @@ module Bosh::Director::DeploymentPlan
         let(:spec) do
           {'configuration_hash' => {'old' => 'config'}}
         end
+        let(:uuid) { BD::Models::Instance.all.last.uuid }
 
         it 'should return true' do
           instance.configuration_hash = {'changed' => 'config'}
@@ -571,7 +636,7 @@ module Bosh::Director::DeploymentPlan
         it 'should log the configuration changed reason' do
           instance.configuration_hash = {'changed' => 'config'}
 
-          expect(logger).to receive(:debug).with('configuration_changed? changed FROM: {"old"=>"config"} TO: {"changed"=>"config"} on instance foobar/1 (uuid-1)')
+          expect(logger).to receive(:debug).with("configuration_changed? changed FROM: {\"old\"=>\"config\"} TO: {\"changed\"=>\"config\"} on instance foobar/1 (#{uuid})")
           instance_plan.configuration_changed?
         end
       end
@@ -629,7 +694,8 @@ module Bosh::Director::DeploymentPlan
 
         describe 'when the index dns record for the instance is not found' do
           before do
-            BD::Models::Dns::Record.create(:name => 'uuid-1.foobar.a.simple.fake-dns', :type => 'A', :content => '192.168.1.3')
+            instance = BD::Models::Instance.all.last
+            BD::Models::Dns::Record.create(:name => "#{instance.uuid}.foobar.a.simple.fake-dns", :type => 'A', :content => '192.168.1.3')
           end
 
           it '#dns_changed? should return true' do
@@ -643,8 +709,10 @@ module Bosh::Director::DeploymentPlan
         end
 
         describe 'when the id dns record for the instance is not found' do
+          let(:uuid) { BD::Models::Instance.all.last }
+
           before do
-            BD::Models::Dns::Record.create(:name => '1.foobar.a.simple.bosh', :type => 'A', :content => '192.168.1.3')
+            BD::Models::Dns::Record.create(:name => "#{uuid}.foobar.a.simple.bosh", :type => 'A', :content => '192.168.1.3')
           end
 
           it '#dns_changed? should return true' do
@@ -652,7 +720,7 @@ module Bosh::Director::DeploymentPlan
           end
 
           it 'should log the dns changes' do
-            expect(logger).to receive(:debug).with("dns_changed? The requested dns record with name 'uuid-1.foobar.a.simple.bosh' and ip '192.168.1.3' was not found in the db.")
+            expect(logger).to receive(:debug).with("dns_changed? The requested dns record with name '1.foobar.a.simple.bosh' and ip '192.168.1.3' was not found in the db.")
             instance_plan.dns_changed?
           end
         end

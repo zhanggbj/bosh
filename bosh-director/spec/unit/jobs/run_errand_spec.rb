@@ -24,16 +24,9 @@ module Bosh::Director
         let!(:deployment_model) do
           Models::Deployment.make(
             name: 'fake-dep-name',
-            manifest: Psych.dump(manifest_hash),
+            manifest: YAML.dump(manifest_hash),
             cloud_config: cloud_config
           )
-        end
-
-        let(:cloud) {double('cloud')}
-
-        before do
-          allow(Config).to receive(:logger).with(no_args).and_return(logger)
-          allow(Config).to receive(:cloud) { cloud }
         end
 
         before do
@@ -102,7 +95,7 @@ module Bosh::Director
 
               before do
                 allow(Errand::JobManager).to receive(:new).
-                  with(planner, deployment_job, cloud, logger).
+                  with(planner, deployment_job, Config.cloud, logger).
                   and_return(job_manager)
               end
               let(:job_manager) do

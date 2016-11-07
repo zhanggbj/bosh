@@ -1,6 +1,7 @@
 require 'fileutils'
 require 'logging'
 require 'socket'
+require 'uri'
 
 module Bosh::Director
 
@@ -14,8 +15,6 @@ module Bosh::Director
         :db,
         :dns,
         :dns_db,
-        # @todo @for-a-refactorer according to grep of "Config.dns_domain_name" I'm pretty sure this can be removed
-        :dns_domain_name,
         :event_log,
         :logger,
         :max_tasks,
@@ -48,9 +47,8 @@ module Bosh::Director
         :ignore_missing_gateway,
         :record_events,
         :director_ips,
-        :config_server_url,
-        :parse_config_values,
-        :config_server_url,
+        :config_server_enabled,
+        :config_server,
       )
 
       def clear
@@ -148,7 +146,9 @@ module Bosh::Director
           end
         end
 
-        @dns_manager = DnsManagerProvider.create
+        @local_dns_enabled = config.fetch('local_dns', {}).fetch('enabled', false)
+        @local_dns_include_index = config.fetch('local_dns', {}).fetch('include_index', false)
+
         @uuid = override_uuid || Bosh::Director::Models::DirectorAttribute.find_or_create_uuid(@logger)
         @logger.info("Director UUID: #{@uuid}")
 
@@ -165,21 +165,29 @@ module Bosh::Director
         @generate_vm_passwords = config.fetch('generate_vm_passwords', false)
         @remove_dev_tools = config['remove_dev_tools']
         @record_events = config.fetch('record_events', false)
-        @local_dns = config.fetch('local_dns', false)
 
         @enable_virtual_delete_vms = config.fetch('enable_virtual_delete_vms', false)
 
         @director_ips = Socket.ip_address_list.reject { |addr| !addr.ip? || !addr.ipv4? || addr.ipv4_loopback? || addr.ipv6_loopback? }.map { |addr| addr.ip_address }
 
+        @config_server = config.fetch('config_server', {})
+        @config_server_enabled = @config_server['enabled']
 
-        @parse_config_values = config.fetch('parse_config_values', false)
-        if @parse_config_values
-          @config_server_url = config['config_server_url']
+        if @config_server_enabled
+          config_server_url = config_server['url']
+          unless URI.parse(config_server_url).scheme == 'https'
+            raise ArgumentError, "Config Server URL should always be https. Currently it is #{config_server_url}"
+          end
         end
 
         Bosh::Clouds::Config.configure(self)
 
         @lock = Monitor.new
+      end
+
+      def canonized_dns_domain_name
+        dns_config = Config.dns || {}
+        Canonicalizer.canonicalize(dns_config.fetch('domain_name', 'bosh'), :allow_dots => true)
       end
 
       def log_dir
@@ -188,6 +196,14 @@ module Bosh::Director
 
       def use_compiled_package_cache?
         !@compiled_package_cache_options.nil?
+      end
+
+      def local_dns_enabled?
+        !!@local_dns_enabled
+      end
+
+      def local_dns_include_index?
+        !!@local_dns_include_index
       end
 
       def get_revision
@@ -343,11 +359,9 @@ module Bosh::Director
 
         new_uuid
       end
-    end
 
-    class << self
       def load_file(path)
-        Config.new(Psych.load_file(path))
+        Config.new(YAML.load_file(path))
       end
 
       def load_hash(hash)

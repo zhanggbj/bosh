@@ -15,10 +15,18 @@ sed \
   bosh-src/ci/pipelines/compiled-releases/tasks/bosh-init-template.yml \
   > bosh-init.yml
 
+if [ "$BOSH_REDIS" = "false" ]; then
+  sed -i '/name: redis/d' bosh-init.yml
+fi
+
 echo "$BOSH_SSH_TUNNEL_KEY" > ssh_tunnel_key
 chmod 600 ssh_tunnel_key
 
 bosh-init deploy bosh-init.yml
+
+# occasionally we get a race where director process hasn't finished starting
+# before nginx is reachable causing "Cannot talk to director..." messages.
+sleep 10
 
 bosh -n target "https://$BOSH_TARGET_IP:25555"
 bosh login "$BOSH_USERNAME" "$BOSH_PASSWORD"

@@ -21,6 +21,36 @@ describe 'cli: vms', type: :integration do
     expect(vitals[:persistent_disk_usage]).to match /n\/a/
   end
 
+  it 'should return ips for legacy deployments' do
+    target_and_login
+
+    manifest = Bosh::Spec::Deployments.legacy_manifest
+    manifest['networks'] << {
+          'name' => 'b',
+          'subnets' => [{
+              'range' => '192.168.2.0/24',
+              'gateway' => '192.168.2.1',
+              'dns' => ['192.168.2.1', '192.168.2.2'],
+              'static' => ['192.168.2.10'],
+              'reserved' => [],
+              'cloud_properties' => {},
+          }],
+      }
+    manifest['jobs'].first['networks'] << {'name' => 'b', 'default' => ['dns', 'gateway']}
+    manifest['jobs'].first['instances'] = 1
+
+    deploy_from_scratch(manifest_hash: manifest)
+
+    expect(scrub_random_ids(bosh_runner.run('vms'))).to match_output %(
+        +-------------------------------------------------+---------+-----+---------+-------------+
+        | VM                                              | State   | AZ  | VM Type | IPs         |
+        +-------------------------------------------------+---------+-----+---------+-------------+
+        | foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (0) | running | n/a | a       | 192.168.1.2 |
+        |                                                 |         |     |         | 192.168.2.2 |
+        +-------------------------------------------------+---------+-----+---------+-------------+
+        )
+  end
+
   it 'should return az with vms' do
     target_and_login
 
@@ -69,9 +99,9 @@ describe 'cli: vms', type: :integration do
 +-------------------------------------------------+---------+--------+---------+-------------+
 | VM                                              | State   | AZ     | VM Type | IPs         |
 +-------------------------------------------------+---------+--------+---------+-------------+
-| foobar/0 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-1 | a       | 192.168.1.2 |
-| foobar/1 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-2 | a       | 192.168.2.2 |
-| foobar/2 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-3 | a       | 192.168.3.2 |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (0) | running | zone-1 | a       | 192.168.1.2 |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (1) | running | zone-2 | a       | 192.168.2.2 |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (2) | running | zone-3 | a       | 192.168.3.2 |
 +-------------------------------------------------+---------+--------+---------+-------------+
 VMS
     output = bosh_runner.run('vms --details')
@@ -87,9 +117,9 @@ VMS
     expect(output).to include('Resurrection')
     expect(output).to include('Ignore')
 
-    expect(output).to include('foobar/0 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
-    expect(output).to include('foobar/1 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
-    expect(output).to include('foobar/2 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (0)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (1)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (2)')
     expect(output).to include('zone-1')
     expect(output).to include('zone-2')
     expect(output).to include('zone-3')
@@ -99,11 +129,11 @@ VMS
 +-------------------------------------------------+---------+--------+---------+-------------+-----------------------------------------------------------+
 | VM                                              | State   | AZ     | VM Type | IPs         | DNS A records                                             |
 +-------------------------------------------------+---------+--------+---------+-------------+-----------------------------------------------------------+
-| foobar/0 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-1 | a       | 192.168.1.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (0) | running | zone-1 | a       | 192.168.1.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
 |                                                 |         |        |         |             | 0.foobar.a.simple.bosh                                    |
-| foobar/1 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-2 | a       | 192.168.2.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (1) | running | zone-2 | a       | 192.168.2.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
 |                                                 |         |        |         |             | 1.foobar.a.simple.bosh                                    |
-| foobar/2 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) | running | zone-3 | a       | 192.168.3.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
+| foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (2) | running | zone-3 | a       | 192.168.3.2 | xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.foobar.a.simple.bosh |
 |                                                 |         |        |         |             | 2.foobar.a.simple.bosh                                    |
 +-------------------------------------------------+---------+--------+---------+-------------+-----------------------------------------------------------+
 VMS
@@ -127,9 +157,9 @@ VMS
     expect(output).to include('Ephemeral')
     expect(output).to include('Persistent')
 
-    expect(output).to include('foobar/0 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
-    expect(output).to include('foobar/1 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
-    expect(output).to include('foobar/2 (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (0)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (1)')
+    expect(output).to include('foobar/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx (2)')
     expect(output).to include('zone-1')
     expect(output).to include('zone-2')
     expect(output).to include('zone-3')

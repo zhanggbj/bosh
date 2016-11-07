@@ -4,6 +4,7 @@ module Bosh::Director
       class BaseController < Sinatra::Base
         include ApiHelper
         include Http
+        include SyslogHelper
 
         def initialize(config)
           super()
@@ -19,7 +20,6 @@ module Bosh::Director
           @stemcell_manager = StemcellManager.new
           @task_manager = TaskManager.new
           @dns_manager = DnsManagerProvider.create
-          @disk_manager = DiskManager.new(nil, @logger)
           @event_manager = EventManager.new(config.record_events)
         end
 

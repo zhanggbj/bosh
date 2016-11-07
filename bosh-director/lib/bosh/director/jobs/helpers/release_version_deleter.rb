@@ -28,8 +28,6 @@ module Bosh::Director::Jobs
       private
 
       def delete_release_version(release_version, force)
-        errors = []
-
         release = release_version.release
 
         packages_to_keep = []
@@ -56,14 +54,13 @@ module Bosh::Director::Jobs
           end
         end
 
-
         stage = @event_log.begin_stage('Deleting packages', packages_to_delete.count)
         packages_to_delete.each do |package|
           track_and_log(stage, "#{package.name}/#{package.version}") do
             @logger.info("Package #{package.name}/#{package.version} " +
                 'is only used by this release version ' +
                 'and will be deleted')
-            errors += @package_deleter.delete(package, force)
+            @package_deleter.delete(package, force)
           end
         end
 
@@ -79,7 +76,7 @@ module Bosh::Director::Jobs
             @logger.info("Template #{template.name}/#{template.version} " +
                 'is only used by this release version ' +
                 'and will be deleted')
-            errors += @template_deleter.delete(template, force)
+            @template_deleter.delete(template, force)
           end
         end
 
@@ -93,15 +90,11 @@ module Bosh::Director::Jobs
         @logger.info('Remove all deployments in release version')
         release_version.remove_all_deployments
 
-        if errors.empty? || force
-          release_version.destroy
-        end
+        release_version.destroy
 
         if release.versions.empty?
-          errors += @release_deleter.delete(release, force)
+          @release_deleter.delete(release, force)
         end
-
-        errors
       end
 
       def track_and_log(stage, task)
