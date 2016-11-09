@@ -7,6 +7,14 @@ OS images are stored in S3 bucket [bosh-os-images](http://s3.amazonaws.com/bosh-
 
 Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
 
+* `bAUozYGz5QKDerLQxQk282GrXn6Oqr_7`
+  - Periodic Bump
+  - built from 257.x-3263.x (0c333f73313b595d0ee77b33fbfa4dd5b7b1b3f1)
+
+* `6nL1sqjjUdmND.rzFJ.lPHTS8BZTcu3a`
+  - USN-3106-2: Linux kernel (Xenial HWE) vulnerability
+  - built from 257.x-3263.x (13d27cdcecad3930b4f2f0ce524daa05de78d53f)
+
 * `GFaKI0uS.XcY9_tNoI9X61vEQZk6YuR8`
   - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
   - build from 257.x-3263.x (07e3b92543834180870f95690fe461c4eeea168f)
@@ -501,6 +509,14 @@ CentOS 6.6 images have filename `bosh-centos-6-os-image.tgz`
 ## CentOS 7
 
 CentOS 7 images have filename `bosh-centos-7-os-image.tgz`
+
+* `gzVOkWfR76VNQH8k6uE0IQMnYbDhmXpc`
+  - Dirty COW (CVE-2016-5195)
+  - built from 257.x-3263.x (0c333f73313b595d0ee77b33fbfa4dd5b7b1b3f1)
+
+* `7gR0.9jpw3hOIr_Jfdeu7WiysSiN8BxP`
+  - USN-3106-2: Linux kernel (Xenial HWE) vulnerability
+  - built from 257.x-3263.x (13d27cdcecad3930b4f2f0ce524daa05de78d53f)
 
 * `LgCye9HqwJ.k2JMeKVujqPxTJWqly5Jz`
   - USN-3099-2: Linux kernel (Xenial HWE) vulnerabilities
