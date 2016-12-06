@@ -52,6 +52,10 @@ Ubuntu 14.04 images have filename `bosh-ubuntu-trusty-os-image.tgz`
   - periodic bump
   - built from develop (f782166c1fd8b61e49b20db0c632df8af14b32bc)
 
+* `s52rq4q3NTsr3EJivPoKCebDIXbD.Kx0`
+  - bumped for https://www.ubuntu.com/usn/usn-3151-2/
+  - built from 3312.x (3611a3d29adbca5c45b5834b490519e114d7c0f7)
+
 * `zOvdCSqvTesS084AN2ttY1mEbZ3wbiIl`
   - periodic bump
   - built from 3312.x (7bf28beb5b7f85ba4d2af67ac08d5b2df5b6fbaa)
