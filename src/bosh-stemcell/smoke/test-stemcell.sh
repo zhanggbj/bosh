@@ -9,8 +9,10 @@ export BUNDLE_GEMFILE="${PWD}/bosh-src/src/Gemfile"
 
 bundle install --local
 
+DIRECTOR=`cat ${PWD}/director-state/director-info`
+
 bosh() {
-  bundle exec bosh -n -t "${BOSH_DIRECTOR_ADDRESS}" "$@"
+  bundle exec bosh -n -t "${DIRECTOR}" "$@"
 }
 
 # login
@@ -36,47 +38,58 @@ env_attr() {
   echo $json | jq --raw-output --arg attribute $2 '.[$attribute]'
 }
 
-metadata=$(cat environment/metadata)
-network=$(env_attr "${metadata}" "network1")
-
-: ${STEMCELL_TEST_VLAN:=$(                          env_attr "${network}" "vCenterVLAN")}
-: ${STEMCELL_TEST_CIDR:=$(                          env_attr "${network}" "vCenterCIDR")}
-: ${STEMCELL_TEST_RESERVED_RANGE:=$(                env_attr "${network}" "reservedRange")}
-: ${STEMCELL_TEST_GATEWAY:=$(                       env_attr "${network}" "vCenterGateway")}
-
 #Build Cloud config
 cat > "./cloud-config.yml" <<EOF
 azs:
 - name: z1
   cloud_properties:
-    datacenters:
-    - name: ${BOSH_VSPHERE_VCENTER_DC}
-      clusters:
-        - ${BOSH_VSPHERE_VCENTER_CLUSTER}: {}
+    Datacenter: { Name: $SL_DATACENTER }
 
 vm_types:
+- name: compilation
+  cloud_properties:
+    Bosh_ip: $DIRECTOR
+    StartCpus:  4
+    MaxMemory:  8192
+    EphemeralDiskSize: 100
+    HourlyBillingFlag: true
+    LocalDiskFlag: false
+    VmNamePrefix: cc-compilation-worker-
+    Domain: $SL_VM_DOMAIN
+    PrimaryNetworkComponent:
+       NetworkVlan:
+          Id: $SL_VLAN_PUBLIC
+    PrimaryBackendNetworkComponent:
+       NetworkVlan:
+          Id: $SL_VLAN_PRIVATE
 - name: default
   cloud_properties:
-    ram: 2048
-    cpu: 1
-    disk: 5120
+    Bosh_ip: $DIRECTOR
+    StartCpus:  4
+    MaxMemory:  8192
+    EphemeralDiskSize: 100
+    HourlyBillingFlag: true
+    LocalDiskFlag: false
+    VmNamePrefix: $SL_VM_NAME_PREFIX
+    Domain: $SL_VM_DOMAIN
+    PrimaryNetworkComponent:
+       NetworkVlan:
+          Id: $SL_VLAN_PUBLIC
+    PrimaryBackendNetworkComponent:
+       NetworkVlan:
+          Id: $SL_VLAN_PRIVATE
 
 networks:
 - name: default
-  type: manual
+  type: dynamic
   subnets:
-  - range: ${STEMCELL_TEST_CIDR}
-    reserved: [${STEMCELL_TEST_RESERVED_RANGE}]
-    gateway: ${STEMCELL_TEST_GATEWAY}
-    az: z1
-    cloud_properties:
-      name: ${STEMCELL_TEST_VLAN}
+  - {az: az1, dns: [ $DIRECTOR, 8.8.8.8, 10.0.80.11, 10.0.80.12 ]}
 
 compilation:
-  workers: 2
+  workers: 5
   reuse_compilation_vms: true
   az: z1
-  vm_type: default
+  vm_type: compilation
   network: default
 EOF
 

@@ -8,14 +8,17 @@ inputs:
 - name: bosh-src
 - name: stemcell
 - name: syslog-release
-- name: environment
+- name: director-state
 
 params:
   BOSH_DIRECTOR_ADDRESS:
   BOSH_DIRECTOR_USERNAME:
   BOSH_DIRECTOR_PASSWORD:
-  BOSH_VSPHERE_VCENTER_CLUSTER:
-  BOSH_VSPHERE_VCENTER_DC:
+  SL_VM_NAME_PREFIX:
+  SL_VM_DOMAIN:
+  SL_DATACENTER:
+  SL_VLAN_PUBLIC:
+  SL_VLAN_PRIVATE:
 
 run:
   path: bosh-src/src/bosh-stemcell/smoke/test-stemcell.sh
