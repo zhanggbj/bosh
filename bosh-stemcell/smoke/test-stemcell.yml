@@ -2,18 +2,23 @@ platform: linux
 
 image_resource:
   type: docker-image
-  source:
-    repository: bosh/main
+  source: {repository: bosh/main}
 
 inputs:
 - name: bosh-src
 - name: stemcell
 - name: syslog-release
+- name: director-state
 
 params:
   BOSH_DIRECTOR_ADDRESS:
   BOSH_DIRECTOR_USERNAME:
   BOSH_DIRECTOR_PASSWORD:
+  SL_VM_NAME_PREFIX:
+  SL_VM_DOMAIN:
+  SL_DATACENTER:
+  SL_VLAN_PUBLIC:
+  SL_VLAN_PRIVATE:
 
 run:
   path: bosh-src/bosh-stemcell/smoke/test-stemcell.sh
