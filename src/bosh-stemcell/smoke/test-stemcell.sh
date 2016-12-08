@@ -83,7 +83,7 @@ networks:
 - name: default
   type: dynamic
   subnets:
-  - {az: az1, dns: [ $DIRECTOR, 8.8.8.8, 10.0.80.11, 10.0.80.12 ]}
+  - {az: z1, dns: [ $DIRECTOR, 8.8.8.8, 10.0.80.11, 10.0.80.12 ]}
 
 compilation:
   workers: 5
