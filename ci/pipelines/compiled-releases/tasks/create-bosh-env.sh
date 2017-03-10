@@ -62,9 +62,9 @@ chmod +x ${BOSH_CLI}
 #    slcli vs detail ${DIRECTOR_VM_ID} --passwords > ${deployment_dir}/director-detail
     cp $BOSH_CLI ${deployment_dir}/
     pushd ${deployment_dir}
-      tar -zcvf  /tmp/director_artifacts.tgz ./ >/dev/null 2>&1
+      tar -zcvf  /tmp/director_state.tgz ./ >/dev/null 2>&1
     popd
-    mv /tmp/director_artifacts.tgz deploy-artifacts/
+    mv /tmp/director_state.tgz director_state/
   }
 
 trap finish ERR
