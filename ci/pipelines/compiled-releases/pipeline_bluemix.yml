@@ -1,0 +1,105 @@
+resources:
+  - name: bosh-cli
+    type: s3
+    source:
+      regexp: bosh-cli-([0-9.]+)-linux-amd64
+      bucket: bosh-cli-artifacts
+      region_name: us-east-1
+#  - name: pipelines
+#    type: git
+#    source:
+#      uri: https://github.com/zhanggbj/bosh-cpi-certification
+#      branch: master
+
+  - name: bosh-src
+    type: git
+    source:
+      uri: https://github.com/zhanggbj/bosh.git
+      branch: stemcell_v2
+
+  - name: bosh-softlayer-cpi-release
+    type: bosh-io-release
+    source:
+      repository: cloudfoundry/bosh-softlayer-cpi-release
+
+  #
+  # releases to compile
+  #
+  - name: bosh-release
+    type: bosh-io-release
+#    version: 255.6
+    source:
+      repository: cloudfoundry/bosh
+
+  #
+  # stemcells to compile on
+  #
+#
+#  - name: ubuntu-trusty-stemcell
+#    type: bosh-io-stemcell
+#    source:
+#      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
+
+  - name: light-stemcell
+    type: s3
+    source:
+      regexp: light-bosh-stemcell-(\d+\.\d+)-softlayer-xen-ubuntu-trusty-go_agent\.tgz
+      bucket: bosh-softlayer-stemcells-bluemix
+      access_key_id: {{s3_access_key_id}}
+      secret_access_key: {{s3_secret_access_key}}
+
+#  - name: ubuntu-trusty-3146-stemcell
+#    type: s3
+#    source:
+#      bucket: bosh-jenkins-artifacts
+#      regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
+
+  #
+  # compiled releases
+  #
+
+  # ubuntu-trusty
+
+#  - name: bosh-on-light-stemcell
+#    type: s3
+#    source:
+#      bucket: bosh-softlayer-compiled-release-tarballs
+#      access_key_id: {{s3_access_key_id}}
+#      secret_access_key: {{s3_secret_access_key}}
+#      regexp: "release-bosh-[\\d\\.]+-on-light-stemcell-[\\d\\.]+-(\\d+).tgz"
+
+jobs:
+  - name: compile-bosh-release-latest-light-stemcell-latest
+    plan:
+      - aggregate:
+          - get: bosh-src
+          - get: bosh-release
+            trigger: true
+          - get: bosh-softlayer-cpi-release
+          - get: light-stemcell
+            trigger: true
+          - get: bosh-cli
+      - task: deploy-director
+        file: bosh-src/ci/pipelines/compiled-releases/tasks/create-bosh-env.yml
+        input_mapping:
+          stemcell: light-stemcell
+        params:
+          SL_VM_PREFIX:         replace-me
+          SL_API_KEY:           replace-me
+          SL_DATACENTER:        replace-me
+          SL_VLAN_PUBLIC:       replace-me
+          SL_VLAN_PRIVATE:      replace-me
+#      - do:
+#        - task: export-release
+#          file: bosh-src/ci/pipelines/compiled-releases/tasks/export-release.yml
+#          input_mapping:
+#            stemcell: ubuntu-trusty-stemcell
+#            release: bosh-release
+#          params:
+#            BOSH_TARGET_IP: 10.0.2.7
+#        - put: bosh-on-ubuntu-trusty
+#          params:
+#            file: "compiled-release/*.tgz"
+#        ensure:
+#          task: teardown-director
+#          file: bosh-src/ci/pipelines/compiled-releases/tasks/teardown-director.yml
