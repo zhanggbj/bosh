@@ -25,3 +25,4 @@ params:
   SL_DATACENTER:        replace-me
   SL_VLAN_PUBLIC:       replace-me
   SL_VLAN_PRIVATE:      replace-me
+  SL_USERNAME:          replace-me
