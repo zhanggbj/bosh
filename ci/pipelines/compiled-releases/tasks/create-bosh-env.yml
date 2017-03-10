@@ -17,7 +17,7 @@ outputs:
   - name: director-state
 
 run:
-  path: bosh-src/ci/pipelines/compiled-releases/tasks/deploy-director.sh
+  path: bosh-src/ci/pipelines/compiled-releases/tasks/create-bosh-env.sh
 
 params:
   SL_VM_PREFIX:         replace-me
