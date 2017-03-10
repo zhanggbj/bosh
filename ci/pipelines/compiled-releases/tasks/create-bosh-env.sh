@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
+
 source bosh-src/ci/pipelines/compiled-releases/tasks/utils.sh
 #source /etc/profile.d/chruby.sh
 #chruby 2.2.4
@@ -45,6 +46,7 @@ ORG_STEMCELL_URI="file://stemcell/light-bosh-stemcell-3312.9-softlayer-xen-ubunt
 sed -i 's/'"$ORG_BOSH_RELEASE_URI"'/'"$BOSH_RELEASE_URI"'/g;s/'"$ORG_CPI_RELEASE_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g;s/'"$ORG_STEMCELL_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g' \
 bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml > bosh-template.yml
 
+echo "here"
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
 chmod +x ${BOSH_CLI}
 
