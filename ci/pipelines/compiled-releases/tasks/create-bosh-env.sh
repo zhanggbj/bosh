@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 
-source bosh-src/ci/pipelines/compiled-release/tasks/utils.sh
+source bosh-src/ci/pipelines/compiled-releases/tasks/utils.sh
 #source /etc/profile.d/chruby.sh
 #chruby 2.2.4
 
@@ -35,7 +35,7 @@ mkdir -p $deployment_dir
 SL_VM_DOMAIN=${SL_VM_PREFIX}.softlayer.com
 
 BOSH_RELEASE_URI="file://$(echo bosh-release/*.tgz)"
-CPI_RELEASE_URI="file://$(echo cpi-release/*.tgz)"
+CPI_RELEASE_URI="file://$(echo bosh-softlayer-cpi-release/*.tgz)"
 STEMCELL_URI="file://$(echo stemcell/*.tgz)"
 
 ORG_BOSH_RELEASE_URI="file://bosh-release/bosh-261.tgz"
@@ -43,7 +43,7 @@ ORG_CPI_RELEASE_URI="file://bosh-softlayer-cpi-release/bosh-softlayer-cpi-releas
 ORG_STEMCELL_URI="file://stemcell/light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
 
 sed -i 's/'"$ORG_BOSH_RELEASE_URI"'/'"$BOSH_RELEASE_URI"'/g;s/'"$ORG_CPI_RELEASE_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g; s/'"$ORG_STEMCELL_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g' \
-bosh-src/ci/pipelines/compiled-release/templates/bosh-template.yml > bosh-template.yml
+bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml > bosh-template.yml
 
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
 chmod +x ${BOSH_CLI}
