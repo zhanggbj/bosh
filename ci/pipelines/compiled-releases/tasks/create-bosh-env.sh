@@ -35,15 +35,10 @@ mkdir -p $deployment_dir
 
 SL_VM_DOMAIN=${SL_VM_PREFIX}.softlayer.com
 
-BOSH_RELEASE_URI="file://$(echo bosh-release/*.tgz)"
-CPI_RELEASE_URI="file://$(echo bosh-softlayer-cpi-release/*.tgz)"
-STEMCELL_URI="file://$(echo stemcell/*.tgz)"
+STEMCELL_NAME="$(ls stemcell|grep tgz)"
+ORG_STEMCELL_NAME="light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
 
-ORG_BOSH_RELEASE_URI="file://bosh-release/bosh-261.tgz"
-ORG_CPI_RELEASE_URI="file://bosh-softlayer-cpi-release/bosh-softlayer-cpi-release-4.tgz"
-ORG_STEMCELL_URI="file://stemcell/light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
-
-sed -i 's/'"$ORG_BOSH_RELEASE_URI"'/'"$BOSH_RELEASE_URI"'/g;s/'"$ORG_CPI_RELEASE_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g;s/'"$ORG_STEMCELL_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g' \
+sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' \
 bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml > bosh-template.yml
 
 echo "here"
