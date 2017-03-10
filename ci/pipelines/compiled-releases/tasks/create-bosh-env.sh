@@ -37,8 +37,8 @@ SL_VM_DOMAIN=${SL_VM_PREFIX}.softlayer.com
 
 STEMCELL_NAME="$(ls stemcell|grep tgz)"
 ORG_STEMCELL_NAME="light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
-
-sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml
+cp bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml bosh-template.yml
+sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' bosh-template.yml
 
 echo "here"
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
@@ -68,7 +68,7 @@ trap finish ERR
 echo "Using bosh-cli $($BOSH_CLI -v)"
 echo "Deploying director..."
 
-$BOSH_CLI create-env bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml \
+$BOSH_CLI create-env bosh-template.yml \
                       --state=${deployment_dir}/director-deploy-state.json \
                       --vars-store ${deployment_dir}/credentials.yml \
                       -v SL_VM_PREFIX=${SL_VM_PREFIX} \
