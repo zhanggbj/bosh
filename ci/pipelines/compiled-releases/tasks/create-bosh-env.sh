@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -ex
 
 source bosh-src/ci/pipelines/compiled-releases/tasks/utils.sh
 #source /etc/profile.d/chruby.sh
@@ -42,7 +42,7 @@ ORG_BOSH_RELEASE_URI="file://bosh-release/bosh-261.tgz"
 ORG_CPI_RELEASE_URI="file://bosh-softlayer-cpi-release/bosh-softlayer-cpi-release-4.tgz"
 ORG_STEMCELL_URI="file://stemcell/light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
 
-sed -i 's/'"$ORG_BOSH_RELEASE_URI"'/'"$BOSH_RELEASE_URI"'/g;s/'"$ORG_CPI_RELEASE_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g; s/'"$ORG_STEMCELL_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g' \
+sed -i 's/'"$ORG_BOSH_RELEASE_URI"'/'"$BOSH_RELEASE_URI"'/g;s/'"$ORG_CPI_RELEASE_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g;s/'"$ORG_STEMCELL_URI"'/'"$ORG_BOSH_RELEASE_URI"'/g' \
 bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml > bosh-template.yml
 
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
