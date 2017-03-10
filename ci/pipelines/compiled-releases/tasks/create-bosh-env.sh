@@ -38,8 +38,7 @@ SL_VM_DOMAIN=${SL_VM_PREFIX}.softlayer.com
 STEMCELL_NAME="$(ls stemcell|grep tgz)"
 ORG_STEMCELL_NAME="light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz"
 
-sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' \
-bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml > bosh-template.yml
+sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml
 
 echo "here"
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
@@ -66,10 +65,10 @@ chmod +x ${BOSH_CLI}
 
 trap finish ERR
 
-echo "Using bosh-cli $(bosh-cli-v2/bosh-cli* -v)"
+echo "Using bosh-cli $($BOSH_CLI -v)"
 echo "Deploying director..."
 
-$BOSH_CLI create-env bosh-template.yml \
+$BOSH_CLI create-env bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml \
                       --state=${deployment_dir}/director-deploy-state.json \
                       --vars-store ${deployment_dir}/credentials.yml \
                       -v SL_VM_PREFIX=${SL_VM_PREFIX} \
@@ -87,7 +86,7 @@ $BOSH_CLI  -e ${SL_VM_DOMAIN} --ca-cert <($BOSH_CLI int ${deployment_dir}/creden
 echo "Trying to login to director..."
 
 export BOSH_CLIENT=admin
-export BOSH_CLIENT_SECRET=$(bosh-cli-v2/bosh-cli* int ${deployment_dir}/credentials.yml --path /DI_ADMIN_PASSWORD)
+export BOSH_CLIENT_SECRET=$(${BOSH_CLI} int ${deployment_dir}/credentials.yml --path /DI_ADMIN_PASSWORD)
 
 $BOSH_CLI -e bosh-env login
 

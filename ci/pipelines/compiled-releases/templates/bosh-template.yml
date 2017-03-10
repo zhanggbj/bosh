@@ -3,9 +3,9 @@ name: bosh
 
 releases:
 - name: bosh
-  url: file://bosh-release/bosh-261.tgz
+  url: file://bosh-release/release.tgz
 - name: bosh-softlayer-cpi
-  url: file://bosh-softlayer-cpi-release/bosh-softlayer-cpi-release-4.tgz
+  url: file://bosh-softlayer-cpi-release/release.tgz
 
 resource_pools:
 - name: vms
