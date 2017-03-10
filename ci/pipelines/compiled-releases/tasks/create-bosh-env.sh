@@ -97,4 +97,3 @@ $BOSH_CLI -e bosh-env login
 trap - ERR
 
 finish
-
