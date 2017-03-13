@@ -1,10 +1,7 @@
 #!/usr/bin/env bash
 set -ex
 
-
 source bosh-src/ci/pipelines/compiled-releases/tasks/utils.sh
-#source /etc/profile.d/chruby.sh
-#chruby 2.2.4
 
 check_param SL_VM_PREFIX
 check_param SL_USERNAME
@@ -12,23 +9,6 @@ check_param SL_API_KEY
 check_param SL_DATACENTER
 check_param SL_VLAN_PUBLIC
 check_param SL_VLAN_PRIVATE
-
-#apt-get update > /dev/null 2>&1
-#apt-get install -y python-pip python-dev> /dev/null 2>&1
-
-#echo "Downloading SoftLayer CLI..."
-#
-#pip install SoftLayer  >/dev/null 2>&1
-#
-#echo "Using $(slcli --version)"
-
-#cat > ~/.softlayer <<EOF
-#[softlayer]
-#username = $SL_USERNAME
-#api_key = $SL_API_KEY
-#endpoint_url = https://api.softlayer.com/xmlrpc/v3.1/
-#timeout = 0
-#EOF
 
 deployment_dir="${PWD}/deployment"
 mkdir -p $deployment_dir
@@ -40,7 +20,6 @@ ORG_STEMCELL_NAME="light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_age
 cp bosh-src/ci/pipelines/compiled-releases/templates/bosh-template.yml bosh-template.yml
 sed -i 's/'"$ORG_STEMCELL_NAME"'/'"$STEMCELL_NAME"'/g' bosh-template.yml
 
-echo "here"
 BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
 chmod +x ${BOSH_CLI}
 
@@ -54,13 +33,11 @@ chmod +x ${BOSH_CLI}
     cat /etc/hosts | grep "$SL_VM_DOMAIN" | tee ${deployment_dir}/director-hosts
     echo "====================================================================="
     echo "Saving config..."
-#    DIRECTOR_VM_ID=$(grep -Po '(?<=current_vm_cid": ")[^"]*' ${deployment_dir}/director-deploy-state.json)
-#    slcli vs detail ${DIRECTOR_VM_ID} --passwords > ${deployment_dir}/director-detail
     cp $BOSH_CLI ${deployment_dir}/
     pushd ${deployment_dir}
-      tar -zcvf  /tmp/director_state.tgz ./ >/dev/null 2>&1
+      tar -zcvf  /tmp/director-state.tgz ./ >/dev/null 2>&1
     popd
-    mv /tmp/director_state.tgz director_state/
+    mv /tmp/director-state.tgz director-state/
   }
 
 trap finish ERR
