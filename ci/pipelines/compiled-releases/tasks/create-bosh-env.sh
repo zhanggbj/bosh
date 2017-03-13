@@ -26,7 +26,7 @@ chmod +x ${BOSH_CLI}
   function finish {
     echo "Final state of director deployment:"
     echo "====================================================================="
-    cat ${deployment_dir}/director-deploy-state.json
+    cat ${deployment_dir}/bosh-template-state.json
     echo "====================================================================="
     echo "Director:"
     echo "====================================================================="
@@ -46,7 +46,7 @@ echo "Using bosh-cli $($BOSH_CLI -v)"
 echo "Deploying director..."
 
 $BOSH_CLI create-env bosh-template.yml \
-                      --state=${deployment_dir}/director-deploy-state.json \
+                      --state=${deployment_dir}/bosh-template-state.json \
                       --vars-store ${deployment_dir}/credentials.yml \
                       -v SL_VM_PREFIX=${SL_VM_PREFIX} \
                       -v SL_VM_DOMAIN=${SL_VM_DOMAIN} \
