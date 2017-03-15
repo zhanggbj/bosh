@@ -128,5 +128,7 @@ $BOSH_CLI -e bosh-env -d ${deployment_name} deploy ${deployment_dir}/${manifest_
 $BOSH_CLI -e bosh-env -d ${deployment_name} export-release bosh/${BOSH_VERSION} ubuntu-trusty/${STEMCELL_VERSION}
 $BOSH_CLI -e bosh-env -d ${deployment_name} export-release bosh-softlayer-cpi/${CPI_VERSION} ubuntu-trusty/${STEMCELL_VERSION}
 
-cp bosh-${BOSH_VERSION}-ubuntu-trusty-${STEMCELL_VERSION}-*.tgz compiled-release/
-cp bosh-softlayer-cpi-${CPI_VERSION}-ubuntu-trusty-${STEMCELL_VERSION}-*.tgz compiled-release/
+mkdir -p complied-release/bosh
+cp bosh-${BOSH_VERSION}-ubuntu-trusty-${STEMCELL_VERSION}-*.tgz compiled-release/bosh
+mkdir -p complied-release/cpi
+cp bosh-softlayer-cpi-${CPI_VERSION}-ubuntu-trusty-${STEMCELL_VERSION}-*.tgz compiled-release/cpi
