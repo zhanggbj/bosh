@@ -22,8 +22,9 @@ BOSH_CLI="$(pwd)/$(echo bosh-cli/bosh-cli-*)"
 chmod +x ${BOSH_CLI}
 
 SL_VM_DOMAIN=${SL_VM_PREFIX}.softlayer.com
+cp director-state/bosh-template.yml ./
 
-$BOSH_CLI delete-env director-state/bosh-template.yml \
+$BOSH_CLI delete-env bosh-template.yml \
                       --vars-store director-state/credentials.yml \
                       -v SL_VM_PREFIX=${SL_VM_PREFIX} \
                       -v SL_VM_DOMAIN=${SL_VM_DOMAIN} \
