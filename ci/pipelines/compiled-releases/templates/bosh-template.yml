@@ -11,9 +11,9 @@ resource_pools:
 - name: vms
   network: default
   stemcell:
-    url: file://stemcell/light-bosh-stemcell-3312.9-softlayer-xen-ubuntu-trusty-go_agent.tgz
+    url: file://stemcell/light-bosh-stemcell-3312.9 -softlayer-xen-ubuntu-trusty-go_agent.tgz
   cloud_properties:
-    not_deployed_by_director: true
+    deployedByBoshcli: true
     Domain: softlayer.com
     VmNamePrefix: ((SL_VM_PREFIX))
     EphemeralDiskSize: 100
