@@ -5,11 +5,6 @@ resources:
       regexp: bosh-cli-([0-9.]+)-linux-amd64
       bucket: bosh-cli-artifacts
       region_name: us-east-1
-#  - name: pipelines
-#    type: git
-#    source:
-#      uri: https://github.com/zhanggbj/bosh-cpi-certification
-#      branch: master
 
   - name: bosh-src
     type: git
@@ -27,23 +22,17 @@ resources:
   #
   - name: bosh-release
     type: bosh-io-release
-#    version: 255.6
     source:
       repository: cloudfoundry/bosh
 
   #
   # stemcells to compile on
   #
-#
-#  - name: ubuntu-trusty-stemcell
-#    type: bosh-io-stemcell
-#    source:
-#      name: bosh-aws-xen-hvm-ubuntu-trusty-go_agent
 
   - name: light-stemcell
     type: s3
     source:
-      regexp: light-bosh-stemcell-([0-9.]+)-softlayer-xen-ubuntu-trusty-go_agent\.tgz
+      regexp: light-bosh-stemcell-(\d+\.\d+)-softlayer-xen-ubuntu-trusty-go_agent\.tgz
       bucket: bosh-softlayer-stemcells-bluemix
       access_key_id: {{s3_access_key_id}}
       secret_access_key: {{s3_secret_access_key}}
@@ -63,33 +52,6 @@ resources:
       bucket: bosh-softlayer-compiled-release-tarballs
       access_key_id: {{s3_access_key_id}}
       secret_access_key: {{s3_secret_access_key}}
-
-  - name: bosh-softlayer-cpi-latest-on-light-stemcell-latest
-    type: s3
-    source:
-      regexp: bosh-softlayer-cpi-([0-9]+)-ubuntu-trusty-([0-9.]+)-(.*)\.tgz
-      bucket: bosh-softlayer-compiled-release-tarballs
-      access_key_id: {{s3_access_key_id}}
-      secret_access_key: {{s3_secret_access_key}}
-#  - name: ubuntu-trusty-3146-stemcell
-#    type: s3
-#    source:
-#      bucket: bosh-jenkins-artifacts
-#      regexp: "bosh-stemcell/aws/light-bosh-stemcell-(?P<version>3146\\.[^-]+)-aws-xen-hvm-ubuntu-trusty-go_agent.tgz"
-
-  #
-  # compiled releases
-  #
-
-  # ubuntu-trusty
-
-#  - name: bosh-on-light-stemcell
-#    type: s3
-#    source:
-#      bucket: bosh-softlayer-compiled-release-tarballs
-#      access_key_id: {{s3_access_key_id}}
-#      secret_access_key: {{s3_secret_access_key}}
-#      regexp: "release-bosh-[\\d\\.]+-on-light-stemcell-[\\d\\.]+-(\\d+).tgz"
 
 jobs:
   - name: prepare-director
@@ -133,6 +95,7 @@ jobs:
             passed: [prepare-director]
           - get: director-state
             passed: [prepare-director]
+            trigger: true
       - task: export-director-release
         file: bosh-src/ci/pipelines/compiled-releases/tasks/export-director-release.yml
         input_mapping:
@@ -158,9 +121,4 @@ jobs:
 
       - put: bosh-latest-on-light-stemcell-latest
         params:
-          file: compiled-release/bosh/*.tgz
-
-      - put: bosh-softlayer-cpi-latest-on-light-stemcell-latest
-        params:
-          file: compiled-release/cpi/*.tgz
-
+          file: compiled-release/bosh/*\.tgz
