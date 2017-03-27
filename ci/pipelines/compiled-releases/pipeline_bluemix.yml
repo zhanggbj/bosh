@@ -84,15 +84,10 @@ jobs:
     plan:
       - aggregate:
           - get: bosh-src
-            passed: [prepare-director]
           - get: bosh-release
-            passed: [prepare-director]
           - get: bosh-softlayer-cpi-release
-            passed: [prepare-director]
           - get: light-stemcell
-            passed: [prepare-director]
           - get: bosh-cli
-            passed: [prepare-director]
           - get: director-state
             passed: [prepare-director]
             trigger: true
